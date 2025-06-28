@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>لوحة التحكم - جهات الاتصال</title>
+<style>
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f2f5;
+    margin: 0; padding: 20px;
+    direction: rtl;
+  }
+  h1 {
+    text-align: center; color: #333;
+  }
+  .search {
+    margin-bottom: 20px; text-align: center;
+  }
+  .search input {
+    width: 300px;
+    padding: 10px;
+    border: 1px solid #ccc; border-radius: 5px;
+    font-size: 16px;
+  }
+  .add-form, .import-vcf {
+    margin: 20px 0; text-align: center;
+  }
+  .add-form input {
+    padding: 8px; margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  .add-form button, .import-vcf button {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 16px;
+    border: none; border-radius: 5px;
+    cursor: pointer;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+  table th, table td {
+    padding: 12px;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+  table th {
+    background-color: #007bff;
+    color: white;
+  }
+  button {
+    padding: 6px 10px;
+    margin: 2px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .edit-btn { background-color: #ffc107; color: white; }
+  .delete-btn { background-color: #dc3545; color: white; }
+  .call-btn {
+    background-color: #17a2b8;
+    color: white;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 5px;
+  }
+  .copy-btn { background-color: #6c757d; color: white; }
+  .wa-btn {
+    background-color: #25D366;
+    color: white;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 5px;
+  }
+  .fav-btn {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: gold;
+    margin-left: 5px;
+  }
+  .fav-btn.inactive { color: #ccc; }
+</style>
+</head>
+<body>
+  <h1>لوحة التحكم - جهات الاتصال</h1>
+
+  <div class="import-vcf">
+    <input type="file" id="vcfFileInput" accept=".vcf" />
+    <button onclick="importVCF()">رفع ملف VCF</button>
+  </div>
+
+  <div class="search">
+    <input type="text" id="searchInput" placeholder="ابحث بالاسم أو الرقم أو الملاحظة" onkeyup="searchTable()" />
+  </div>
+
+  <div class="add-form">
+    <input type="text" id="nameInput" placeholder="الاسم" />
+    <input type="text" id="phoneInput" placeholder="رقم الهاتف" />
+    <input type="text" id="noteInput" placeholder="ملاحظة" />
+    <button onclick="addContact()">إضافة</button>
+  </div>
+
+  <table id="contactsTable">
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>رقم الهاتف</th>
+        <th>ملاحظة</th>
+        <th>الإجراءات</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+  import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVZPuoh_jryc6K46mjL61e57wnRrQVlSE",
+    authDomain: "past-c2c4d.firebaseapp.com",
+    databaseURL: "https://past-c2c4d-default-rtdb.firebaseio.com/",
+    projectId: "past-c2c4d",
+    storageBucket: "past-c2c4d.appspot.com",
+    messagingSenderId: "513264432934",
+    appId: "1:513264432934:web:aef1b4a3adf30a67c373e7",
+    measurementId: "G-GBHGM21BP0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // تحميل جهات الاتصال وترتيب المفضلة أولاً
+  function loadContacts() {
+    const contactsRef = ref(db, 'contacts');
+    onValue(contactsRef, (snapshot) => {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      // جلب جميع الاتصالات في مصفوفة لترتيبها حسب المفضلة
+      let contactsArray = [];
+      snapshot.forEach(childSnapshot => {
+        contactsArray.push({ key: childSnapshot.key, data: childSnapshot.val() });
+      });
+
+      // ترتيب: المفضلة أولاً
+      contactsArray.sort((a,b) => {
+        return (b.data.favorite === true) - (a.data.favorite === true);
+      });
+
+      contactsArray.forEach(({key, data}) => {
+        const phone = data.phone || '';
+        const isFav = data.favorite === true;
+        const favClass = isFav ? '' : 'inactive';
+        const favIcon = isFav ? '★' : '☆';
+
+        const row = `
+          <tr id="${key}">
+            <td>
+              <input type="text" value="${data.name || ''}" disabled />
+              <button class="fav-btn ${favClass}" onclick="toggleFavorite('${key}', ${isFav})" title="تبديل المفضلة">${favIcon}</button>
+            </td>
+            <td><input type="text" value="${phone}" disabled /></td>
+            <td><input type="text" value="${data.note || ''}" disabled /></td>
+            <td>
+              <button class="edit-btn" onclick="enableEdit('${key}')">تعديل</button>
+              <button class="delete-btn" onclick="deleteContact('${key}')">حذف</button>
+              <button class="copy-btn" onclick="copyPhone('${phone}')">نسخ</button>
+              <a class="call-btn" href="tel:${phone}">اتصال</a>
+              <a class="wa-btn" href="https://wa.me/970${phone}" target="_blank">واتساب 970+</a>
+              <a class="wa-btn" href="https://wa.me/972${phone}" target="_blank">واتساب 972+</a>
+            </td>
+          </tr>`;
+        tbody.innerHTML += row;
+      });
+    });
+  }
+
+  loadContacts();
+
+  window.addContact = function() {
+    const name = document.getElementById('nameInput').value.trim();
+    const phone = document.getElementById('phoneInput').value.trim();
+    const note = document.getElementById('noteInput').value.trim();
+
+    if (!name || !phone) {
+      alert('يرجى إدخال الاسم ورقم الهاتف');
+      return;
+    }
+
+    const newContactRef = push(ref(db, 'contacts'));
+    set(newContactRef, { name, phone, note, favorite: false });
+
+    document.getElementById('nameInput').value = '';
+    document.getElementById('phoneInput').value = '';
+    document.getElementById('noteInput').value = '';
+  };
+
+  window.enableEdit = function(key) {
+    const row = document.getElementById(key);
+    const inputs = row.querySelectorAll('input');
+    const editButton = row.querySelector('.edit-btn');
+
+    if (editButton.innerText === 'تعديل') {
+      inputs.forEach(input => input.disabled = false);
+      editButton.innerText = 'حفظ';
+    } else {
+      const updatedName = inputs[0].value.trim();
+      const updatedPhone = inputs[1].value.trim();
+      const updatedNote = inputs[2].value.trim();
+
+      if (!updatedName || !updatedPhone) {
+        alert('الاسم ورقم الهاتف لا يمكن أن يكونا فارغين');
+        return;
+      }
+
+      update(ref(db, 'contacts/' + key), {
+        name: updatedName,
+        phone: updatedPhone,
+        note: updatedNote
+      });
+
+      inputs.forEach(input => input.disabled = true);
+      editButton.innerText = 'تعديل';
+    }
+  };
+
+  window.deleteContact = function(key) {
+    if (confirm('هل أنت متأكد من حذف جهة الاتصال؟')) {
+      remove(ref(db, `contacts/${key}`));
+    }
+  };
+
+  window.copyPhone = function(phone) {
+    navigator.clipboard.writeText(phone).then(() => {
+      alert('تم نسخ الرقم: ' + phone);
+    });
+  };
+
+  window.searchTable = function() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#contactsTable tbody tr');
+
+    rows.forEach(row => {
+      const name = row.cells[0].querySelector('input').value.toLowerCase();
+      const phone = row.cells[1].querySelector('input').value.toLowerCase();
+      const note = row.cells[2].querySelector('input').value.toLowerCase();
+
+      row.style.display = (name.includes(input) || phone.includes(input) || note.includes(input)) ? '' : 'none';
+    });
+  };
+
+  window.toggleFavorite = function(key, currentState) {
+    const newFavState = !currentState;
+    update(ref(db, 'contacts/' + key), { favorite: newFavState });
+  };
+
+  // دالة قراءة ملف VCF ورفع البيانات إلى Firebase
+  window.importVCF = function() {
+    const fileInput = document.getElementById('vcfFileInput');
+    const file = fileInput.files[0];
+    if (!file) {
+      alert('يرجى اختيار ملف VCF أولاً');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const contacts = parseVCF(text);
+      if (contacts.length === 0) {
+        alert('لم يتم العثور على جهات اتصال في الملف');
+        return;
+      }
+      let addedCount = 0;
+      contacts.forEach(c => {
+        if(c.name && c.phone){
+          const newContactRef = push(ref(db, 'contacts'));
+          set(newContactRef, { name: c.name, phone: c.phone, note: '', favorite: false });
+          addedCount++;
+        }
+      });
+      alert(`تمت إضافة ${addedCount} جهة اتصال`);
+      fileInput.value = ''; // إعادة تعيين الاختيار
+    };
+    reader.readAsText(file);
+  };
+
+  // دالة بسيطة لتحليل ملف VCF (تدعم فقط الاسم و رقم الهاتف)
+  function parseVCF(data) {
+    const contacts = [];
+    const entries = data.split(/END:VCARD/gi);
+    entries.forEach(entry => {
+      const nameMatch = entry.match(/FN:(.+)/i);
+      const phoneMatch = entry.match(/TEL[^:]*:(.+)/i);
+      if (nameMatch && phoneMatch) {
+        contacts.push({ name: nameMatch[1].trim(), phone: phoneMatch[1].trim() });
+      }
+    });
+    return contacts;
+  }
+</script>
+
+</body>
+</html>
