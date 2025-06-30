@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>لوحة التحكم - جهات الاتصال مع Firebase</title>
 <style>
-  body { font-family: 'Arial'; background: #f0f2f5; direction: rtl; padding: 20px; margin:0; }
-  h1 { text-align:center; color:#333; }
-  .import-vcf, .search, .owner-filter, .add-form { text-align:center; margin:20px auto; max-width:600px; }
-  input[type=text], select, button { font-size:16px; }
-  input[type=text], select { padding:8px; margin:5px; width:90%; max-width:300px; border:1px solid #ccc; border-radius:5px; }
-  button { padding:8px 16px; margin:5px; border:none; border-radius:5px; background:#28a745; color:#fff; cursor:pointer; }
-  .delete-btn { background:#dc3545 !important; }
-  .counters { text-align:center; margin:10px 0; font-size:16px; }
-  table { width:100%; border-collapse:collapse; background:#fff; box-shadow:0 0 10px rgba(0,0,0,0.1); margin-top:20px; }
-  th, td { padding:12px; border:1px solid #ddd; text-align:center; vertical-align:middle; }
-  th { background:#007bff; color:#fff; cursor:pointer; }
-  @media(max-width:768px) {
-    table, thead, tbody, th, td, tr { display:block; }
-    thead tr { display:none; }
-    tbody tr { background:#fff; margin-bottom:15px; padding:15px; box-shadow:0 0 10px rgba(0,0,0,0.1); border-radius:8px; }
-    tbody td { border:none; padding:8px 10px; position:relative; text-align:right; font-size:16px; padding-left:50%; }
-    tbody td::before { content:attr(data-label); position:absolute; left:10px; top:8px; font-weight:bold; color:#007bff; }
+  body { font-family: 'Arial', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; direction: rtl; }
+  h1 { text-align: center; color: #333; }
+  .import-vcf, .search, .owner-filter, .add-form { text-align: center; margin: 20px auto; max-width: 600px; }
+  input[type=text], select, button { font-size: 16px; }
+  input[type=text], select { padding: 8px; margin: 5px; width: 90%; max-width: 300px; border: 1px solid #ccc; border-radius: 5px; }
+  button { padding: 8px 16px; margin: 5px; border: none; border-radius: 5px; background-color: #28a745; color: #fff; cursor: pointer; }
+  .delete-btn { background-color: #dc3545 !important; }
+  .counters { text-align: center; margin: 10px 0; font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-top: 20px; }
+  th, td { padding: 12px; border: 1px solid #ddd; text-align: center; vertical-align: middle; }
+  th { background-color: #007bff; color: #fff; cursor: pointer; }
+  @media (max-width: 768px) {
+    table, thead, tbody, th, td, tr { display: block; }
+    thead tr { display: none; }
+    tbody tr { margin-bottom: 15px; background: #fff; padding: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
+    tbody td { border: none; padding: 8px 10px; position: relative; padding-left: 50%; text-align: right; font-size: 16px; }
+    tbody td::before { content: attr(data-label); position: absolute; left: 10px; top: 8px; font-weight: bold; color: #007bff; }
   }
 </style>
 </head>
@@ -68,7 +68,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBVZPuoh_jryc6K46mjL61e57wnRrQVlSE",
   authDomain: "past-c2c4d.firebaseapp.com",
@@ -82,30 +81,44 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database().ref('contacts');
 let contacts = [];
 
-function decodeQP(str) {
-  return str.replace(/=([A-F0-9]{2})/gi, (_,h)=>String.fromCharCode(parseInt(h,16))).replace(/=\r?\n/g,'');
+function decodeQuotedPrintable(str) {
+  // فك ترميز quoted-printable
+  return str.replace(/=([A-F0-9]{2})/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16))).replace(/=\r?\n/g, '');
 }
+
 function parseVCF(data) {
-  const arr=[]; data.split(/END:VCARD/gi).forEach(e=>{
-    const fn = e.match(/FN(;[^:]*)?:(.*)/i);
-    const tel= e.match(/TEL[^:]*:(.*)/i);
-    let name=fn?fn[2].trim():'بدون اسم';
-    if(name.includes('=')&&e.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE')) name=decodeQP(name);
-    name = name.replace(/=\r?\n/g,'').replace(/=\s/g,'');
-    if(tel){ const phone=tel[1].trim(); arr.push({name,phone}); }
-  }); return arr;
+  const arr = [];
+  // قم بقراءة الملف كنص UTF-8
+  data = new TextDecoder('utf-8').decode(new TextEncoder().encode(data));
+  data.split(/END:VCARD/gi).forEach(entry => {
+    const fn = entry.match(/FN(;[^:]*)?:(.*)/i);
+    const tel = entry.match(/TEL[^:]*:(.*)/i);
+    let name = fn ? fn[2].trim() : 'بدون اسم';
+    if (fn && fn[1] && fn[1].toUpperCase().includes('QUOTED-PRINTABLE')) {
+      name = decodeQuotedPrintable(name);
+    }
+    if (tel) {
+      const phone = tel[1].trim();
+      arr.push({ name, phone });
+    }
+  });
+  return arr;
 }
-function loadContacts(){
-  db.on('value',snap=>{
-    contacts=[]; snap.forEach(c=>contacts.push({key:c.key,...c.val()}));
+
+function loadContacts() {
+  db.on('value', snap => {
+    contacts = [];
+    snap.forEach(c => contacts.push({ key: c.key, ...c.val() }));
     applyFilters(); updateOwnerFilter();
   });
 }
-function render(filtered){
-  const t=document.getElementById('tableBody'); t.innerHTML='';
-  filtered.forEach(c=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
+
+function render(filtered) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  filtered.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td data-label="تحديد"><input type="checkbox" class="select-contact" data-key="${c.key}" onchange="updateSelection()" /></td>
       <td data-label="الاسم">${c.name}</td>
       <td data-label="رقم الهاتف">${c.phone}</td>
@@ -113,34 +126,78 @@ function render(filtered){
       <td data-label="اسم المالك">${c.owner||''}</td>
       <td data-label="آخر تعديل">${c.lastModified||''}</td>
       <td data-label="الإجراءات"><button onclick="deleteContact('${c.key}')" class="delete-btn">حذف</button></td>
-    `; t.appendChild(tr);
+    `;
+    tbody.appendChild(tr);
   });
   document.getElementById('totalCount').textContent = filtered.length;
   updateSelection();
 }
-function applyFilters(){
-  const kv=document.getElementById('searchInput').value.toLowerCase();
-  const own=document.getElementById('ownerFilter').value;
-  const filtered = contacts.filter(c=>
+
+function applyFilters() {
+  const kv = document.getElementById('searchInput').value.toLowerCase();
+  const own = document.getElementById('ownerFilter').value;
+  const filtered = contacts.filter(c =>
     ((c.name||'').toLowerCase().includes(kv) || c.phone.includes(kv) || (c.note||'').toLowerCase().includes(kv)) &&
-    (!own||c.owner===own)
+    (!own || c.owner === own)
   );
   render(filtered);
 }
-function addContact(){ const n=document.getElementById('nameInput').value.trim();
-  const p=document.getElementById('phoneInput').value.trim();
-  const no=document.getElementById('noteInput').value.trim();
-  const o=document.getElementById('ownerSingleInput').value.trim();
-  if(!p)return; db.push({name:n||'بدون اسم',phone:p,note:no,owner:o,lastModified:new Date().toLocaleString()});
+
+function addContact() {
+  const n = document.getElementById('nameInput').value.trim();
+  const p = document.getElementById('phoneInput').value.trim();
+  const no = document.getElementById('noteInput').value.trim();
+  const o = document.getElementById('ownerSingleInput').value.trim();
+  if (!p) return;
+  db.push({ name: n||'بدون اسم', phone: p, note: no, owner: o, lastModified: new Date().toLocaleString() });
 }
-function deleteContact(k){ db.child(k).remove(); }
-function deleteSelected(){ document.querySelectorAll('.select-contact:checked').forEach(cb=>deleteContact(cb.dataset.key)); }
-function importVCF(){ const f=document.getElementById('vcfFileInput').files[0]; const o=document.getElementById('ownerInput').value.trim(); if(!f)return; const r=new FileReader(); r.onload=e=>{ parseVCF(e.target.result).forEach(x=>db.push({name:x.name||'بدون اسم',phone:x.phone,owner:o,lastModified:new Date().toLocaleString()})); }; r.readAsText(f); }
-function updateOwnerFilter(){ const sel=document.getElementById('ownerFilter'); sel.innerHTML='<option value="">كل المالكين</option>'; [...new Set(contacts.map(c=>c.owner).filter(x=>x))].forEach(o=>sel.innerHTML+=`<option>${o}</option>`); }
-function toggleSelectAll(cb){ document.querySelectorAll('.select-contact').forEach(c=>c.checked=cb.checked); updateSelection(); }
-function updateSelection(){ const selCount=document.querySelectorAll('.select-contact:checked').length; document.getElementById('selectedCount').textContent=selCount; document.getElementById('deleteSelectedBtn').classList.toggle('hidden', selCount===0); }
-function sortTable(key){ contacts.sort((a,b)=> (a[key]||'').localeCompare(b[key]||'')); applyFilters(); }
-window.onload=loadContacts;
+
+function deleteContact(k) {
+  db.child(k).remove();
+}
+
+function deleteSelected() {
+  document.querySelectorAll('.select-contact:checked').forEach(cb => deleteContact(cb.dataset.key));
+}
+
+function importVCF() {
+  const file = document.getElementById('vcfFileInput').files[0];
+  const owner = document.getElementById('ownerInput').value.trim();
+  if (!file) return;
+  const reader = new FileReader();
+  reader.readAsText(file, 'UTF-8');
+  reader.onload = e => {
+    parseVCF(e.target.result).forEach(x =>
+      db.push({ name: x.name||'بدون اسم', phone: x.phone, owner, lastModified: new Date().toLocaleString() })
+    );
+  };
+}
+
+function updateOwnerFilter() {
+  const sel = document.getElementById('ownerFilter');
+  sel.innerHTML = '<option value="">كل المالكين</option>';
+  [...new Set(contacts.map(c => c.owner).filter(x => x))].forEach(o =>
+    sel.innerHTML += `<option>${o}</option>`
+  );
+}
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.select-contact').forEach(c => c.checked = cb.checked);
+  updateSelection();
+}
+
+function updateSelection() {
+  const count = document.querySelectorAll('.select-contact:checked').length;
+  document.getElementById('selectedCount').textContent = count;
+  document.getElementById('deleteSelectedBtn').classList.toggle('hidden', count===0);
+}
+
+function sortTable(key) {
+  contacts.sort((a,b) => (a[key]||'').localeCompare(b[key]||''));
+  applyFilters();
+}
+
+window.onload = loadContacts;
 </script>
 </body>
 </html>
