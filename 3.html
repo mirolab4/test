@@ -530,16 +530,39 @@
 
 <script>
   // ======== Firebase Configuration ========
+  // 
+  // هام جداً:
+  // لاستخدام هذا التطبيق، يجب عليك استبدال القيم أدناه بمعلومات مشروعك الحقيقية
+  // من لوحة تحكم Firebase Console.
+  // 
+  // كيفية الحصول على هذه الإعدادات:
+  // 1. اذهب إلى https://console.firebase.google.com/
+  // 2. اختر مشروعك.
+  // 3. انقر على أيقونة الترس (Project settings) بجوار "Project overview".
+  // 4. ضمن "General" انزل لأسفل إلى "Your apps" وسترى التطبيقات التي قمت بإضافتها.
+  //    إذا لم يكن لديك تطبيق ويب، فانقر على </> لإضافة تطبيق ويب جديد، وستظهر لك هذه الإعدادات.
+  // 
   const firebaseConfig = {
-    apiKey: "AIzaSyBVZPuoh_jryc6K46mjL61e57wnRrQVlSE", // Replace with your actual Firebase API Key
-    authDomain: "past-c2c4d.firebaseapp.com", // Replace with your actual Auth Domain
-    databaseURL: "https://past-c2c4d-default-rtdb.firebaseio.com/", // Replace with your actual Database URL
-    projectId: "past-c2c4d", // Replace with your actual Project ID
-    storageBucket: "past-c2c4d.appspot.com", // Replace with your actual Storage Bucket
-    messagingSenderId: "513264432934", // Replace with your actual Messaging Sender ID
-    appId: "1:513264432934:web:aef1b4a3adf30a67c373e7", // Replace with your actual App ID
-    measurementId: "G-GBHGM21BP1" // Replace with your actual Measurement ID - changed last digit to prevent collision
+    apiKey: "YOUR_FIREBASE_API_KEY", // <--- استبدل هذا بالمفتاح الخاص بمشروعك
+    authDomain: "YOUR_FIREBASE_AUTH_DOMAIN", // <--- استبدل هذا بنطاق المصادقة الخاص بمشروعك
+    databaseURL: "YOUR_FIREBASE_DATABASE_URL", // <--- استبدل هذا برابط قاعدة البيانات الخاص بمشروعك
+    projectId: "YOUR_FIREBASE_PROJECT_ID", // <--- استبدل هذا بمعرف المشروع الخاص بمشروعك
+    storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET", // <--- استبدل هذا باسم سلة التخزين الخاصة بمشروعك
+    messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID", // <--- استبدل هذا بمعرف مرسل الرسائل الخاص بمشروعك
+    appId: "YOUR_FIREBASE_APP_ID", // <--- استبدل هذا بمعرف التطبيق الخاص بمشروعك
+    measurementId: "YOUR_FIREBASE_MEASUREMENT_ID" // <--- استبدل هذا بمعرف القياس الخاص بمشروعك (اختياري، يمكنك حذفه إذا لم تستخدم Analytics)
   };
+  
+  // هام جداً: بعد استبدال القيم أعلاه، تأكد أيضاً من قواعد أمان قاعدة بياناتك في Firebase Console.
+  // لغرض الاختبار، يمكنك تعيين قواعد القراءة والكتابة إلى "true" (لكن هذا غير آمن للإنتاج):
+  // Realtime Database -> Rules:
+  // {
+  //   "rules": {
+  //     ".read": "true",
+  //     ".write": "true"
+  //   }
+  // }
+
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
@@ -758,7 +781,7 @@
     }, (error) => {
       hideLoading();
       console.error("Firebase data load error:", error);
-      showToast("فشل في تحميل البيانات من Firebase.", 'error');
+      showToast("فشل في تحميل البيانات من Firebase. تحقق من إعداداتك وقواعد الأمان.", 'error'); // More specific error message
     });
   }
 
