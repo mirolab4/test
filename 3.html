@@ -5,158 +5,1432 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>لوحة التحكم - جهات الاتصال مع Firebase</title>
 <style>
-  body { font-family: 'Arial'; background: #f0f2f5; direction: rtl; padding: 20px; margin:0; }
-  h1 { text-align:center; color:#333; }
-  .import-vcf, .search, .owner-filter, .add-form { text-align:center; margin:20px auto; max-width:600px; }
-  input[type=text], select, button { font-size:16px; }
-  input[type=text], select { padding:8px; margin:5px; width:90%; max-width:300px; border:1px solid #ccc; border-radius:5px; }
-  button { padding:8px 16px; margin:5px; border:none; border-radius:5px; background:#28a745; color:#fff; cursor:pointer; }
-  table { width:100%; border-collapse:collapse; background:#fff; box-shadow:0 0 10px rgba(0,0,0,0.1); margin-top:20px; }
-  th, td { padding:12px; border:1px solid #ddd; text-align:center; vertical-align:middle; }
-  th { background:#007bff; color:#fff; cursor:pointer; }
-  .delete-btn { background:#dc3545 !important; }
-  @media(max-width:768px) {
-    table, thead, tbody, th, td, tr { display:block; }
-    thead tr { display:none; }
-    tbody tr { background:#fff; margin-bottom:15px; padding:15px; box-shadow:0 0 10px rgba(0,0,0,0.1); border-radius:8px; }
-    tbody td { border:none; padding:8px 10px; position:relative; text-align:right; font-size:16px; padding-left:50%; }
-    tbody td::before { content:attr(data-label); position:absolute; left:10px; top:8px; font-weight:bold; color:#007bff; }
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f2f5;
+    margin: 0; padding: 15px;
+    direction: rtl;
+    line-height: 1.6;
+  }
+  h1 {
+    text-align: center; color: #333;
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  .section-container {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .search, .owner-filter, .add-form, .import-vcf, .date-filter, .export-section {
+    text-align: center;
+  }
+  input[type="text"], input[type="file"], select {
+    width: calc(100% - 20px);
+    max-width: 350px;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc; border-radius: 5px;
+    font-size: 15px;
+    box-sizing: border-box;
+  }
+  input[type="date"] {
+    width: calc(50% - 15px);
+    max-width: 170px;
+    padding: 10px;
+    margin: 8px 5px;
+    border: 1px solid #ccc; border-radius: 5px;
+    font-size: 15px;
+    box-sizing: border-box;
+  }
+  button, .call-btn, .wa-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    margin: 5px;
+    border: none; border-radius: 5px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.2s;
+    width: auto;
+    display: inline-block;
+  }
+  button:hover, .call-btn:hover, .wa-btn:hover {
+    background-color: #0056b3;
+  }
+  .add-form button { background-color: #28a745; }
+  .add-form button:hover { background-color: #218838; }
+
+  .edit-btn { background-color: #ffc107; color: white; }
+  .edit-btn:hover { background-color: #e0a800; }
+  .delete-btn { background-color: #dc3545; color: white; }
+  .delete-btn:hover { background-color: #c82333; }
+  .copy-btn { background-color: #6c757d; color: white; }
+  .copy-btn:hover { background-color: #5a6268; }
+  .call-btn { background-color: #17a2b8; }
+  .call-btn:hover { background-color: #138496; }
+  .wa-btn { background-color: #25D366; }
+  .wa-btn:hover { background-color: #1eaf53; }
+  .export-section button { background-color: #1abc9c; }
+  .export-section button:hover { background-color: #148f77; }
+
+  .stats-bar {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: #555;
+  }
+  .delete-selected-container {
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    display: flex; /* Use flexbox for button alignment */
+    justify-content: center; /* Center buttons */
+    gap: 10px; /* Space between buttons */
+  }
+  .hidden { display: none; }
+
+  /* Table scroll container for lazy loading */
+  .table-scroll-container {
+    max-height: 600px; /* Or any suitable height to show a reasonable number of rows */
+    overflow-y: auto; /* Makes the container vertically scrollable */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Keep shadow from previous table */
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    margin-top: 0; /* Remove top margin as container handles spacing */
+    box-shadow: none; /* Remove shadow as container has it */
+    border: none; /* Container has border */
+  }
+  table th, table td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+    font-size: 14px;
+  }
+  table th {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    white-space: nowrap;
+    position: sticky; /* Make headers sticky */
+    top: 0; /* Stick to the top of the scroll container */
+    z-index: 1; /* Ensure it's above scrolling content */
+  }
+  table th:first-child,
+  table td:first-child {
+    border-right: none; /* Adjust border for RTL */
+  }
+  table td input[type="text"] {
+    width: calc(100% - 10px);
+    padding: 5px;
+    margin: 0;
+    font-size: 14px;
+    border: 1px solid #eee;
+  }
+  table td input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+  }
+
+  /* Multi-select dropdown styles (for owner and tags) */
+  .multi-select-dropdown {
+    width: calc(100% - 20px);
+    max-width: 350px;
+    margin: 8px auto;
+    position: relative;
+    text-align: left;
+  }
+  .multi-select-dropdown .selected-items {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #fff;
+    cursor: pointer;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .multi-select-dropdown .selected-items.active {
+    border-color: #007bff;
+  }
+  .multi-select-dropdown .selected-item {
+    background-color: #e9e9e9;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .multi-select-dropdown .selected-item .remove-item {
+    cursor: pointer;
+    font-weight: bold;
+    color: #888;
+  }
+  .multi-select-dropdown .options-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    background-color: #fff;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .multi-select-dropdown .option {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .multi-select-dropdown .option:hover {
+    background-color: #f0f0f0;
+  }
+  .multi-select-dropdown .option.selected {
+    background-color: #e0f0ff;
+    font-weight: bold;
+  }
+  .multi-select-dropdown.active .options-container {
+    display: block;
+  }
+
+  /* Loading Overlay Styles */
+  .loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    color: white;
+    font-size: 20px;
+  }
+  .loading-overlay.hidden {
+    display: none;
+  }
+  /* Simple spinner */
+  .spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid #fff;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Toast Notifications Styles */
+  #toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .toast {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    animation: fadeInOut 4s forwards;
+    min-width: 200px;
+    text-align: center;
+  }
+  .toast.success { background-color: #28a745; }
+  .toast.error { background-color: #dc3545; }
+  .toast.info { background-color: #17a2b8; }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+
+  /* Bulk Edit Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .close-button {
+    color: #aaa;
+    float: left; /* Changed from right to left for RTL */
+    font-size: 28px;
+    font-weight: bold;
+  }
+  .close-button:hover,
+  .close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .modal-content label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+  .modal-content select, .modal-content input[type="text"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  .modal-content button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .modal-content button:hover {
+    background-color: #0056b3;
+  }
+
+
+  /* Responsive Design for smaller screens */
+  @media (max-width: 768px) {
+    body { padding: 10px; }
+    h1 { font-size: 20px; }
+    .section-container { padding: 10px; }
+    input[type="text"], input[type="file"], select {
+      width: calc(100% - 16px);
+      font-size: 14px;
+      margin: 6px 0;
+    }
+    input[type="date"] {
+      width: calc(100% - 16px); /* Full width for dates on mobile */
+      margin: 6px 0;
+    }
+    button, .call-btn, .wa-btn {
+      padding: 8px 12px;
+      font-size: 14px;
+      margin: 4px;
+    }
+    /* Table styling for stacked layout */
+    .table-scroll-container {
+      max-height: 80vh; /* Adjust height for mobile screens */
+      margin: 10px 0;
+      box-shadow: none; /* Remove shadow here, individual rows will have it */
+      border: none; /* Remove border, individual rows will have it */
+    }
+    table, thead, tbody, th, td, tr {
+      display: block; /* Stack elements */
+      width: 100%; /* Ensure they take full width */
+    }
+    thead tr {
+      position: absolute; /* Hide the actual table header */
+      top: -9999px;
+      left: -9999px;
+    }
+    tbody tr {
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    tbody tr td {
+      border: none; /* Remove borders between cells in stacked view */
+      position: relative;
+      padding-left: 50%; /* Space for data-label */
+      text-align: right;
+      font-size: 15px;
+    }
+    tbody tr td::before {
+      content: attr(data-label);
+      position: absolute; left: 10px; top: 10px; font-weight: bold; color: #007bff; font-size: 13px; white-space: nowrap;
+    }
+    tbody tr td:last-child { /* Actions column */
+      padding-left: 10px;
+      text-align: center;
+      display: flex; /* Use flexbox for button alignment */
+      flex-wrap: wrap; /* Allow buttons to wrap */
+      justify-content: center; /* Center buttons */
+      gap: 5px; /* Space between buttons */
+    }
+    tbody tr td:last-child button, tbody tr td:last-child a {
+      flex: 1 1 auto; min-width: 80px; font-size: 14px; padding: 8px 10px;
+    }
+    tbody tr td input[type="text"] {
+      width: calc(100% - 5px); padding: 6px; font-size: 15px;
+    }
+    .stats-bar, .delete-selected-container {
+        font-size: 15px; padding: 5px;
+    }
+    .multi-select-dropdown {
+        width: calc(100% - 16px);
+    }
+    .modal-content {
+      width: 95%;
+    }
+    #toast-container {
+      top: 10px;
+      right: 10px;
+      left: 10px; /* Center toasts on mobile */
+      align-items: center;
+    }
   }
 </style>
 </head>
 <body>
-<h1>لوحة التحكم - جهات الاتصال</h1>
-<div class="import-vcf">
+
+<h1>لوحة التحكم - جهات الاتصال مع Firebase</h1>
+
+<div class="section-container import-vcf">
   <input type="file" id="vcfFileInput" accept=".vcf" />
-  <input type="text" id="ownerInput" placeholder="اسم المالك" />
+  <input type="text" id="ownerInput" placeholder="اسم المالك (للملف المرفوع)" />
   <button onclick="importVCF()">رفع ملف VCF</button>
 </div>
-<div class="search">
-  <input type="text" id="searchInput" placeholder="ابحث بالاسم أو الرقم أو الملاحظة" oninput="applyFilters()" />
+
+<div class="section-container export-section">
+  <button onclick="exportContacts('csv')">تصدير إلى CSV</button>
+  <button onclick="exportContacts('vcf')">تصدير إلى VCF</button>
 </div>
-<div class="owner-filter">
-  <select id="ownerFilter" onchange="applyFilters()">
-    <option value="">كل المالكين</option>
-  </select>
+
+<div class="section-container search">
+  <input type="text" id="searchInput" placeholder="ابحث بالاسم أو الرقم أو الملاحظة أو العلامة" onkeyup="applyFilters()" />
 </div>
-<div class="add-form">
+
+<div class="section-container owner-filter">
+  <label for="ownerMultiSelect">فلترة حسب المالك:</label>
+  <div id="ownerMultiSelect" class="multi-select-dropdown">
+    <div class="selected-items" onclick="toggleMultiSelect(this)">اختر المالكين...</div>
+    <div class="options-container" id="ownerOptionsContainer">
+      </div>
+  </div>
+</div>
+
+<div class="section-container tags-filter">
+  <label for="tagsMultiSelect">فلترة حسب العلامات (Tags):</label>
+  <div id="tagsMultiSelect" class="multi-select-dropdown">
+    <div class="selected-items" onclick="toggleMultiSelect(this)">اختر العلامات...</div>
+    <div class="options-container" id="tagsOptionsContainer">
+      </div>
+  </div>
+</div>
+
+<div class="section-container date-filter">
+  <label for="startDate">من تاريخ:</label>
+  <input type="date" id="startDate" onchange="applyFilters()" />
+  <label for="endDate">إلى تاريخ:</label>
+  <input type="date" id="endDate" onchange="applyFilters()" />
+</div>
+
+<div class="section-container add-form">
   <input type="text" id="nameInput" placeholder="الاسم" />
   <input type="text" id="phoneInput" placeholder="رقم الهاتف" />
   <input type="text" id="noteInput" placeholder="ملاحظة" />
-  <input type="text" id="ownerSingleInput" placeholder="اسم المالك" />
+  <input type="text" id="ownerSingleInput" placeholder="اسم المالك (لجهة الاتصال الجديدة)" />
+  <input type="text" id="tagsSingleInput" placeholder="علامات (فاصلة بينها , )" />
   <button onclick="addContact()">إضافة</button>
-  <button id="deleteSelectedBtn" class="delete-btn hidden" onclick="deleteSelected()">حذف المحدد</button>
 </div>
-<table id="contactsTable">
-  <thead>
-    <tr>
-      <th onclick="sortTable('name')">الاسم</th>
-      <th onclick="sortTable('phone')">رقم الهاتف</th>
-      <th onclick="sortTable('note')">ملاحظة</th>
-      <th onclick="sortTable('owner')">اسم المالك</th>
-      <th onclick="sortTable('lastModified')">آخر تعديل</th>
-      <th class="no-sort">الإجراءات</th>
-    </tr>
-  </thead>
-  <tbody id="tableBody"></tbody>
-</table>
+
+<div class="stats-bar">
+  <span id="totalVisibleContacts">إجمالي جهات الاتصال المعروضة: 0</span> |
+  <span id="selectedVisibleContacts">المحدد من المعروض: 0</span>
+</div>
+
+<div class="delete-selected-container">
+  <button id="deleteSelectedBtn" class="delete-btn hidden" onclick="confirmDeleteSelected()">حذف المحدد</button>
+  <button id="bulkEditBtn" class="edit-btn hidden" onclick="openBulkEditModal()">تعديل جماعي</button>
+  <button id="deleteByOwnerBtn" class="delete-btn hidden" onclick="confirmDeleteByOwner()">حذف جهات الاتصال للمالكين المحددين</button>
+</div>
+
+<div class="table-scroll-container">
+    <table id="contactsTable">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" /></th>
+          <th onclick="sortTable(1)">الاسم</th>
+          <th onclick="sortTable(2)">رقم الهاتف</th>
+          <th onclick="sortTable(3)">ملاحظة</th>
+          <th onclick="sortTable(4)">اسم المالك</th>
+          <th onclick="sortTable(5)">العلامات</th>
+          <th onclick="sortTable(6)">آخر تعديل</th>
+          <th>الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+</div>
+
+<div id="toast-container"></div>
+
+<div id="bulkEditModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" onclick="closeBulkEditModal()">&times;</span>
+    <h2>تعديل جماعي</h2>
+    <label for="bulkEditField">اختر الحقل للتعديل:</label>
+    <select id="bulkEditField">
+      <option value="name">الاسم</option>
+      <option value="phone">رقم الهاتف</option>
+      <option value="note">ملاحظة</option>
+      <option value="owner">المالك</option>
+      <option value="tags">العلامات</option>
+    </select>
+    <label for="bulkEditValue">القيمة الجديدة:</label>
+    <input type="text" id="bulkEditValue" placeholder="أدخل القيمة الجديدة"/>
+    <button onclick="applyBulkEdit()">تطبيق التعديل</button>
+  </div>
+</div>
+
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
-// Firebase config
-defaultConfig = {
-  apiKey: "AIzaSyBVZPuoh_jryc6K46mjL61e57wnRrQVlSE",
-  authDomain: "past-c2c4d.firebaseapp.com",
-  databaseURL: "https://past-c2c4d-default-rtdb.firebaseio.com/",
-  projectId: "past-c2c4d",
-  storageBucket: "past-c2c4d.appspot.com",
-  messagingSenderId: "513264432934",
-  appId: "1:513264432934:web:aef1b4a3adf30a67c373e7"
-};
-firebase.initializeApp(defaultConfig);
-const db = firebase.database().ref('contacts');
-
-let contacts = [];
-
-function decodeQP(str) {
-  return str.replace(/=([A-F0-9]{2})/gi, (_,h)=>String.fromCharCode(parseInt(h,16))).replace(/=\r?\n/g,'');
-}
-function parseVCF(data) {
-  const arr=[]; data.split(/END:VCARD/gi).forEach(e=>{
-    const fn = e.match(/FN(;[^:]*)?:(.*)/i);
-    const tel= e.match(/TEL[^:]*:(.*)/i);
-    let name=fn?fn[2].trim():'بدون اسم';
-    if(name.includes('=')&&e.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE')) name=decodeQP(name);
-    name = name.replace(/=\r?\n/g,'').replace(/=\s/g,'');
-    if(tel){ const phone=tel[1].trim(); arr.push({name,phone}); }
-  }); return arr;
-}
-
-function loadContacts(){
-  db.on('value',snap=>{
-    contacts=[]; snap.forEach(c=>contacts.push({key:c.key,...c.val()}));
-    render(); updateOwnerFilter();
-  });
-}
-function render(){
-  const t=document.getElementById('tableBody'); t.innerHTML='';
-  contacts.forEach(c=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td data-label="الاسم">${c.name||'بدون اسم'}</td>
-      <td data-label="رقم الهاتف">${c.phone}</td>
-      <td data-label="ملاحظة">${c.note||''}</td>
-      <td data-label="اسم المالك">${c.owner||''}</td>
-      <td data-label="آخر تعديل">${c.lastModified||''}</td>
-      <td data-label="الإجراءات">
-        <button onclick="deleteContact('${c.key}')" class="delete-btn">حذف</button>
-      </td>
-    `; t.appendChild(tr);
-  });
-}
-function addContact(){
-  const n=document.getElementById('nameInput').value.trim();
-  const p=document.getElementById('phoneInput').value.trim();
-  const no=document.getElementById('noteInput').value.trim();
-  const o=document.getElementById('ownerSingleInput').value.trim();
-  if(!p) return; db.push({name:n||'بدون اسم',phone:p,note:no,owner:o,lastModified:new Date().toLocaleString()});
-}
-function deleteContact(k){ db.child(k).remove(); }
-
-function importVCF(){
-  const f=document.getElementById('vcfFileInput').files[0];
-  const owner=document.getElementById('ownerInput').value.trim();
-  if(!f) return; const r=new FileReader();
-  r.onload=e=>{
-    const arr=parseVCF(e.target.result);
-    arr.forEach(x=>db.push({name:x.name||'بدون اسم',phone:x.phone,owner, lastModified:new Date().toLocaleString()}));
+  // ======== Firebase Configuration ========
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVZPuoh_jryc6K46mjL61e57wnRrQVlSE", // Replace with your actual Firebase API Key
+    authDomain: "past-c2c4d.firebaseapp.com", // Replace with your actual Auth Domain
+    databaseURL: "https://past-c2c4d-default-rtdb.firebaseio.com/", // Replace with your actual Database URL
+    projectId: "past-c2c4d", // Replace with your actual Project ID
+    storageBucket: "past-c2c4d.appspot.com", // Replace with your actual Storage Bucket
+    messagingSenderId: "513264432934", // Replace with your actual Messaging Sender ID
+    appId: "1:513264432934:web:aef1b4a3adf30a67c373e7", // Replace with your actual App ID
+    measurementId: "G-GBHGM21BP1" // Replace with your actual Measurement ID - changed last digit to prevent collision
   };
-  r.readAsText(f);
-}
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const contactsRef = db.ref('contacts');
 
-function updateOwnerFilter(){
-  const sel=document.getElementById('ownerFilter'); sel.innerHTML='<option value="">كل المالكين</option>';
-  [...new Set(contacts.map(c=>c.owner).filter(x=>x))].forEach(o=>sel.innerHTML+=`<option>${o}</option>`);
-}
+  // Enable Firebase Offline Capabilities
+  firebase.database.enablePersistence()
+    .catch(err => {
+      if (err.code === 'failed-precondition') {
+        // Multiple tabs open, persistence already enabled
+        showToast('التخزين دون اتصال غير متاح (ربما تفتح عدة علامات تبويب).', 'info');
+      } else if (err.code === 'unimplemented') {
+        // The browser does not support the requested feature
+        showToast('التخزين دون اتصال غير مدعوم في متصفحك.', 'error');
+      } else {
+        showToast('فشل تفعيل التخزين دون اتصال.', 'error');
+        console.error("Persistence failed:", err);
+      }
+    });
 
-function applyFilters(){
-  const kv=document.getElementById('searchInput').value.toLowerCase();
-  const own=document.getElementById('ownerFilter').value;
-  contacts.forEach(c=>c._show=(
-    (c.name||'').toLowerCase().includes(kv)||
-    c.phone.includes(kv)||
-    (c.note||'').toLowerCase().includes(kv)
-  )&&(!own||c.owner===own));
-  const t=document.getElementById('tableBody'); t.innerHTML='';
-  contacts.filter(c=>c._show).forEach(c=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td>${c.name}</td><td>${c.phone}</td><td>${c.note||''}</td><td>${c.owner||''}</td><td>${c.lastModified||''}</td><td><button onclick="deleteContact('${c.key}')" class="delete-btn">حذف</button></td>`;
-    t.appendChild(tr);
+  let allContactsData = {}; // Store all contacts data here
+  let selectedOwners = []; // For multi-select owner filter
+  let selectedTags = []; // For multi-select tags filter
+
+  // --- New Variables for Lazy Loading ---
+  const rowsPerLoad = 50; // Number of rows to load at a time
+  let currentLoadedRows = 0;
+  let filteredContactsCache = []; // To store filtered contacts for lazy loading
+
+  // --- Loading Indicator Functions ---
+  function showLoading() {
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  }
+
+  // --- Toast Notification Functions ---
+  function showToast(message, type = 'info', duration = 3000) {
+    const toastContainer = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.remove();
+    }, duration);
+  }
+
+  // --- فك ترميز QUOTED-PRINTABLE مع دعم UTF-8 محسّن ---
+  function decodeQuotedPrintable(str) {
+    str = str.replace(/=\r?\n/g, ''); // Remove soft line breaks
+    str = str.replace(/=([0-9A-F]{2})/gi, '%$1'); // Convert =XX to %XX
+    try {
+      return decodeURIComponent(str); // Decode as URI component (handles UTF-8)
+    } catch (e) {
+      console.warn("Failed to decode URI component, falling back. Error:", e);
+      return str.replace(/%([0-9A-F]{2})/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+    }
+  }
+
+  // --- تحليل ملف VCF ---
+  function parseVCF(data) {
+    const contacts = [];
+    const entries = data.split(/END:VCARD\r?\n+/gi);
+    
+    entries.forEach(entry => {
+      if (!entry.trim()) return;
+
+      let name = '';
+      const phones = [];
+      let note = '';
+      let tags = ''; // New: For VCF import tags
+
+      const isQuotedPrintableUtf8 = entry.toUpperCase().includes('CHARSET=UTF-8') && entry.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE');
+
+      const fnMatch = entry.match(/FN(?:;[^:]*)?:\s*(.*)/i);
+      if (fnMatch && fnMatch[1]) {
+        name = fnMatch[1].trim();
+        if (isQuotedPrintableUtf8) name = decodeQuotedPrintable(name);
+      }
+
+      if (!name) {
+        const nMatch = entry.match(/N(?:;[^:]*)?:([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)/i);
+        if (nMatch) {
+          let lastName = nMatch[1] || '';
+          let firstName = nMatch[2] || '';
+          let middleName = nMatch[3] || '';
+          let combinedName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim();
+          if (isQuotedPrintableUtf8) combinedName = decodeQuotedPrintable(combinedName);
+          if (combinedName) name = combinedName;
+        }
+      }
+      
+      if (!name) {
+          const orgMatch = entry.match(/ORG(?:;[^:]*)?:(.*)/i);
+          if (orgMatch && orgMatch[1]) {
+              name = orgMatch[1].trim();
+              if (isQuotedPrintableUtf8) name = decodeQuotedPrintable(name);
+          }
+      }
+
+      const telMatches = entry.match(/TEL(?:;[^:]*)?:(.*)/gi);
+      if (telMatches) {
+        telMatches.forEach(telLine => {
+          let phone = telLine.split(':').pop().trim().replace(/[^\d+]/g, '');
+          if (phone.startsWith('tel:')) phone = phone.substring(4);
+          if (phone) phones.push(phone);
+        });
+      }
+
+      const noteMatch = entry.match(/NOTE(?:;[^:]*)?:(.*)/i);
+      if (noteMatch && noteMatch[1]) {
+        note = noteMatch[1].trim();
+        if (isQuotedPrintableUtf8) note = decodeQuotedPrintable(note);
+        note = note.replace(/=\r?\n/g, '').trim();
+      }
+
+      // New: Extract categories/tags from VCF
+      const categoriesMatch = entry.match(/CATEGORIES(?:;[^:]*)?:(.*)/i);
+      if (categoriesMatch && categoriesMatch[1]) {
+          let categoryStr = categoriesMatch[1].trim();
+          if (isQuotedPrintableUtf8) categoryStr = decodeQuotedPrintable(categoryStr);
+          tags = categoryStr.split(',').map(tag => tag.trim()).filter(Boolean).join(','); // Store as comma-separated
+      }
+
+      if (phones.length > 0) {
+        phones.forEach(currentPhone => {
+          let contactName = name;
+          if (!contactName) contactName = `رقم بدون اسم (${currentPhone})`;
+          contacts.push({ name: contactName, phone: currentPhone, note: note, tags: tags });
+        });
+      } else if (name) {
+           contacts.push({ name: name, phone: '', note: note, tags: tags });
+      }
+    });
+    return contacts;
+  }
+
+  function importVCF() {
+    const fileInput = document.getElementById('vcfFileInput');
+    const owner = document.getElementById('ownerInput').value.trim();
+    const file = fileInput.files[0];
+
+    if (!file) {
+      showToast('يرجى اختيار ملف VCF أولاً.', 'error');
+      return;
+    }
+
+    if (!owner) {
+        showToast('يرجى إدخال اسم المالك للملف المرفوع.', 'error');
+        return;
+    }
+
+    showLoading();
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const vcfContent = e.target.result;
+      const parsedContacts = parseVCF(vcfContent);
+      
+      if (parsedContacts.length === 0) {
+        hideLoading();
+        showToast('لم يتم العثور على جهات اتصال صالحة في ملف VCF المحدد.', 'error');
+        return;
+      }
+
+      const updates = {};
+      parsedContacts.forEach(contact => {
+        const newKey = contactsRef.push().key; 
+        updates[newKey] = {
+          name: contact.name || '',
+          phone: contact.phone || '',
+          note: contact.note || '',
+          owner: owner,
+          tags: contact.tags || '', // Save imported tags
+          lastModified: new Date().toLocaleString()
+        };
+      });
+
+      contactsRef.update(updates)
+        .then(() => {
+          hideLoading();
+          showToast(`تم استيراد ${parsedContacts.length} جهة اتصال بنجاح باسم المالك: ${owner}`, 'success');
+          fileInput.value = '';
+          document.getElementById('ownerInput').value = '';
+        })
+        .catch(error => {
+          hideLoading();
+          console.error("Error importing contacts:", error);
+          showToast("حدث خطأ أثناء استيراد جهات الاتصال.", 'error');
+        });
+    };
+
+    reader.onerror = function(e) {
+      hideLoading();
+      console.error("Error reading VCF file:", e);
+      showToast('حدث خطأ أثناء قراءة ملف VCF.', 'error');
+    };
+
+    reader.readAsText(file);
+  }
+
+  // تحميل جهات الاتصال من Firebase وتطبيق الفلاتر
+  function loadContacts() {
+    showLoading();
+    contactsRef.off();
+    contactsRef.on('value', snapshot => {
+      allContactsData = snapshot.val() || {};
+      applyFilters();
+      updateOwnerMultiSelect(allContactsData);
+      updateTagsMultiSelect(allContactsData); // New: Update tags filter
+      hideLoading(); // Hide loading after initial load and filters applied
+    }, (error) => {
+      hideLoading();
+      console.error("Firebase data load error:", error);
+      showToast("فشل في تحميل البيانات من Firebase.", 'error');
+    });
+  }
+
+  // تطبيق جميع الفلاتر (البحث، المالك، التاريخ، العلامات)
+  function applyFilters() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const startDateInput = document.getElementById('startDate').value;
+    const endDateInput = document.getElementById('endDate').value;
+
+    const contactsArray = Object.entries(allContactsData).map(([key, val]) => {
+      return { key, ...val };
+    });
+
+    const filtered = contactsArray.filter(contact => {
+      const name = (contact.name || '').toLowerCase();
+      const phone = (contact.phone || '').toLowerCase();
+      const note = (contact.note || '').toLowerCase();
+      const owner = (contact.owner || '').toLowerCase();
+      const tags = (contact.tags || '').toLowerCase(); // New: Get tags for filtering
+
+      const lastModifiedDate = contact.lastModified ? new Date(contact.lastModified) : null;
+      const startDate = startDateInput ? new Date(startDateInput) : null;
+      const endDate = endDateInput ? new Date(endDateInput) : null;
+
+      // Search Filter
+      const matchesSearch = name.includes(searchInput) ||
+                            phone.includes(searchInput) ||
+                            note.includes(searchInput) ||
+                            owner.includes(searchInput) ||
+                            tags.includes(searchInput); // New: Search by tags
+
+      // Owner Filter (Multi-select)
+      const matchesOwner = selectedOwners.length === 0 || selectedOwners.includes(owner);
+
+      // Tags Filter (Multi-select)
+      const contactTagsArray = tags.split(',').map(tag => tag.trim()).filter(Boolean);
+      const matchesTags = selectedTags.length === 0 || selectedTags.some(selectedTag => contactTagsArray.includes(selectedTag));
+
+
+      // Date Filter
+      let matchesDate = true;
+      if (lastModifiedDate) {
+        if (startDate && endDate) {
+          matchesDate = (lastModifiedDate >= startDate && lastModifiedDate <= endDate);
+        } else if (startDate) {
+          matchesDate = (lastModifiedDate >= startDate);
+        } else if (endDate) {
+          matchesDate = (lastModifiedDate <= endDate);
+        }
+      } else if (startDate || endDate) {
+          matchesDate = false;
+      }
+
+      return matchesSearch && matchesOwner && matchesTags && matchesDate; // Combine all filters
+    });
+
+    filtered.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'ar', { sensitivity: 'base' }));
+
+    filteredContactsCache = filtered;
+    currentLoadedRows = 0;
+    document.getElementById('tableBody').innerHTML = '';
+    loadMoreRows();
+  }
+
+  // دالة مساعدة لتشفير HTML
+  function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  // إضافة جهة اتصال جديدة
+  function addContact() {
+    const name = document.getElementById('nameInput').value.trim();
+    const phone = document.getElementById('phoneInput').value.trim();
+    const note = document.getElementById('noteInput').value.trim();
+    const owner = document.getElementById('ownerSingleInput').value.trim();
+    const tags = document.getElementById('tagsSingleInput').value.trim(); // New: Get tags
+
+    if (!name && !phone) {
+      showToast('يرجى إدخال الاسم أو رقم الهاتف على الأقل', 'error');
+      return;
+    }
+    showLoading();
+    const newContactRef = contactsRef.push();
+    newContactRef.set({
+      name: name || '',
+      phone: phone || '',
+      note: note || '',
+      owner: owner || '',
+      tags: tags || '', // Save tags
+      lastModified: new Date().toLocaleString()
+    })
+    .then(() => {
+        hideLoading();
+        showToast('تم إضافة جهة الاتصال بنجاح.', 'success');
+        clearInputs();
+    })
+    .catch(error => {
+        hideLoading();
+        console.error("Error adding contact:", error);
+        showToast("حدث خطأ أثناء إضافة جهة الاتصال.", 'error');
+    });
+  }
+
+  // مسح حقول الإدخال
+  function clearInputs() {
+    document.getElementById('nameInput').value = '';
+    document.getElementById('phoneInput').value = '';
+    document.getElementById('noteInput').value = '';
+    document.getElementById('ownerSingleInput').value = '';
+    document.getElementById('tagsSingleInput').value = '';
+  }
+
+  // تفعيل وضع التعديل لصف معين
+  function enableEdit(key) {
+    const row = document.getElementById(key);
+    // Inputs are: Name, Phone, Note, Owner, Tags (new index 4)
+    const inputs = row.querySelectorAll('input[type=text]');
+    const editBtn = row.querySelector('.edit-btn');
+
+    if (editBtn.innerText === 'تعديل') {
+      inputs.forEach(input => input.disabled = false);
+      editBtn.innerText = 'حفظ';
+    } else {
+      const updatedName = inputs[0].value.trim();
+      const updatedPhone = inputs[1].value.trim();
+      const updatedNote = inputs[2].value.trim();
+      const updatedOwner = inputs[3].value.trim();
+      const updatedTags = inputs[4].value.trim(); // New: Get updated tags
+
+      if (!updatedName && !updatedPhone) {
+        showToast('الاسم ورقم الهاتف لا يمكن أن يكونا فارغين في نفس الوقت', 'error');
+        return;
+      }
+      showLoading();
+      contactsRef.child(key).update({
+        name: updatedName || '',
+        phone: updatedPhone || '',
+        note: updatedNote || '',
+        owner: updatedOwner || '',
+        tags: updatedTags || '', // Update tags
+        lastModified: new Date().toLocaleString()
+      })
+      .then(() => {
+          hideLoading();
+          showToast('تم حفظ التعديلات بنجاح.', 'success');
+          inputs.forEach(input => input.disabled = true);
+          editBtn.innerText = 'تعديل';
+      })
+      .catch(error => {
+          hideLoading();
+          console.error("Error updating contact:", error);
+          showToast("حدث خطأ أثناء حفظ التعديلات.", 'error');
+      });
+    }
+  }
+
+  // تأكيد وحذف جهة اتصال واحدة
+  function confirmDeleteContact(key) {
+    if (confirm('هل أنت متأكد من حذف جهة الاتصال هذه؟')) {
+      showLoading();
+      contactsRef.child(key).remove()
+        .then(() => {
+            hideLoading();
+            showToast('تم حذف جهة الاتصال بنجاح.', 'success');
+        })
+        .catch(error => {
+            hideLoading();
+            console.error("Error deleting contact: ", error);
+            showToast("حدث خطأ أثناء حذف جهة الاتصال.", 'error');
+        });
+    }
+  }
+
+  // نسخ رقم الهاتف إلى الحافظة
+  function copyPhone(phone) {
+    navigator.clipboard.writeText(phone).then(() => {
+      showToast('تم نسخ الرقم: ' + phone, 'info');
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      showToast('فشل نسخ الرقم. يرجى النسخ يدويًا.', 'error');
+    });
+  }
+
+  // --- Multi-select for Owners ---
+  function updateOwnerMultiSelect(data) {
+    const ownerOptionsContainer = document.getElementById('ownerOptionsContainer');
+    ownerOptionsContainer.innerHTML = '';
+    const owners = new Set(Object.values(data).map(c => c.owner).filter(o => o));
+    const sortedOwners = Array.from(owners).sort((a, b) => a.localeCompare(b, 'ar', { sensitivity: 'base' }));
+
+    sortedOwners.forEach(owner => {
+      const option = document.createElement('div');
+      option.className = 'option';
+      option.textContent = owner;
+      option.setAttribute('data-value', owner.toLowerCase());
+      if (selectedOwners.includes(owner.toLowerCase())) {
+        option.classList.add('selected');
+      }
+      option.onclick = (event) => toggleMultiSelectSelection(event, owner.toLowerCase(), owner, selectedOwners, updateOwnerMultiSelectDisplay, updateDeleteByOwnerButtonVisibility);
+      ownerOptionsContainer.appendChild(option);
+    });
+    updateOwnerMultiSelectDisplay();
+  }
+
+  // --- Multi-select for Tags ---
+  function updateTagsMultiSelect(data) {
+    const tagsOptionsContainer = document.getElementById('tagsOptionsContainer');
+    tagsOptionsContainer.innerHTML = '';
+    const allTags = new Set();
+    Object.values(data).forEach(c => {
+      if (c.tags) {
+        c.tags.split(',').forEach(tag => {
+          const trimmedTag = tag.trim();
+          if (trimmedTag) allTags.add(trimmedTag);
+        });
+      }
+    });
+    const sortedTags = Array.from(allTags).sort((a, b) => a.localeCompare(b, 'ar', { sensitivity: 'base' }));
+
+    sortedTags.forEach(tag => {
+      const option = document.createElement('div');
+      option.className = 'option';
+      option.textContent = tag;
+      option.setAttribute('data-value', tag.toLowerCase());
+      if (selectedTags.includes(tag.toLowerCase())) {
+        option.classList.add('selected');
+      }
+      option.onclick = (event) => toggleMultiSelectSelection(event, tag.toLowerCase(), tag, selectedTags, updateTagsMultiSelectDisplay);
+      tagsOptionsContainer.appendChild(option);
+    });
+    updateTagsMultiSelectDisplay();
+  }
+
+  // Generic toggle for multi-select options
+  function toggleMultiSelectSelection(event, value, text, selectedArray, updateDisplayFn, extraFn = null) {
+    event.stopPropagation();
+    const index = selectedArray.indexOf(value);
+    const optionElement = event.target;
+
+    if (index > -1) {
+      selectedArray.splice(index, 1);
+      optionElement.classList.remove('selected');
+    } else {
+      selectedArray.push(value);
+      optionElement.classList.add('selected');
+    }
+    updateDisplayFn();
+    applyFilters();
+    if (extraFn) extraFn(); // Call additional function if provided (e.g., button visibility)
+  }
+
+  // تبديل حالة فتح/إغلاق قائمة التحديد المتعدد
+  function toggleMultiSelect(element) {
+    element.closest('.multi-select-dropdown').classList.toggle('active');
+  }
+
+  // تحديث عرض العناصر المختارة في التحديد المتعدد للمالكين
+  function updateOwnerMultiSelectDisplay() {
+    const selectedItemsDiv = document.querySelector('#ownerMultiSelect .selected-items');
+    updateMultiSelectDisplayGeneric(selectedItemsDiv, selectedOwners, '#ownerOptionsContainer .option');
+  }
+
+  // تحديث عرض العناصر المختارة في التحديد المتعدد للعلامات
+  function updateTagsMultiSelectDisplay() {
+    const selectedItemsDiv = document.querySelector('#tagsMultiSelect .selected-items');
+    updateMultiSelectDisplayGeneric(selectedItemsDiv, selectedTags, '#tagsOptionsContainer .option');
+  }
+
+  // Generic update display for multi-selects
+  function updateMultiSelectDisplayGeneric(selectedItemsDiv, selectedArray, optionsSelector) {
+    selectedItemsDiv.innerHTML = '';
+
+    if (selectedArray.length === 0) {
+      selectedItemsDiv.textContent = selectedItemsDiv.closest('.multi-select-dropdown').querySelector('label') ? selectedItemsDiv.closest('.multi-select-dropdown').querySelector('label').textContent.replace(':', '...') : 'اختر...';
+      selectedItemsDiv.classList.remove('active');
+    } else {
+      selectedArray.forEach(selectedValue => {
+        const itemText = Array.from(document.querySelectorAll(optionsSelector))
+                          .find(opt => opt.getAttribute('data-value') === selectedValue)
+                          ?.textContent || selectedValue;
+        const item = document.createElement('span');
+        item.className = 'selected-item';
+        item.textContent = itemText;
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'remove-item';
+        removeBtn.textContent = 'x';
+        removeBtn.onclick = (event) => {
+          event.stopPropagation();
+          // Find the correct multi-select array based on selectedItemsDiv's parent ID
+          if (selectedItemsDiv.closest('#ownerMultiSelect')) {
+            toggleMultiSelectSelection(event, selectedValue, itemText, selectedOwners, updateOwnerMultiSelectDisplay, updateDeleteByOwnerButtonVisibility);
+          } else if (selectedItemsDiv.closest('#tagsMultiSelect')) {
+            toggleMultiSelectSelection(event, selectedValue, itemText, selectedTags, updateTagsMultiSelectDisplay);
+          }
+        };
+        item.appendChild(removeBtn);
+        selectedItemsDiv.appendChild(item);
+      });
+      selectedItemsDiv.classList.add('active');
+    }
+  }
+
+
+  // إغلاق قائمة التحديد المتعدد عند النقر خارجها
+  document.addEventListener('click', function(event) {
+    const multiSelectDropdowns = document.querySelectorAll('.multi-select-dropdown');
+    multiSelectDropdowns.forEach(dropdown => {
+      if (!dropdown.contains(event.target)) {
+        dropdown.classList.remove('active');
+      }
+    });
   });
-}
-window.onload=loadContacts;
+
+  // --- التحميل الكسول للجدول (Lazy Loading) ---
+  function loadMoreRows() {
+    const tbody = document.getElementById('tableBody');
+    const totalFiltered = filteredContactsCache.length;
+    const startIndex = currentLoadedRows;
+    const endIndex = Math.min(startIndex + rowsPerLoad, totalFiltered);
+
+    for (let i = startIndex; i < endIndex; i++) {
+      const contact = filteredContactsCache[i];
+      const tr = document.createElement('tr');
+      tr.id = contact.key;
+
+      tr.innerHTML = `
+        <td data-label="تحديد"><input type="checkbox" class="select-contact" data-key="${contact.key}" onchange="updateSelected()" /></td>
+        <td data-label="الاسم"><input type="text" value="${escapeHTML(contact.name)}" disabled /></td>
+        <td data-label="رقم الهاتف"><input type="text" value="${escapeHTML(contact.phone)}" disabled /></td>
+        <td data-label="ملاحظة"><input type="text" value="${escapeHTML(contact.note || '')}" disabled /></td>
+        <td data-label="اسم المالك"><input type="text" value="${escapeHTML(contact.owner || '')}" disabled /></td>
+        <td data-label="العلامات"><input type="text" value="${escapeHTML(contact.tags || '')}" disabled /></td>
+        <td data-label="آخر تعديل"><input type="text" value="${escapeHTML(contact.lastModified || '')}" disabled /></td>
+        <td data-label="الإجراءات">
+          <button class="edit-btn" onclick="enableEdit('${contact.key}')">تعديل</button>
+          <button class="delete-btn" onclick="confirmDeleteContact('${contact.key}')">حذف</button>
+          <button class="copy-btn" onclick="copyPhone('${escapeHTML(contact.phone)}')">نسخ</button>
+          <a class="call-btn" href="tel:${escapeHTML(contact.phone)}">اتصال</a>
+          <a class="wa-btn" href="https://wa.me/970${escapeHTML(contact.phone)}" target="_blank">واتساب 970+</a>
+          <a class="wa-btn" href="https://wa.me/972${escapeHTML(contact.phone)}" target="_blank">واتساب 972+</a>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+    currentLoadedRows = endIndex;
+    updateStats();
+  }
+
+  // إضافة معالج حدث التمرير إلى حاوية الجدول لتطبيق التحميل الكسول
+  document.addEventListener('DOMContentLoaded', () => {
+      const tableScrollContainer = document.querySelector('.table-scroll-container');
+      if (tableScrollContainer) {
+          tableScrollContainer.addEventListener('scroll', () => {
+              if (tableScrollContainer.scrollTop + tableScrollContainer.clientHeight >= tableScrollContainer.scrollHeight - 50) {
+                  if (currentLoadedRows < filteredContactsCache.length) {
+                      loadMoreRows();
+                  }
+              }
+          });
+      }
+  });
+
+  // --- تحديد الكل الذكي ---
+  function toggleSelectAll(checkbox) {
+    const allRenderedCheckboxes = document.querySelectorAll('#contactsTable tbody tr .select-contact');
+    allRenderedCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateSelected();
+  }
+
+  // تحديث ظهور أزرار الحذف والتعديل الجماعي وعداد المحدد
+  function updateSelected() {
+    const allRenderedCheckboxes = document.querySelectorAll('#tableBody .select-contact');
+    const selectedRendered = Array.from(allRenderedCheckboxes).filter(cb => cb.checked);
+    
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const bulkEditBtn = document.getElementById('bulkEditBtn');
+    
+    document.getElementById('selectedVisibleContacts').textContent = `المحدد من المعروض: ${selectedRendered.length}`;
+
+    if (selectedRendered.length > 0) {
+      deleteBtn.classList.remove('hidden');
+      bulkEditBtn.classList.remove('hidden'); // Show bulk edit button
+    } else {
+      deleteBtn.classList.add('hidden');
+      bulkEditBtn.classList.add('hidden'); // Hide bulk edit button
+      if (document.getElementById('selectAll').checked) {
+          document.getElementById('selectAll').checked = false;
+      }
+    }
+    if (selectedRendered.length > 0 && selectedRendered.length === allRenderedCheckboxes.length && allRenderedCheckboxes.length > 0) {
+        document.getElementById('selectAll').checked = true;
+    } else if (allRenderedCheckboxes.length === 0 && document.getElementById('selectAll').checked) {
+        document.getElementById('selectAll').checked = false;
+    }
+  }
+
+  // تحديث إحصائيات الصفوف المرئية
+  function updateStats() {
+    const renderedRows = document.querySelectorAll('#tableBody tr').length;
+    document.getElementById('totalVisibleContacts').textContent = `إجمالي جهات الاتصال المعروضة: ${renderedRows} من ${filteredContactsCache.length}`;
+    updateSelected();
+  }
+
+  // تأكيد وحذف جهات الاتصال المحددة (باستخدام Multi-path Delete)
+  function confirmDeleteSelected() {
+    const selectedCheckboxes = document.querySelectorAll('#tableBody .select-contact:checked');
+    const contactsToDeleteCount = selectedCheckboxes.length;
+
+    if (contactsToDeleteCount === 0) {
+        showToast('يرجى تحديد جهة اتصال واحدة على الأقل للحذف.', 'error');
+        return;
+    }
+
+    if (confirm(`هل أنت متأكد من حذف ${contactsToDeleteCount} جهة اتصال محددة؟`)) {
+      showLoading();
+      const updates = {};
+      selectedCheckboxes.forEach(cb => {
+        const key = cb.getAttribute('data-key');
+        updates[`/${key}`] = null;
+      });
+
+      db.ref('contacts').update(updates)
+        .then(() => {
+            hideLoading();
+            showToast(`تم حذف ${contactsToDeleteCount} جهة اتصال بنجاح.`, 'success');
+            document.getElementById('selectAll').checked = false;
+        })
+        .catch(error => {
+            hideLoading();
+            showToast("حدث خطأ أثناء حذف بعض جهات الاتصال.", 'error');
+            console.error("Error in batch deletion:", error);
+        });
+    }
+  }
+
+  // Update visibility of the "Delete by Owner" button
+  function updateDeleteByOwnerButtonVisibility() {
+      const deleteByOwnerBtn = document.getElementById('deleteByOwnerBtn');
+      if (selectedOwners.length > 0) {
+          deleteByOwnerBtn.classList.remove('hidden');
+      } else {
+          deleteByOwnerBtn.classList.add('hidden');
+      }
+  }
+
+  // Confirm and delete contacts by selected owners
+  function confirmDeleteByOwner() {
+      if (selectedOwners.length === 0) {
+          showToast('يرجى تحديد مالك واحد على الأقل للحذف.', 'error');
+          return;
+      }
+
+      const contactsToDelete = {};
+      let countToDelete = 0;
+
+      for (const key in allContactsData) {
+          if (allContactsData.hasOwnProperty(key)) {
+              const contact = allContactsData[key];
+              if (contact.owner && selectedOwners.includes(contact.owner.toLowerCase())) {
+                  contactsToDelete[`/${key}`] = null;
+                  countToDelete++;
+              }
+          }
+      }
+
+      if (countToDelete === 0) {
+          showToast('لم يتم العثور على جهات اتصال للمالكين المحددين.', 'info');
+          return;
+      }
+
+      const ownerNamesForConfirmation = selectedOwners.map(ownerVal => {
+        const optionElement = Array.from(document.querySelectorAll('#ownerOptionsContainer .option'))
+                                .find(opt => opt.getAttribute('data-value') === ownerVal);
+        return optionElement ? optionElement.textContent : ownerVal;
+      }).join(', ');
+
+
+      if (confirm(`هل أنت متأكد من حذف ${countToDelete} جهة اتصال لـ: ${ownerNamesForConfirmation}؟\n\nهذا الإجراء لا يمكن التراجع عنه.`)) {
+          showLoading();
+          db.ref('contacts').update(contactsToDelete)
+              .then(() => {
+                  hideLoading();
+                  showToast(`تم حذف ${countToDelete} جهة اتصال بنجاح للمالكين المحددين.`, 'success');
+                  selectedOwners = [];
+                  updateOwnerMultiSelectDisplay();
+                  updateDeleteByOwnerButtonVisibility();
+              })
+              .catch(error => {
+                  hideLoading();
+                  console.error("Error deleting contacts by owner:", error);
+                  showToast("حدث خطأ أثناء حذف جهات الاتصال للمالكين المحددين.", 'error');
+              });
+      }
+  }
+
+  // --- Bulk Edit Functions ---
+  function openBulkEditModal() {
+    const selectedCount = document.querySelectorAll('#tableBody .select-contact:checked').length;
+    if (selectedCount === 0) {
+        showToast('يرجى تحديد جهة اتصال واحدة على الأقل للتعديل الجماعي.', 'error');
+        return;
+    }
+    document.getElementById('bulkEditModal').style.display = 'flex'; // Use flex to center
+  }
+
+  function closeBulkEditModal() {
+    document.getElementById('bulkEditModal').style.display = 'none';
+    document.getElementById('bulkEditField').value = 'name'; // Reset field selection
+    document.getElementById('bulkEditValue').value = ''; // Clear value
+  }
+
+  function applyBulkEdit() {
+    const selectedCheckboxes = document.querySelectorAll('#tableBody .select-contact:checked');
+    const contactsToEditCount = selectedCheckboxes.length;
+    const fieldToEdit = document.getElementById('bulkEditField').value;
+    const newValue = document.getElementById('bulkEditValue').value.trim();
+
+    if (contactsToEditCount === 0) {
+        showToast('لا توجد جهات اتصال محددة للتعديل.', 'error');
+        return;
+    }
+    if (!fieldToEdit) {
+        showToast('يرجى اختيار حقل للتعديل.', 'error');
+        return;
+    }
+
+    if (confirm(`هل أنت متأكد من تعديل ${contactsToEditCount} جهة اتصال للحقل "${fieldToEdit}" بالقيمة "${newValue}"؟`)) {
+        showLoading();
+        const updates = {};
+        selectedCheckboxes.forEach(cb => {
+            const key = cb.getAttribute('data-key');
+            updates[`/${key}/${fieldToEdit}`] = newValue;
+            updates[`/${key}/lastModified`] = new Date().toLocaleString(); // Update timestamp
+        });
+
+        db.ref('contacts').update(updates)
+            .then(() => {
+                hideLoading();
+                showToast(`تم تعديل ${contactsToEditCount} جهة اتصال بنجاح.`, 'success');
+                closeBulkEditModal();
+                document.getElementById('selectAll').checked = false; // Deselect all
+            })
+            .catch(error => {
+                hideLoading();
+                console.error("Error in bulk edit:", error);
+                showToast("حدث خطأ أثناء التعديل الجماعي.", 'error');
+            });
+    }
+  }
+
+  // --- Export Functions ---
+  function exportContacts(format) {
+    if (filteredContactsCache.length === 0) {
+      showToast('لا توجد جهات اتصال لتصديرها.', 'info');
+      return;
+    }
+
+    let fileContent;
+    let fileName;
+
+    if (format === 'csv') {
+      fileContent = generateCSV(filteredContactsCache);
+      fileName = 'contacts.csv';
+    } else if (format === 'vcf') {
+      fileContent = generateVCF(filteredContactsCache);
+      fileName = 'contacts.vcf';
+    } else {
+      showToast('صيغة تصدير غير مدعومة.', 'error');
+      return;
+    }
+
+    const blob = new Blob([fileContent], { type: `text/${format};charset=utf-8;` });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    showToast(`تم تصدير ${filteredContactsCache.length} جهة اتصال إلى ${format.toUpperCase()}.`, 'success');
+  }
+
+  function generateCSV(contacts) {
+    const headers = ['الاسم', 'رقم الهاتف', 'ملاحظة', 'المالك', 'العلامات', 'آخر تعديل'];
+    const csvRows = [];
+    csvRows.push(headers.join(',')); // Add headers
+
+    contacts.forEach(contact => {
+      const row = [
+        `"${(contact.name || '').replace(/"/g, '""')}"`, // Handle commas and quotes
+        `"${(contact.phone || '').replace(/"/g, '""')}"`,
+        `"${(contact.note || '').replace(/"/g, '""')}"`,
+        `"${(contact.owner || '').replace(/"/g, '""')}"`,
+        `"${(contact.tags || '').replace(/"/g, '""')}"`,
+        `"${(contact.lastModified || '').replace(/"/g, '""')}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+    return csvRows.join('\n');
+  }
+
+  function generateVCF(contacts) {
+    let vcfContent = '';
+    contacts.forEach(contact => {
+      vcfContent += 'BEGIN:VCARD\n';
+      vcfContent += 'VERSION:3.0\n';
+      if (contact.name) vcfContent += `FN:${contact.name}\n`;
+      if (contact.name) vcfContent += `N:${(contact.name || '').split(' ').slice(-1)[0]};${(contact.name || '').split(' ').slice(0, -1).join(' ')};;;\n`; // Basic split for N field
+      if (contact.phone) vcfContent += `TEL:${contact.phone}\n`;
+      if (contact.note) vcfContent += `NOTE:${contact.note}\n`;
+      if (contact.owner) vcfContent += `ORG:${contact.owner}\n`; // Using ORG for owner
+      if (contact.tags) vcfContent += `CATEGORIES:${contact.tags}\n`;
+      // You might want to add other fields like EMAIL, ADDR, etc. if your contacts have them
+      vcfContent += 'END:VCARD\n';
+    });
+    return vcfContent;
+  }
+
+
+  let sortDirection = {};
+  function sortTable(colIndex) {
+    filteredContactsCache.sort((a, b) => {
+      let valA, valB;
+
+      if (colIndex === 1) { // Name
+          valA = (a.name || '').toLowerCase();
+          valB = (b.name || '').toLowerCase();
+      } else if (colIndex === 2) { // Phone
+          valA = (a.phone || '').toLowerCase();
+          valB = (b.phone || '').toLowerCase();
+      } else if (colIndex === 3) { // Note
+          valA = (a.note || '').toLowerCase();
+          valB = (b.note || '').toLowerCase();
+      } else if (colIndex === 4) { // Owner
+          valA = (a.owner || '').toLowerCase();
+          valB = (b.owner || '').toLowerCase();
+      } else if (colIndex === 5) { // Tags (New index for Tags)
+          valA = (a.tags || '').toLowerCase();
+          valB = (b.tags || '').toLowerCase();
+      } else if (colIndex === 6) { // Last Modified Date/Time (New index)
+          valA = a.lastModified ? new Date(a.lastModified) : new Date(0);
+          valB = b.lastModified ? new Date(b.lastModified) : new Date(0);
+      }
+      
+      const direction = sortDirection[colIndex] === 'asc' ? 'desc' : 'asc';
+      sortDirection[colIndex] = direction;
+
+      if (colIndex === 1 || colIndex === 4 || colIndex === 5) { // Name, Owner, Tags (text)
+        if (direction === 'asc') {
+          return valA.localeCompare(valB, 'ar', { sensitivity: 'base' });
+        } else {
+          return valB.localeCompare(valA, 'ar', { sensitivity: 'base' });
+        }
+      } else { // Phone, Note, Last Modified (general comparison or date object comparison)
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+      }
+    });
+
+    currentLoadedRows = 0;
+    document.getElementById('tableBody').innerHTML = '';
+    loadMoreRows();
+  }
+
+  // عند تحميل نافذة المتصفح، ابدأ بتحميل جهات الاتصال
+  window.onload = function () {
+    loadContacts();
+  };
 </script>
+
 </body>
 </html>
