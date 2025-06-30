@@ -207,7 +207,7 @@
 
   // --- فك ترميز QUOTED-PRINTABLE مع دعم UTF-8 ---
   function decodeQuotedPrintable(str) {
-    // Remove soft line breaks (like "= \n")
+    // Remove soft line breaks (like "= \n" or "=\r\n")
     str = str.replace(/=\r?\n/g, '');
 
     // Replace encoded characters and try to decode as UTF-8
@@ -217,11 +217,10 @@
         return String.fromCharCode(parseInt(hex, 16));
       });
       // Use decodeURIComponent to interpret these byte values as UTF-8
-      // escape() converts string characters to their %xx hexadecimal equivalent (for non-ASCII)
-      // This is crucial for handling multi-byte UTF-8 characters correctly.
+      // escape() is crucial for handling multi-byte UTF-8 characters correctly before decodeURIComponent.
       return decodeURIComponent(escape(decodedBytes));
     } catch (e) {
-      // If UTF-8 decoding fails, fall back to simple character code decoding
+      // Fallback if UTF-8 decoding fails (e.g., malformed sequence)
       console.warn("Failed to decode as UTF-8, falling back. Error:", e);
       return str.replace(/=([A-F0-9]{2})/gi, (match, hex) => {
         return String.fromCharCode(parseInt(hex, 16));
@@ -232,37 +231,44 @@
   // --- تحليل ملف VCF ---
   function parseVCF(data) {
     const contacts = [];
-    const entries = data.split(/END:VCARD/gi); // Split by END:VCARD
+    // Split by END:VCARD followed by one or more newlines (robust for various VCF endings)
+    const entries = data.split(/END:VCARD\r?\n+/gi);
+    
     entries.forEach(entry => {
       if (!entry.trim()) return; // Skip empty entries
 
       let name = '';
-      let phone = '';
+      const phones = []; // Array to hold multiple phone numbers
+      let note = ''; // Changed from notes to note for consistency with single field
 
-      // Find FN (Full Name) field
-      // This regex is more robust to capture various FN formats
-      const fnMatch = entry.match(/FN(?:;[^:]*)?:(.*)/i);
+      // Determine if charset and encoding are specified for the current vCard entry
+      const isQuotedPrintableUtf8 = entry.toUpperCase().includes('CHARSET=UTF-8') && entry.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE');
+
+      // 1. Try to find FN (Full Name) field first (more robust regex for properties)
+      // Example: FN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D9=88=D8=B3=D9=8A=D9=85=20=D9=85=D8=AD=D9=8A=D8=B3=D9=86=20=32
+      // Captures anything after the colon until a newline or end of string
+      const fnMatch = entry.match(/FN(?:;[^:]*)?:\s*(.*)/i);
       if (fnMatch && fnMatch[1]) {
         name = fnMatch[1].trim();
-        // Check for QUOTED-PRINTABLE and CHARSET=UTF-8
-        if (entry.toUpperCase().includes('CHARSET=UTF-8') && entry.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE')) {
+        if (isQuotedPrintableUtf8) {
           name = decodeQuotedPrintable(name);
         }
-        // Additional cleanup for common VCF formatting issues
-        name = name.replace(/;;;/g, '').trim(); // Remove extra semicolons
-      } else {
-        // Fallback for N field if FN is not present or easily parsed
-        const nMatch = entry.match(/N(?:;[^:]*)?:([^;]+);([^;]+);([^;]*);([^;]*);([^;]*)/i);
+        name = name.replace(/;;;/g, '').trim(); // Clean up common VCF artifacts (e.g., empty components)
+      }
+
+      // 2. If FN is empty or not found, try to reconstruct from N (Name) field
+      // N:family;given;middle;prefix;suffix
+      if (!name) {
+        const nMatch = entry.match(/N(?:;[^:]*)?:([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)/i);
         if (nMatch) {
-          // Typically N:last;first;middle;prefix;suffix
-          // Let's try to reconstruct a name, prioritizing first, then last.
           let lastName = nMatch[1] || '';
           let firstName = nMatch[2] || '';
           let middleName = nMatch[3] || '';
-
+          // You can also include prefix/suffix if desired: nMatch[4], nMatch[5]
+          
           let combinedName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim();
 
-          if (entry.toUpperCase().includes('CHARSET=UTF-8') && entry.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE')) {
+          if (isQuotedPrintableUtf8) {
             combinedName = decodeQuotedPrintable(combinedName);
           }
           if (combinedName) {
@@ -270,22 +276,67 @@
           }
         }
       }
-
-
-      // Find TEL (Telephone) field
-      const telMatch = entry.match(/TEL(?:;TYPE=(?:CELL|WORK|HOME))?(?:;VALUE=URI)?[^:]*:(.*)/i);
-      if (telMatch && telMatch[1]) {
-        phone = telMatch[1].trim();
-        // Clean phone number: remove non-digits, keep leading '+'
-        phone = phone.replace(/[^\d+]/g, '');
-        // Remove 'tel:' prefix if present
-        if (phone.startsWith('tel:')) {
-          phone = phone.substring(4);
-        }
+      
+      // Fallback: If name is still empty, check for ORG (Organization)
+      // Some VCFs might only have an organization name.
+      if (!name) {
+          const orgMatch = entry.match(/ORG(?:;[^:]*)?:(.*)/i);
+          if (orgMatch && orgMatch[1]) {
+              name = orgMatch[1].trim();
+              if (isQuotedPrintableUtf8) {
+                  name = decodeQuotedPrintable(name);
+              }
+              name = name.replace(/;;/g, '').trim(); // Clean up
+          }
       }
 
-      if (name && phone) {
-        contacts.push({ name: name, phone: phone });
+
+      // 3. Find TEL (Telephone) fields - handle multiple numbers
+      // This regex is robust for various TEL formats (e.g., TEL;CELL:, TEL;TYPE=WORK:, TEL:tel:...)
+      // The `g` flag ensures all occurrences are matched.
+      const telMatches = entry.match(/TEL(?:;[^:]*)?:(.*)/gi);
+      if (telMatches) {
+        telMatches.forEach(telLine => {
+          // Extract the number part after the last colon, and clean it
+          let phone = telLine.split(':').pop().trim();
+          phone = phone.replace(/[^\d+]/g, ''); // Remove non-digits, keep leading '+'
+          if (phone.startsWith('tel:')) { // Remove 'tel:' URI prefix if present
+            phone = phone.substring(4);
+          }
+          if (phone) { // Only add if phone number is not empty
+            phones.push(phone);
+          }
+        });
+      }
+
+      // 4. Find NOTE field
+      const noteMatch = entry.match(/NOTE(?:;[^:]*)?:(.*)/i);
+      if (noteMatch && noteMatch[1]) {
+        note = noteMatch[1].trim();
+        if (isQuotedPrintableUtf8) {
+          note = decodeQuotedPrintable(note);
+        }
+        note = note.replace(/=\r?\n/g, '').trim(); // Remove soft line breaks within notes
+      }
+
+
+      // 5. Add contact entry for EACH phone number found
+      // This ensures all numbers are captured, even if a contact has multiple.
+      if (phones.length > 0) {
+        phones.forEach(currentPhone => {
+          let contactName = name;
+          if (!contactName) {
+              // If no name is found, assign a default name based on the phone number
+              contactName = `رقم بدون اسم (${currentPhone})`;
+          }
+          contacts.push({ name: contactName, phone: currentPhone, note: note });
+        });
+      } else if (name) {
+          // Case: Has a name but no phone number found in TEL field
+          // This case is less common for "contacts" but could happen.
+          // You might choose to skip these or add them with an empty phone.
+          // For now, let's add them as they explicitly asked to capture ALL names.
+           contacts.push({ name: name, phone: '', note: note });
       }
     });
     return contacts;
@@ -293,7 +344,7 @@
 
   // تحميل جهات الاتصال من Firebase وعرضها
   function loadContacts() {
-    contactsRef.off(); // إلغاء الاشتراك السابق لتجنب التكرار
+    contactsRef.off();
     contactsRef.on('value', snapshot => {
       const data = snapshot.val() || {};
       renderTable(data);
@@ -481,12 +532,13 @@
       }
       let addedCount = 0;
       contacts.forEach(c => {
-        if (c.name && c.phone) {
+        // We now allow contacts with only a name (phone empty) or only a phone (name default)
+        if (c.name || c.phone) { // Ensure at least name or phone is present
           const newContactRef = contactsRef.push();
           newContactRef.set({
-            name: c.name,
-            phone: c.phone,
-            note: '',
+            name: c.name || '', // Store empty string if name is not found, rather than null
+            phone: c.phone || '', // Store empty string if phone is not found
+            note: c.note || '',
             owner: ownerName,
             lastModified: new Date().toLocaleString()
           });
@@ -497,9 +549,6 @@
       fileInput.value = '';
       document.getElementById('ownerInput').value = '';
     };
-    // It's crucial to read as 'text' and let JS handle UTF-8 decoding
-    // For VCFs specifically stating UTF-8, you might sometimes need to read as ArrayBuffer
-    // and then use TextDecoder, but FileReader.readAsText generally works if meta charset is UTF-8.
     reader.readAsText(file);
   }
 
