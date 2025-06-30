@@ -487,6 +487,69 @@
     return contacts;
   }
 
+  // **** START OF MISSING/CORRECTED importVCF FUNCTION ****
+  function importVCF() {
+    const fileInput = document.getElementById('vcfFileInput');
+    const owner = document.getElementById('ownerInput').value.trim();
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert('يرجى اختيار ملف VCF أولاً.');
+      return;
+    }
+
+    if (!owner) {
+        alert('يرجى إدخال اسم المالك للملف المرفوع.');
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const vcfContent = e.target.result;
+      const parsedContacts = parseVCF(vcfContent);
+      
+      if (parsedContacts.length === 0) {
+        alert('لم يتم العثور على جهات اتصال صالحة في ملف VCF المحدد.');
+        return;
+      }
+
+      const updates = {};
+      parsedContacts.forEach(contact => {
+        // Generate a new Firebase push key for each contact
+        const newKey = contactsRef.push().key; 
+        updates[newKey] = {
+          name: contact.name || '',
+          phone: contact.phone || '',
+          note: contact.note || '',
+          owner: owner, // Assign the provided owner to all imported contacts
+          lastModified: new Date().toLocaleString()
+        };
+      });
+
+      // Use update to add multiple contacts in one go
+      contactsRef.update(updates)
+        .then(() => {
+          alert(`تم استيراد ${parsedContacts.length} جهة اتصال بنجاح باسم المالك: ${owner}`);
+          fileInput.value = ''; // Clear the file input
+          document.getElementById('ownerInput').value = ''; // Clear the owner input
+          // The Firebase listener will automatically update the UI
+        })
+        .catch(error => {
+          console.error("Error importing contacts:", error);
+          alert("حدث خطأ أثناء استيراد جهات الاتصال.");
+        });
+    };
+
+    reader.onerror = function(e) {
+      console.error("Error reading VCF file:", e);
+      alert('حدث خطأ أثناء قراءة ملف VCF.');
+    };
+
+    reader.readAsText(file);
+  }
+  // **** END OF MISSING/CORRECTED importVCF FUNCTION ****
+
   // تحميل جهات الاتصال من Firebase وتطبيق الفلاتر
   function loadContacts() {
     contactsRef.off(); // Remove previous listener to prevent duplicates
@@ -811,7 +874,7 @@
         // we still only toggle what's currently on screen due to lazy loading.
         // Selecting "all" (1200+) contacts that are not yet rendered would cause performance issues.
         // For a true "select all X contacts" behavior when no filters are active, a different
-        // implementation (e.g., selecting keys directly in filteredContactsCache) would be needed,
+        // implementation (e.e., selecting keys directly in filteredContactsCache) would be needed,
         // but it complicates the UI feedback (checkboxes not appearing).
         allRenderedCheckboxes.forEach(cb => cb.checked = checkbox.checked);
     }
