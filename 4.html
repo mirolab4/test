@@ -8,13 +8,13 @@
   body {
     font-family: 'Arial', sans-serif;
     background-color: #f0f2f5;
-    margin: 0; padding: 15px; /* Reduced padding for smaller screens */
+    margin: 0; padding: 15px;
     direction: rtl;
     line-height: 1.6;
   }
   h1 {
     text-align: center; color: #333;
-    font-size: 24px; /* Adjusted for mobile */
+    font-size: 24px;
     margin-bottom: 20px;
   }
   .section-container {
@@ -24,29 +24,38 @@
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
-  .search, .owner-filter, .add-form, .import-vcf {
+  .search, .owner-filter, .add-form, .import-vcf, .date-filter {
     text-align: center;
   }
   input[type="text"], input[type="file"], select {
-    width: calc(100% - 20px); /* Adjust width for padding */
-    max-width: 350px; /* Max width for larger screens */
+    width: calc(100% - 20px);
+    max-width: 350px;
     padding: 10px;
-    margin: 8px 0; /* More vertical space */
+    margin: 8px 0;
     border: 1px solid #ccc; border-radius: 5px;
-    font-size: 15px; /* Slightly smaller for mobile */
-    box-sizing: border-box; /* Include padding in width */
+    font-size: 15px;
+    box-sizing: border-box;
+  }
+  input[type="date"] {
+    width: calc(50% - 15px);
+    max-width: 170px;
+    padding: 10px;
+    margin: 8px 5px;
+    border: 1px solid #ccc; border-radius: 5px;
+    font-size: 15px;
+    box-sizing: border-box;
   }
   button, .call-btn, .wa-btn {
     background-color: #007bff;
     color: white;
-    padding: 10px 15px; /* Larger touch targets */
-    margin: 5px; /* Consistent margin */
+    padding: 10px 15px;
+    margin: 5px;
     border: none; border-radius: 5px;
     cursor: pointer;
-    font-size: 15px; /* Consistent font size */
+    font-size: 15px;
     transition: background-color 0.2s;
-    width: auto; /* Allow buttons to size naturally */
-    display: inline-block; /* For proper spacing */
+    width: auto;
+    display: inline-block;
   }
   button:hover, .call-btn:hover, .wa-btn:hover {
     background-color: #0056b3;
@@ -78,51 +87,135 @@
   }
   .hidden { display: none; }
 
+  /* Table scroll container for lazy loading */
+  .table-scroll-container {
+    max-height: 600px; /* Or any suitable height to show a reasonable number of rows */
+    overflow-y: auto; /* Makes the container vertically scrollable */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Keep shadow from previous table */
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;
     background-color: #fff;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    margin-top: 20px;
+    margin-top: 0; /* Remove top margin as container handles spacing */
+    box-shadow: none; /* Remove shadow as container has it */
+    border: none; /* Container has border */
   }
   table th, table td {
-    padding: 10px; /* Adjusted padding */
+    padding: 10px;
     text-align: center;
     border: 1px solid #ddd;
-    font-size: 14px; /* Adjusted font size for table cells */
+    font-size: 14px;
   }
   table th {
     background-color: #007bff;
     color: white;
     cursor: pointer;
-    white-space: nowrap; /* Prevent wrapping for headers */
+    white-space: nowrap;
+    position: sticky; /* Make headers sticky */
+    top: 0; /* Stick to the top of the scroll container */
+    z-index: 1; /* Ensure it's above scrolling content */
+  }
+  table th:first-child,
+  table td:first-child {
+    border-right: none; /* Adjust border for RTL */
   }
   table td input[type="text"] {
-    width: calc(100% - 10px); /* Adjust input width in table cells */
+    width: calc(100% - 10px);
     padding: 5px;
     margin: 0;
     font-size: 14px;
-    border: 1px solid #eee; /* Lighter border for inputs */
+    border: 1px solid #eee;
   }
   table td input[type="checkbox"] {
     width: auto;
     margin: 0;
   }
 
+  /* Multi-select dropdown styles */
+  .multi-select-dropdown {
+    width: calc(100% - 20px);
+    max-width: 350px;
+    margin: 8px auto;
+    position: relative;
+    text-align: left;
+  }
+  .multi-select-dropdown .selected-items {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #fff;
+    cursor: pointer;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .multi-select-dropdown .selected-items.active {
+    border-color: #007bff;
+  }
+  .multi-select-dropdown .selected-item {
+    background-color: #e9e9e9;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .multi-select-dropdown .selected-item .remove-item {
+    cursor: pointer;
+    font-weight: bold;
+    color: #888;
+  }
+  .multi-select-dropdown .options-container {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    background-color: #fff;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .multi-select-dropdown .option {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .multi-select-dropdown .option:hover {
+    background-color: #f0f0f0;
+  }
+  .multi-select-dropdown .option.selected {
+    background-color: #e0f0ff;
+    font-weight: bold;
+  }
+  .multi-select-dropdown.active .options-container {
+    display: block;
+  }
+
   /* Responsive Design for smaller screens */
   @media (max-width: 768px) {
-    body {
-      padding: 10px; /* Even less padding on very small screens */
-    }
-    h1 {
-      font-size: 20px;
-    }
-    .section-container {
-        padding: 10px;
-    }
+    body { padding: 10px; }
+    h1 { font-size: 20px; }
+    .section-container { padding: 10px; }
     input[type="text"], input[type="file"], select {
-      width: calc(100% - 16px); /* Account for padding in input */
+      width: calc(100% - 16px);
       font-size: 14px;
+      margin: 6px 0;
+    }
+    input[type="date"] {
+      width: calc(100% - 16px); /* Full width for dates on mobile */
       margin: 6px 0;
     }
     button, .call-btn, .wa-btn {
@@ -130,12 +223,19 @@
       font-size: 14px;
       margin: 4px;
     }
-    /* Make table stack on small screens */
+    /* Table styling for stacked layout */
+    .table-scroll-container {
+      max-height: 80vh; /* Adjust height for mobile screens */
+      margin: 10px 0;
+      box-shadow: none; /* Remove shadow here, individual rows will have it */
+      border: none; /* Remove border, individual rows will have it */
+    }
     table, thead, tbody, th, td, tr {
-      display: block;
+      display: block; /* Stack elements */
+      width: 100%; /* Ensure they take full width */
     }
     thead tr {
-      position: absolute;
+      position: absolute; /* Hide the actual table header */
       top: -9999px;
       left: -9999px;
     }
@@ -147,21 +247,15 @@
       border-radius: 8px;
     }
     tbody tr td {
-      border: none;
+      border: none; /* Remove borders between cells in stacked view */
       position: relative;
       padding-left: 50%; /* Space for data-label */
       text-align: right;
-      font-size: 15px; /* Larger font for readability */
+      font-size: 15px;
     }
     tbody tr td::before {
       content: attr(data-label);
-      position: absolute;
-      left: 10px;
-      top: 10px; /* Adjusted top for padding */
-      font-weight: bold;
-      color: #007bff;
-      font-size: 13px;
-      white-space: nowrap; /* Prevent label wrapping */
+      position: absolute; left: 10px; top: 10px; font-weight: bold; color: #007bff; font-size: 13px; white-space: nowrap;
     }
     tbody tr td:last-child { /* Actions column */
       padding-left: 10px;
@@ -171,21 +265,17 @@
       justify-content: center; /* Center buttons */
       gap: 5px; /* Space between buttons */
     }
-    tbody tr td:last-child button,
-    tbody tr td:last-child a {
-      flex: 1 1 auto; /* Allow buttons to grow/shrink */
-      min-width: 80px; /* Minimum width for buttons */
-      font-size: 14px;
-      padding: 8px 10px;
+    tbody tr td:last-child button, tbody tr td:last-child a {
+      flex: 1 1 auto; min-width: 80px; font-size: 14px; padding: 8px 10px;
     }
     tbody tr td input[type="text"] {
-      width: calc(100% - 5px); /* Adjusted width for inputs in stacked table */
-      padding: 6px;
-      font-size: 15px;
+      width: calc(100% - 5px); padding: 6px; font-size: 15px;
     }
     .stats-bar, .delete-selected-container {
-        font-size: 15px;
-        padding: 5px;
+        font-size: 15px; padding: 5px;
+    }
+    .multi-select-dropdown {
+        width: calc(100% - 16px);
     }
   }
 </style>
@@ -196,51 +286,63 @@
 
 <div class="section-container import-vcf">
   <input type="file" id="vcfFileInput" accept=".vcf" />
-  <input type="text" id="ownerInput" placeholder="اسم المالك" />
+  <input type="text" id="ownerInput" placeholder="اسم المالك (للملف المرفوع)" />
   <button onclick="importVCF()">رفع ملف VCF</button>
 </div>
 
 <div class="section-container search">
-  <input type="text" id="searchInput" placeholder="ابحث بالاسم أو الرقم أو الملاحظة" onkeyup="searchTable()" />
+  <input type="text" id="searchInput" placeholder="ابحث بالاسم أو الرقم أو الملاحظة" onkeyup="applyFilters()" />
 </div>
 
 <div class="section-container owner-filter">
-  <select id="ownerFilter" onchange="filterByOwner()">
-    <option value="">كل المالكين</option>
-  </select>
+  <label for="ownerMultiSelect">فلترة حسب المالك:</label>
+  <div id="ownerMultiSelect" class="multi-select-dropdown">
+    <div class="selected-items" onclick="toggleMultiSelect(this)">اختر المالكين...</div>
+    <div class="options-container" id="ownerOptionsContainer">
+      </div>
+  </div>
+</div>
+
+<div class="section-container date-filter">
+  <label for="startDate">من تاريخ:</label>
+  <input type="date" id="startDate" onchange="applyFilters()" />
+  <label for="endDate">إلى تاريخ:</label>
+  <input type="date" id="endDate" onchange="applyFilters()" />
 </div>
 
 <div class="section-container add-form">
   <input type="text" id="nameInput" placeholder="الاسم" />
   <input type="text" id="phoneInput" placeholder="رقم الهاتف" />
   <input type="text" id="noteInput" placeholder="ملاحظة" />
-  <input type="text" id="ownerSingleInput" placeholder="اسم المالك" />
+  <input type="text" id="ownerSingleInput" placeholder="اسم المالك (لجهة الاتصال الجديدة)" />
   <button onclick="addContact()">إضافة</button>
 </div>
 
 <div class="stats-bar">
-  <span id="totalContacts">إجمالي جهات الاتصال: 0</span> |
-  <span id="selectedContacts">المحدد: 0</span>
+  <span id="totalVisibleContacts">إجمالي جهات الاتصال المعروضة: 0</span> |
+  <span id="selectedVisibleContacts">المحدد من المعروض: 0</span>
 </div>
 
 <div class="delete-selected-container">
-  <button id="deleteSelectedBtn" class="delete-btn hidden" onclick="deleteSelected()">حذف المحدد</button>
+  <button id="deleteSelectedBtn" class="delete-btn hidden" onclick="confirmDeleteSelected()">حذف المحدد</button>
 </div>
 
-<table id="contactsTable">
-  <thead>
-    <tr>
-      <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" /></th>
-      <th onclick="sortTable(1)">الاسم</th>
-      <th onclick="sortTable(2)">رقم الهاتف</th>
-      <th onclick="sortTable(3)">ملاحظة</th>
-      <th onclick="sortTable(4)">اسم المالك</th>
-      <th onclick="sortTable(5)">آخر تعديل</th>
-      <th>الإجراءات</th>
-    </tr>
-  </thead>
-  <tbody id="tableBody"></tbody>
-</table>
+<div class="table-scroll-container">
+    <table id="contactsTable">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" /></th>
+          <th onclick="sortTable(1)">الاسم</th>
+          <th onclick="sortTable(2)">رقم الهاتف</th>
+          <th onclick="sortTable(3)">ملاحظة</th>
+          <th onclick="sortTable(4)">اسم المالك</th>
+          <th onclick="sortTable(5)">آخر تعديل</th>
+          <th>الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -248,19 +350,27 @@
 <script>
   // ======== Firebase Configuration ========
   const firebaseConfig = {
-    apiKey: "AIzaSyBVZPuoh_jryc6K46mjL61e57wnRrQVlSE",
-    authDomain: "past-c2c4d.firebaseapp.com",
-    databaseURL: "https://past-c2c4d-default-rtdb.firebaseio.com/",
-    projectId: "past-c2c4d",
-    storageBucket: "past-c2c4d.appspot.com",
-    messagingSenderId: "513264432934",
-    appId: "1:513264432934:web:aef1b4a3adf30a67c373e7",
-    measurementId: "G-GBHGM21BP0"
+    apiKey: "AIzaSyBVZPuoh_jryc6K46mjL61e57wnRrQVlSE", // Replace with your actual Firebase API Key
+    authDomain: "past-c2c4d.firebaseapp.com", // Replace with your actual Auth Domain
+    databaseURL: "https://past-c2c4d-default-rtdb.firebaseio.com/", // Replace with your actual Database URL
+    projectId: "past-c2c4d", // Replace with your actual Project ID
+    storageBucket: "past-c2c4d.appspot.com", // Replace with your actual Storage Bucket
+    messagingSenderId: "513264432934", // Replace with your actual Messaging Sender ID
+    appId: "1:513264432934:web:aef1b4a3adf30a67c373e7", // Replace with your actual App ID
+    measurementId: "G-GBHGM21BP0" // Replace with your actual Measurement ID
   };
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const contactsRef = db.ref('contacts');
+
+  let allContactsData = {}; // Store all contacts data here
+  let selectedOwners = []; // For multi-select owner filter
+
+  // --- New Variables for Lazy Loading ---
+  const rowsPerLoad = 50; // Number of rows to load at a time
+  let currentLoadedRows = 0;
+  let filteredContactsCache = []; // To store filtered contacts for lazy loading
 
   // --- فك ترميز QUOTED-PRINTABLE مع دعم UTF-8 ---
   function decodeQuotedPrintable(str) {
@@ -281,15 +391,17 @@
   // --- تحليل ملف VCF ---
   function parseVCF(data) {
     const contacts = [];
+    // Split by END:VCARD followed by optional newlines, ensuring we handle multiple VCARDS
     const entries = data.split(/END:VCARD\r?\n+/gi);
     
     entries.forEach(entry => {
-      if (!entry.trim()) return;
+      if (!entry.trim()) return; // Skip empty entries
 
       let name = '';
       const phones = [];
       let note = '';
 
+      // Check if the entry uses QUOTED-PRINTABLE and UTF-8 encoding
       const isQuotedPrintableUtf8 = entry.toUpperCase().includes('CHARSET=UTF-8') && entry.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE');
 
       // 1. Try to find FN (Full Name) field first
@@ -299,7 +411,7 @@
         if (isQuotedPrintableUtf8) {
           name = decodeQuotedPrintable(name);
         }
-        name = name.replace(/;;;/g, '').trim();
+        name = name.replace(/;;;/g, '').trim(); // Clean up potential extra semicolons
       }
 
       // 2. If FN is empty or not found, try to reconstruct from N (Name) field
@@ -321,7 +433,7 @@
         }
       }
       
-      // Fallback: If name is still empty, check for ORG (Organization)
+      // 3. Fallback: If name is still empty, check for ORG (Organization)
       if (!name) {
           const orgMatch = entry.match(/ORG(?:;[^:]*)?:(.*)/i);
           if (orgMatch && orgMatch[1]) {
@@ -333,13 +445,13 @@
           }
       }
 
-      // 3. Find TEL (Telephone) fields
+      // 4. Find TEL (Telephone) fields
       const telMatches = entry.match(/TEL(?:;[^:]*)?:(.*)/gi);
       if (telMatches) {
         telMatches.forEach(telLine => {
           let phone = telLine.split(':').pop().trim();
-          phone = phone.replace(/[^\d+]/g, '');
-          if (phone.startsWith('tel:')) {
+          phone = phone.replace(/[^\d+]/g, ''); // Remove non-digit characters except '+'
+          if (phone.startsWith('tel:')) { // Remove 'tel:' scheme if present
             phone = phone.substring(4);
           }
           if (phone) {
@@ -348,22 +460,22 @@
         });
       }
 
-      // 4. Find NOTE field
+      // 5. Find NOTE field
       const noteMatch = entry.match(/NOTE(?:;[^:]*)?:(.*)/i);
       if (noteMatch && noteMatch[1]) {
         note = noteMatch[1].trim();
         if (isQuotedPrintableUtf8) {
           note = decodeQuotedPrintable(note);
         }
-        note = note.replace(/=\r?\n/g, '').trim();
+        note = note.replace(/=\r?\n/g, '').trim(); // Remove soft line breaks within notes
       }
 
-      // 5. Add contact entry
+      // 6. Add contact entry for each phone number, or just the name if no phone
       if (phones.length > 0) {
         phones.forEach(currentPhone => {
           let contactName = name;
           if (!contactName) {
-              contactName = `رقم بدون اسم (${currentPhone})`;
+              contactName = `رقم بدون اسم (${currentPhone})`; // Fallback name for phone-only contacts
           }
           contacts.push({ name: contactName, phone: currentPhone, note: note });
         });
@@ -375,66 +487,87 @@
     return contacts;
   }
 
-  // تحميل جهات الاتصال من Firebase وعرضها
+  // تحميل جهات الاتصال من Firebase وتطبيق الفلاتر
   function loadContacts() {
-    contactsRef.off();
+    contactsRef.off(); // Remove previous listener to prevent duplicates
     contactsRef.on('value', snapshot => {
-      const data = snapshot.val() || {};
-      renderTable(data);
-      updateOwnerFilter(data);
-      updateStats(); // Update stats after rendering
+      allContactsData = snapshot.val() || {}; // Store all data from Firebase
+      applyFilters(); // Apply filters initially after loading or data change
+      updateOwnerMultiSelect(allContactsData); // Update multi-select options based on all data
     });
   }
 
-  // عرض البيانات في الجدول
-  function renderTable(data) {
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
+  // تطبيق جميع الفلاتر (البحث، المالك، التاريخ)
+  function applyFilters() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const startDateInput = document.getElementById('startDate').value;
+    const endDateInput = document.getElementById('endDate').value;
 
-    const contactsArray = Object.entries(data).map(([key, val]) => {
+    const contactsArray = Object.entries(allContactsData).map(([key, val]) => {
       return { key, ...val };
     });
 
-    contactsArray.sort((a, b) => a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' }));
+    const filtered = contactsArray.filter(contact => {
+      const name = (contact.name || '').toLowerCase();
+      const phone = (contact.phone || '').toLowerCase();
+      const note = (contact.note || '').toLowerCase();
+      const owner = (contact.owner || '').toLowerCase();
+      // Ensure lastModified is a valid Date object for comparison
+      // Using new Date(string) directly handles various date string formats
+      const lastModifiedDate = contact.lastModified ? new Date(contact.lastModified) : null;
+      const startDate = startDateInput ? new Date(startDateInput) : null;
+      const endDate = endDateInput ? new Date(endDateInput) : null;
 
-    contactsArray.forEach(contact => {
-      const tr = document.createElement('tr');
-      tr.id = contact.key;
+      // Search Filter
+      const matchesSearch = name.includes(searchInput) ||
+                            phone.includes(searchInput) ||
+                            note.includes(searchInput) ||
+                            owner.includes(searchInput);
 
-      tr.innerHTML = `
-        <td data-label="تحديد"><input type="checkbox" class="select-contact" data-key="${contact.key}" onchange="updateSelected()" /></td>
-        <td data-label="الاسم"><input type="text" value="${escapeHTML(contact.name)}" disabled /></td>
-        <td data-label="رقم الهاتف"><input type="text" value="${escapeHTML(contact.phone)}" disabled /></td>
-        <td data-label="ملاحظة"><input type="text" value="${escapeHTML(contact.note || '')}" disabled /></td>
-        <td data-label="اسم المالك"><input type="text" value="${escapeHTML(contact.owner || '')}" disabled /></td>
-        <td data-label="آخر تعديل"><input type="text" value="${escapeHTML(contact.lastModified || '')}" disabled /></td>
-        <td data-label="الإجراءات">
-          <button class="edit-btn" onclick="enableEdit('${contact.key}')">تعديل</button>
-          <button class="delete-btn" onclick="deleteContact('${contact.key}')">حذف</button>
-          <button class="copy-btn" onclick="copyPhone('${escapeHTML(contact.phone)}')">نسخ</button>
-          <a class="call-btn" href="tel:${escapeHTML(contact.phone)}">اتصال</a>
-          <a class="wa-btn" href="https://wa.me/970${escapeHTML(contact.phone)}" target="_blank">واتساب 970+</a>
-          <a class="wa-btn" href="https://wa.me/972${escapeHTML(contact.phone)}" target="_blank">واتساب 972+</a>
-        </td>
-      `;
+      // Owner Filter (Multi-select)
+      const matchesOwner = selectedOwners.length === 0 || selectedOwners.includes(owner);
 
-      tbody.appendChild(tr);
+      // Date Filter
+      let matchesDate = true;
+      if (lastModifiedDate) { // Only apply date filter if lastModified exists on contact
+        if (startDate && endDate) {
+          // Compare dates (ignoring time)
+          matchesDate = (lastModifiedDate >= startDate && lastModifiedDate <= endDate);
+        } else if (startDate) {
+          matchesDate = (lastModifiedDate >= startDate);
+        } else if (endDate) {
+          matchesDate = (lastModifiedDate <= endDate);
+        }
+      } else if (startDate || endDate) { // If date filter is active but contact has no lastModified
+          matchesDate = false; // Do not match contacts without a modification date if a date filter is applied
+      }
+
+      return matchesSearch && matchesOwner && matchesDate;
     });
-    updateStats(); // Update stats after rendering the table
+
+    // Sort all filtered contacts once
+    filtered.sort((a, b) => (a.name || '').localeCompare((b.name || ''), 'ar', { sensitivity: 'base' }));
+
+    filteredContactsCache = filtered; // Store the sorted, filtered data
+    currentLoadedRows = 0; // Reset loaded rows for new filter results
+    document.getElementById('tableBody').innerHTML = ''; // Clear table before loading
+    loadMoreRows(); // Load initial set of rows for the new filter results
   }
 
+  // دالة مساعدة لتشفير HTML
   function escapeHTML(str) {
     const div = document.createElement('div');
     div.appendChild(document.createTextNode(str));
     return div.innerHTML;
   }
 
+  // إضافة جهة اتصال جديدة
   function addContact() {
     const name = document.getElementById('nameInput').value.trim();
     const phone = document.getElementById('phoneInput').value.trim();
     const note = document.getElementById('noteInput').value.trim();
     const owner = document.getElementById('ownerSingleInput').value.trim();
-    if (!name && !phone) { // Allow adding if only name or only phone is present
+    if (!name && !phone) {
       alert('يرجى إدخال الاسم أو رقم الهاتف على الأقل');
       return;
     }
@@ -444,11 +577,12 @@
       phone: phone || '',
       note: note || '',
       owner: owner || '',
-      lastModified: new Date().toLocaleString()
+      lastModified: new Date().toLocaleString() // Store modification date/time
     });
-    clearInputs();
+    clearInputs(); // Clear input fields after adding
   }
 
+  // مسح حقول الإدخال
   function clearInputs() {
     document.getElementById('nameInput').value = '';
     document.getElementById('phoneInput').value = '';
@@ -456,8 +590,10 @@
     document.getElementById('ownerSingleInput').value = '';
   }
 
+  // تفعيل وضع التعديل لصف معين
   function enableEdit(key) {
     const row = document.getElementById(key);
+    // Get inputs in the specific order they appear in HTML
     const inputs = row.querySelectorAll('input[type=text]');
     const editBtn = row.querySelector('.edit-btn');
 
@@ -479,20 +615,29 @@
         phone: updatedPhone || '',
         note: updatedNote || '',
         owner: updatedOwner || '',
-        lastModified: new Date().toLocaleString()
+        lastModified: new Date().toLocaleString() // Update modification date
       });
       inputs.forEach(input => input.disabled = true);
       editBtn.innerText = 'تعديل';
     }
   }
 
-  function deleteContact(key) {
-    if (confirm('هل أنت متأكد من حذف جهة الاتصال؟')) {
-      contactsRef.child(key).remove();
-      updateSelected();
+  // تأكيد وحذف جهة اتصال واحدة
+  function confirmDeleteContact(key) {
+    if (confirm('هل أنت متأكد من حذف جهة الاتصال هذه؟')) {
+      contactsRef.child(key).remove()
+        .then(() => {
+            alert('تم حذف جهة الاتصال بنجاح.');
+            // Firebase listener will automatically re-render the table
+        })
+        .catch(error => {
+            console.error("Error deleting contact: ", error);
+            alert("حدث خطأ أثناء حذف جهة الاتصال.");
+        });
     }
   }
 
+  // نسخ رقم الهاتف إلى الحافظة
   function copyPhone(phone) {
     navigator.clipboard.writeText(phone).then(() => {
       alert('تم نسخ الرقم: ' + phone);
@@ -502,162 +647,294 @@
     });
   }
 
-  function searchTable() {
-    const input = document.getElementById('searchInput').value.toLowerCase();
-    const rows = document.querySelectorAll('#contactsTable tbody tr');
-    let visibleRowCount = 0;
-    rows.forEach(row => {
-      const name = row.cells[1].querySelector('input').value.toLowerCase();
-      const phone = row.cells[2].querySelector('input').value.toLowerCase();
-      const note = row.cells[3].querySelector('input').value.toLowerCase();
-      const owner = row.cells[4].querySelector('input').value.toLowerCase();
-      const isVisible = (name.includes(input) || phone.includes(input) || note.includes(input) || owner.includes(input));
-      row.style.display = isVisible ? '' : 'none';
-      if (isVisible) {
-        visibleRowCount++;
-      }
-    });
-    updateStats(visibleRowCount); // Update stats based on visible rows
-  }
+  // --- Multi-select for Owners ---
+  function updateOwnerMultiSelect(data) {
+    const ownerOptionsContainer = document.getElementById('ownerOptionsContainer');
+    ownerOptionsContainer.innerHTML = ''; // Clear previous options
+    const owners = new Set(Object.values(data).map(c => c.owner).filter(o => o)); // Get unique owners
 
-  function filterByOwner() {
-    const ownerFilter = document.getElementById('ownerFilter').value.toLowerCase();
-    const rows = document.querySelectorAll('#contactsTable tbody tr');
-    let visibleRowCount = 0;
-    rows.forEach(row => {
-      const owner = row.cells[4].querySelector('input').value.toLowerCase();
-      const isVisible = (ownerFilter === '' || owner === ownerFilter);
-      row.style.display = isVisible ? '' : 'none';
-      if (isVisible) {
-        visibleRowCount++;
-      }
-    });
-    updateStats(visibleRowCount); // Update stats based on visible rows
-  }
+    // Sort owners alphabetically (Arabic locale-aware)
+    const sortedOwners = Array.from(owners).sort((a, b) => a.localeCompare(b, 'ar', { sensitivity: 'base' }));
 
-  function updateOwnerFilter(data) {
-    const ownerFilter = document.getElementById('ownerFilter');
-    const owners = new Set(Object.values(data).map(c => c.owner).filter(o => o));
-    ownerFilter.innerHTML = '<option value="">كل المالكين</option>';
-    Array.from(owners).sort((a, b) => a.localeCompare(b, 'ar', { sensitivity: 'base' })).forEach(owner => {
-      const option = document.createElement('option');
-      option.value = owner.toLowerCase();
+    sortedOwners.forEach(owner => {
+      const option = document.createElement('div');
+      option.className = 'option';
       option.textContent = owner;
-      ownerFilter.appendChild(option);
-    });
-  }
-
-  function importVCF() {
-    const fileInput = document.getElementById('vcfFileInput');
-    const file = fileInput.files[0];
-    const ownerName = document.getElementById('ownerInput').value.trim();
-
-    if (!file) {
-      alert('يرجى اختيار ملف VCF أولاً');
-      return;
-    }
-    if (!ownerName) {
-      alert('يرجى إدخال اسم المالك');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const text = e.target.result;
-      const contacts = parseVCF(text);
-      if (contacts.length === 0) {
-        alert('لم يتم العثور على جهات اتصال في الملف');
-        return;
+      option.setAttribute('data-value', owner.toLowerCase()); // Store lowercase for internal logic
+      // Check if this option is currently selected in selectedOwners array
+      if (selectedOwners.includes(owner.toLowerCase())) {
+        option.classList.add('selected');
       }
-      let addedCount = 0;
-      contacts.forEach(c => {
-        if (c.name || c.phone) {
-          const newContactRef = contactsRef.push();
-          newContactRef.set({
-            name: c.name || '',
-            phone: c.phone || '',
-            note: c.note || '',
-            owner: ownerName,
-            lastModified: new Date().toLocaleString()
-          });
-          addedCount++;
-        }
-      });
-      alert(`تمت إضافة ${addedCount} جهة اتصال`);
-      fileInput.value = '';
-      document.getElementById('ownerInput').value = '';
-    };
-    reader.readAsText(file);
+      option.onclick = (event) => toggleOwnerSelection(event, owner.toLowerCase(), owner);
+      ownerOptionsContainer.appendChild(option);
+    });
+    updateMultiSelectDisplay(); // Update display after loading options
   }
 
+  // تبديل حالة فتح/إغلاق قائمة التحديد المتعدد
+  function toggleMultiSelect(element) {
+    element.closest('.multi-select-dropdown').classList.toggle('active');
+  }
+
+  // إضافة/إزالة مالك من التحديد المتعدد
+  function toggleOwnerSelection(event, value, text) {
+    event.stopPropagation(); // Prevent dropdown from closing immediately on option click
+    const index = selectedOwners.indexOf(value);
+    const optionElement = event.target;
+
+    if (index > -1) {
+      selectedOwners.splice(index, 1); // Remove if already selected
+      optionElement.classList.remove('selected');
+    } else {
+      selectedOwners.push(value); // Add if not selected
+      optionElement.classList.add('selected');
+    }
+    updateMultiSelectDisplay(); // Update the displayed selected items
+    applyFilters(); // Re-apply filters when selection changes
+  }
+
+  // تحديث عرض العناصر المختارة في التحديد المتعدد
+  function updateMultiSelectDisplay() {
+    const selectedItemsDiv = document.querySelector('#ownerMultiSelect .selected-items');
+    selectedItemsDiv.innerHTML = ''; // Clear current display
+
+    if (selectedOwners.length === 0) {
+      selectedItemsDiv.textContent = 'اختر المالكين...';
+      selectedItemsDiv.classList.remove('active');
+    } else {
+      selectedOwners.forEach(ownerValue => {
+        // Find the original case text for display
+        const ownerText = Array.from(document.querySelectorAll('#ownerOptionsContainer .option'))
+                          .find(opt => opt.getAttribute('data-value') === ownerValue)
+                          ?.textContent || ownerValue;
+        const item = document.createElement('span');
+        item.className = 'selected-item';
+        item.textContent = ownerText;
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'remove-item';
+        removeBtn.textContent = 'x';
+        removeBtn.onclick = (event) => {
+          event.stopPropagation(); // Prevent closing dropdown
+          toggleOwnerSelection(event, ownerValue, ownerText); // Simulate click to remove
+        };
+        item.appendChild(removeBtn);
+        selectedItemsDiv.appendChild(item);
+      });
+      selectedItemsDiv.classList.add('active'); // Add active class if items are selected
+    }
+  }
+
+  // إغلاق قائمة التحديد المتعدد عند النقر خارجها
+  document.addEventListener('click', function(event) {
+    const multiSelectDropdowns = document.querySelectorAll('.multi-select-dropdown');
+    multiSelectDropdowns.forEach(dropdown => {
+      if (!dropdown.contains(event.target)) {
+        dropdown.classList.remove('active');
+      }
+    });
+  });
+
+  // --- التحميل الكسول للجدول (Lazy Loading) ---
+  // دالة جديدة لتحميل المزيد من الصفوف إلى الجدول
+  function loadMoreRows() {
+    const tbody = document.getElementById('tableBody');
+    const totalFiltered = filteredContactsCache.length;
+    const startIndex = currentLoadedRows;
+    const endIndex = Math.min(startIndex + rowsPerLoad, totalFiltered);
+
+    for (let i = startIndex; i < endIndex; i++) {
+      const contact = filteredContactsCache[i];
+      const tr = document.createElement('tr');
+      tr.id = contact.key;
+
+      tr.innerHTML = `
+        <td data-label="تحديد"><input type="checkbox" class="select-contact" data-key="${contact.key}" onchange="updateSelected()" /></td>
+        <td data-label="الاسم"><input type="text" value="${escapeHTML(contact.name)}" disabled /></td>
+        <td data-label="رقم الهاتف"><input type="text" value="${escapeHTML(contact.phone)}" disabled /></td>
+        <td data-label="ملاحظة"><input type="text" value="${escapeHTML(contact.note || '')}" disabled /></td>
+        <td data-label="اسم المالك"><input type="text" value="${escapeHTML(contact.owner || '')}" disabled /></td>
+        <td data-label="آخر تعديل"><input type="text" value="${escapeHTML(contact.lastModified || '')}" disabled /></td>
+        <td data-label="الإجراءات">
+          <button class="edit-btn" onclick="enableEdit('${contact.key}')">تعديل</button>
+          <button class="delete-btn" onclick="confirmDeleteContact('${contact.key}')">حذف</button>
+          <button class="copy-btn" onclick="copyPhone('${escapeHTML(contact.phone)}')">نسخ</button>
+          <a class="call-btn" href="tel:${escapeHTML(contact.phone)}">اتصال</a>
+          <a class="wa-btn" href="https://wa.me/970${escapeHTML(contact.phone)}" target="_blank">واتساب 970+</a>
+          <a class="wa-btn" href="https://wa.me/972${escapeHTML(contact.phone)}" target="_blank">واتساب 972+</a>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+    currentLoadedRows = endIndex; // Update how many rows are currently loaded
+    updateStats(); // Update stats based on currently visible/rendered rows
+  }
+
+  // إضافة معالج حدث التمرير إلى حاوية الجدول لتطبيق التحميل الكسول
+  document.addEventListener('DOMContentLoaded', () => {
+      const tableScrollContainer = document.querySelector('.table-scroll-container');
+      if (tableScrollContainer) {
+          tableScrollContainer.addEventListener('scroll', () => {
+              // Load more rows when scrolled near the bottom (within 50px buffer)
+              if (tableScrollContainer.scrollTop + tableScrollContainer.clientHeight >= tableScrollContainer.scrollHeight - 50) {
+                  // Ensure there are more filtered contacts to load
+                  if (currentLoadedRows < filteredContactsCache.length) {
+                      loadMoreRows();
+                  }
+              }
+          });
+      }
+  });
+
+  // --- تحديد الكل الذكي ---
   function toggleSelectAll(checkbox) {
-    const checkboxes = document.querySelectorAll('.select-contact');
-    checkboxes.forEach(cb => cb.checked = checkbox.checked);
-    updateSelected();
+    // Get all checkboxes that are currently rendered in the DOM
+    const allRenderedCheckboxes = document.querySelectorAll('#contactsTable tbody tr .select-contact');
+    
+    // Check if any filter is actively applied (search, owner, date)
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const startDateInput = document.getElementById('startDate').value;
+    const endDateInput = document.getElementById('endDate').value;
+    const isFilteredBySearch = searchInput !== '';
+    const isFilteredByOwner = selectedOwners.length > 0;
+    const isFilteredByDate = startDateInput !== '' || endDateInput !== '';
+
+    // Determine if any active filters are applied that would hide rows
+    // We compare the number of currently filtered contacts in cache to the total contacts
+    const isAnyFilterActive = (isFilteredBySearch || isFilteredByOwner || isFilteredByDate) || 
+                              (filteredContactsCache.length < Object.keys(allContactsData).length);
+
+    if (isAnyFilterActive) {
+        // If filters are active, only toggle currently visible/rendered checkboxes
+        allRenderedCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+    } else {
+        // If no filter is active (or filters result in all contacts being visible),
+        // we still only toggle what's currently on screen due to lazy loading.
+        // Selecting "all" (1200+) contacts that are not yet rendered would cause performance issues.
+        // For a true "select all X contacts" behavior when no filters are active, a different
+        // implementation (e.g., selecting keys directly in filteredContactsCache) would be needed,
+        // but it complicates the UI feedback (checkboxes not appearing).
+        allRenderedCheckboxes.forEach(cb => cb.checked = checkbox.checked);
+    }
+    updateSelected(); // Update counts and button visibility
   }
 
   // تحديث ظهور زر الحذف وعداد المحدد
   function updateSelected() {
-    const selected = document.querySelectorAll('.select-contact:checked');
+    // Get only the checkboxes that are currently rendered in the DOM
+    const allRenderedCheckboxes = document.querySelectorAll('#tableBody .select-contact');
+    const selectedRendered = Array.from(allRenderedCheckboxes).filter(cb => cb.checked);
+    
     const deleteBtn = document.getElementById('deleteSelectedBtn');
     
-    document.getElementById('selectedContacts').textContent = `المحدد: ${selected.length}`;
+    document.getElementById('selectedVisibleContacts').textContent = `المحدد من المعروض: ${selectedRendered.length}`;
 
-    if (selected.length > 0) {
+    if (selectedRendered.length > 0) {
       deleteBtn.classList.remove('hidden');
     } else {
       deleteBtn.classList.add('hidden');
-      document.getElementById('selectAll').checked = false; // Uncheck select all if nothing is selected
+      // If nothing is selected from *rendered* rows, uncheck select all checkbox
+      if (document.getElementById('selectAll').checked) {
+          document.getElementById('selectAll').checked = false;
+      }
+    }
+    // If all *rendered* checkboxes are selected and there's at least one, check 'select all'
+    if (selectedRendered.length > 0 && selectedRendered.length === allRenderedCheckboxes.length && allRenderedCheckboxes.length > 0) {
+        document.getElementById('selectAll').checked = true;
+    } else if (allRenderedCheckboxes.length === 0 && document.getElementById('selectAll').checked) {
+        // If no rows are rendered but selectAll is checked, uncheck it
+        document.getElementById('selectAll').checked = false;
     }
   }
 
-  // تحديث إحصائيات الصفوف
-  function updateStats(visibleCount = null) {
-    const totalRows = document.querySelectorAll('#contactsTable tbody tr').length;
-    const currentVisibleRows = visibleCount !== null ? visibleCount : totalRows;
-
-    document.getElementById('totalContacts').textContent = `إجمالي جهات الاتصال: ${currentVisibleRows}`;
-    updateSelected(); // Also update selected count here
+  // تحديث إحصائيات الصفوف المرئية
+  function updateStats() {
+    const renderedRows = document.querySelectorAll('#tableBody tr').length;
+    document.getElementById('totalVisibleContacts').textContent = `إجمالي جهات الاتصال المعروضة: ${renderedRows} من ${filteredContactsCache.length}`;
+    updateSelected(); // Also updates selected count
   }
 
-  function deleteSelected() {
-    if (confirm('هل أنت متأكد من حذف جهات الاتصال المحددة؟')) {
-      const selected = document.querySelectorAll('.select-contact:checked');
-      selected.forEach(cb => {
+  // تأكيد وحذف جهات الاتصال المحددة (باستخدام Multi-path Delete)
+  function confirmDeleteSelected() {
+    const selectedCheckboxes = document.querySelectorAll('#tableBody .select-contact:checked');
+    const contactsToDeleteCount = selectedCheckboxes.length;
+
+    if (contactsToDeleteCount === 0) {
+        alert('يرجى تحديد جهة اتصال واحدة على الأقل للحذف.');
+        return;
+    }
+
+    if (confirm(`هل أنت متأكد من حذف ${contactsToDeleteCount} جهة اتصال محددة؟`)) {
+      const updates = {}; // Prepare for multi-path deletion
+      selectedCheckboxes.forEach(cb => {
         const key = cb.getAttribute('data-key');
-        contactsRef.child(key).remove();
+        updates[`/${key}`] = null; // Set the path to null to delete the node in Firebase
       });
-      document.getElementById('selectAll').checked = false; // Uncheck select all after deletion
+
+      // Perform the multi-path update (deletion)
+      db.ref('contacts').update(updates)
+        .then(() => {
+            alert(`تم حذف ${contactsToDeleteCount} جهة اتصال بنجاح.`);
+            document.getElementById('selectAll').checked = false; // Uncheck select all after deletion
+            // Firebase listener will automatically trigger loadContacts -> applyFilters
+            // which will re-render the table with updated data.
+        })
+        .catch(error => {
+            alert("حدث خطأ أثناء حذف بعض جهات الاتصال.");
+            console.error("Error in batch deletion:", error);
+        });
     }
   }
 
-  let sortDirection = {};
+  let sortDirection = {}; // Object to store sort direction for each column
   function sortTable(colIndex) {
-    const tbody = document.getElementById('tableBody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const direction = sortDirection[colIndex] === 'asc' ? 'desc' : 'asc';
-    sortDirection[colIndex] = direction;
+    // Sort the entire filteredContactsCache, not just currently rendered rows
+    filteredContactsCache.sort((a, b) => {
+      let valA, valB;
 
-    rows.sort((a, b) => {
-      let valA = a.cells[colIndex].querySelector('input').value.toLowerCase();
-      let valB = b.cells[colIndex].querySelector('input').value.toLowerCase();
+      // Get values from the contact objects in cache, not from DOM inputs
+      if (colIndex === 1) { // Name
+          valA = (a.name || '').toLowerCase();
+          valB = (b.name || '').toLowerCase();
+      } else if (colIndex === 2) { // Phone
+          valA = (a.phone || '').toLowerCase();
+          valB = (b.phone || '').toLowerCase();
+      } else if (colIndex === 3) { // Note
+          valA = (a.note || '').toLowerCase();
+          valB = (b.note || '').toLowerCase();
+      } else if (colIndex === 4) { // Owner
+          valA = (a.owner || '').toLowerCase();
+          valB = (b.owner || '').toLowerCase();
+      } else if (colIndex === 5) { // Last Modified Date/Time
+          // Convert to Date objects for proper chronological comparison
+          valA = a.lastModified ? new Date(a.lastModified) : new Date(0); // Use epoch for missing dates
+          valB = b.lastModified ? new Date(b.lastModified) : new Date(0);
+      }
+      
+      // Determine sorting direction for the current column
+      const direction = sortDirection[colIndex] === 'asc' ? 'desc' : 'asc';
+      sortDirection[colIndex] = direction;
 
-      if (colIndex === 1 || colIndex === 4) {
+      // Perform the comparison based on column type
+      if (colIndex === 1 || colIndex === 4) { // Name and Owner (text, Arabic locale-aware)
         if (direction === 'asc') {
           return valA.localeCompare(valB, 'ar', { sensitivity: 'base' });
         } else {
           return valB.localeCompare(valA, 'ar', { sensitivity: 'base' });
         }
-      } else {
+      } else { // Phone, Note, Last Modified (general comparison or date object comparison)
         if (valA < valB) return direction === 'asc' ? -1 : 1;
         if (valA > valB) return direction === 'asc' ? 1 : -1;
         return 0;
       }
     });
 
-    rows.forEach(row => tbody.appendChild(row));
+    // After sorting the cache, re-render the table, resetting lazy load state
+    currentLoadedRows = 0;
+    document.getElementById('tableBody').innerHTML = ''; // Clear existing rendered rows
+    loadMoreRows(); // Load the initial set of sorted rows
   }
 
+  // عند تحميل نافذة المتصفح، ابدأ بتحميل جهات الاتصال
   window.onload = function () {
     loadContacts();
   };
