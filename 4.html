@@ -84,6 +84,9 @@
     text-align: center;
     margin-top: 10px;
     margin-bottom: 15px;
+    display: flex; /* Use flexbox for button alignment */
+    justify-content: center; /* Center buttons */
+    gap: 10px; /* Space between buttons */
   }
   .hidden { display: none; }
 
@@ -325,6 +328,7 @@
 
 <div class="delete-selected-container">
   <button id="deleteSelectedBtn" class="delete-btn hidden" onclick="confirmDeleteSelected()">حذف المحدد</button>
+  <button id="deleteByOwnerBtn" class="delete-btn hidden" onclick="confirmDeleteByOwner()">حذف جهات الاتصال للمالكين المحددين</button>
 </div>
 
 <div class="table-scroll-container">
@@ -755,6 +759,7 @@
     }
     updateMultiSelectDisplay(); // Update the displayed selected items
     applyFilters(); // Re-apply filters when selection changes
+    updateDeleteByOwnerButtonVisibility(); // Update visibility of the new button
   }
 
   // تحديث عرض العناصر المختارة في التحديد المتعدد
@@ -948,6 +953,69 @@
         });
     }
   }
+
+  // NEW FUNCTION: Update visibility of the "Delete by Owner" button
+  function updateDeleteByOwnerButtonVisibility() {
+      const deleteByOwnerBtn = document.getElementById('deleteByOwnerBtn');
+      if (selectedOwners.length > 0) {
+          deleteByOwnerBtn.classList.remove('hidden');
+      } else {
+          deleteByOwnerBtn.classList.add('hidden');
+      }
+  }
+
+  // NEW FUNCTION: Confirm and delete contacts by selected owners
+  function confirmDeleteByOwner() {
+      if (selectedOwners.length === 0) {
+          alert('يرجى تحديد مالك واحد على الأقل للحذف.');
+          return;
+      }
+
+      const contactsToDelete = {};
+      let countToDelete = 0;
+
+      // Iterate through all contacts data
+      for (const key in allContactsData) {
+          if (allContactsData.hasOwnProperty(key)) {
+              const contact = allContactsData[key];
+              // Check if the contact's owner is in the selectedOwners array
+              if (contact.owner && selectedOwners.includes(contact.owner.toLowerCase())) {
+                  contactsToDelete[`/${key}`] = null; // Mark for deletion
+                  countToDelete++;
+              }
+          }
+      }
+
+      if (countToDelete === 0) {
+          alert('لم يتم العثور على جهات اتصال للمالكين المحددين.');
+          return;
+      }
+
+      const ownerNamesForConfirmation = selectedOwners.map(ownerVal => {
+        // Find the original case text for display in the confirmation message
+        const optionElement = Array.from(document.querySelectorAll('#ownerOptionsContainer .option'))
+                                .find(opt => opt.getAttribute('data-value') === ownerVal);
+        return optionElement ? optionElement.textContent : ownerVal;
+      }).join(', ');
+
+
+      if (confirm(`هل أنت متأكد من حذف ${countToDelete} جهة اتصال لـ: ${ownerNamesForConfirmation}؟\n\nهذا الإجراء لا يمكن التراجع عنه.`)) {
+          db.ref('contacts').update(contactsToDelete)
+              .then(() => {
+                  alert(`تم حذف ${countToDelete} جهة اتصال بنجاح للمالكين المحددين.`);
+                  // Clear selected owners after deletion
+                  selectedOwners = [];
+                  updateMultiSelectDisplay();
+                  updateDeleteByOwnerButtonVisibility();
+                  // Firebase listener will automatically re-render the table
+              })
+              .catch(error => {
+                  console.error("Error deleting contacts by owner:", error);
+                  alert("حدث خطأ أثناء حذف جهات الاتصال للمالكين المحددين.");
+              });
+      }
+  }
+
 
   let sortDirection = {}; // Object to store sort direction for each column
   function sortTable(colIndex) {
