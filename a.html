@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم العائلة</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        .input-field {
+            border: 1px solid #d1d5db; /* Light gray border */
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        table {
+            width: 100%;
+            border-collapse: separate; /* For rounded corners on cells */
+            border-spacing: 0;
+            border-radius: 1rem; /* Rounded corners for the whole table */
+            overflow: hidden; /* Ensures rounded corners are visible */
+        }
+        th, td {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid #e5e7eb; /* Light border for rows */
+        }
+        th {
+            background-color: #f9fafb; /* Lighter background for header */
+            font-weight: 600;
+            color: #374151;
+        }
+        tr:last-child td {
+            border-bottom: none; /* No border for the last row */
+        }
+        tr:hover {
+            background-color: #f3f4f6; /* Hover effect for rows */
+            cursor: pointer;
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <!-- Custom Modal for Messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">لوحة تحكم العائلة</h1>
+            <nav class="flex flex-wrap gap-3">
+                <a href="index.html" class="btn-primary">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-primary">إضافة شخص جديد</a>
+            </nav>
+        </div>
+
+        <!-- Search and Filters Section -->
+        <div class="card mb-6">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">البحث والتصفية</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <!-- Search Input -->
+                <div>
+                    <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">البحث بالاسم:</label>
+                    <input type="text" id="searchInput" placeholder="ابحث بالاسم الرباعي..." class="input-field">
+                </div>
+
+                <!-- Gender Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">الجنس:</label>
+                    <div class="flex gap-4">
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterMale" value="Male" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">ذكر</span>
+                        </label>
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterFemale" value="Female" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">أنثى</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Age Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">الفئة العمرية:</label>
+                    <div class="flex gap-4">
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterAbove16" value="Above16" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">فوق 16 سنة</span>
+                        </label>
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterBelow16" value="Below16" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">أقل من 16 سنة</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Marital Status Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">الحالة الاجتماعية:</label>
+                    <div class="flex flex-wrap gap-4">
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterMarried" value="Married" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">متزوج</span>
+                        </label>
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterSingle" value="Single" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">أعزب</span>
+                        </label>
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterDivorced" value="Divorced" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">مطلق</span>
+                        </label>
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterWidowed" value="Widowed" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">أرمل</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Alive/Deceased Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">الحالة:</label>
+                    <div class="flex gap-4">
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterAlive" value="Alive" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">على قيد الحياة</span>
+                        </label>
+                        <label class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2">
+                            <input type="checkbox" id="filterDeceased" value="Deceased" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-2 text-gray-700">متوفى</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Birth Year Filter -->
+                <div>
+                    <label for="birthYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الميلاد:</label>
+                    <input type="number" id="birthYearInput" placeholder="أدخل سنة الميلاد..." class="input-field">
+                </div>
+
+                <!-- Death Year Filter -->
+                <div>
+                    <label for="deathYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الوفاة:</label>
+                    <input type="number" id="deathYearInput" placeholder="أدخل سنة الوفاة..." class="input-field">
+                </div>
+            </div>
+            <button id="applyFiltersBtn" class="btn-primary w-full md:w-auto">تطبيق التصفية</button>
+            <button id="clearFiltersBtn" class="btn-secondary w-full md:w-auto mt-2 md:mt-0 md:mr-2">مسح التصفية</button>
+        </div>
+
+        <!-- Family Members List -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">أفراد العائلة</h2>
+            <div id="loadingIndicator" class="text-center text-gray-600 text-lg mb-4 hidden">جاري تحميل البيانات...</div>
+            <div id="noDataMessage" class="text-center text-gray-600 text-lg mb-4 hidden">لا توجد بيانات لعرضها.</div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-xl">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4 text-right">الاسم الرباعي</th>
+                            <th class="py-3 px-4 text-right">العمر</th>
+                        </tr>
+                    </thead>
+                    <tbody id="familyMembersTableBody">
+                        <!-- Family members will be loaded here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot, getDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let allFamilyMembers = []; // To store all fetched data
+        let currentFilteredMembers = []; // To store currently filtered data
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Function to show custom modal messages
+        function showModal(message) {
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('messageModal').style.display = 'flex';
+        }
+
+        // Function to close custom modal messages
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Add event listeners for modal close buttons
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+
+            // Initial authentication attempt
+            (async () => {
+                try {
+                    // Log the token value to debug
+                    console.log("Initial auth token:", typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : "undefined or null");
+
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            // If custom token fails, especially with mismatch, try anonymous
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError; // Re-throw other errors
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                }
+            })();
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+                    fetchFamilyMembers(); // Fetch data after authentication
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    // Optionally clear data or show a login prompt if no user
+                    allFamilyMembers = [];
+                    currentFilteredMembers = [];
+                    displayFamilyMembers([]);
+                    document.getElementById('loadingIndicator').classList.add('hidden');
+                    document.getElementById('noDataMessage').classList.remove('hidden');
+                }
+            });
+        });
+
+
+        // Function to calculate age from birth date
+        function calculateAge(birthDate) {
+            if (!birthDate || !birthDate.toDate) return 'غير محدد';
+            const today = new Date();
+            const birth = birthDate.toDate(); // Convert Firebase Timestamp to Date object
+
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            let days = today.getDate() - birth.getDate();
+
+            if (days < 0) {
+                months--;
+                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); // Days in previous month
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            return `${years} سنة, ${months} شهر, ${days} يوم`;
+        }
+
+        // Function to check if age is above/below 16
+        function isAbove16(birthDate) {
+            if (!birthDate || !birthDate.toDate) return false;
+            const today = new Date();
+            const birth = birthDate.toDate();
+            const ageDate = new Date(birth.getFullYear() + 16, birth.getMonth(), birth.getDate());
+            return today >= ageDate;
+        }
+
+        // Function to fetch family members from Firestore
+        function fetchFamilyMembers() {
+            if (!userId) {
+                console.log("User ID not available yet. Cannot fetch data.");
+                return;
+            }
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const noDataMessage = document.getElementById('noDataMessage');
+            loadingIndicator.classList.remove('hidden');
+            noDataMessage.classList.add('hidden');
+
+            // Listen for real-time updates to the 'familyMembers' collection
+            const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+            onSnapshot(q, (snapshot) => {
+                allFamilyMembers = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allFamilyMembers.push({ id: doc.id, ...data });
+                });
+                console.log("Fetched family members:", allFamilyMembers);
+                loadingIndicator.classList.add('hidden');
+                applyFilters(); // Apply filters immediately after fetching
+            }, (error) => {
+                console.error("Error fetching family members:", error);
+                loadingIndicator.classList.add('hidden');
+                showModal("حدث خطأ أثناء جلب بيانات العائلة: " + error.message);
+            });
+        }
+
+        // Function to display family members in the table
+        function displayFamilyMembers(members) {
+            const tableBody = document.getElementById('familyMembersTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            if (members.length === 0) {
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                return;
+            } else {
+                document.getElementById('noDataMessage').classList.add('hidden');
+            }
+
+            members.forEach(person => {
+                const row = tableBody.insertRow();
+                row.classList.add('hover:bg-gray-50', 'transition-colors', 'duration-200');
+                row.style.cursor = 'pointer';
+                row.onclick = () => {
+                    window.location.href = `profile.html?id=${person.id}`;
+                };
+
+                const fullNameCell = row.insertCell();
+                fullNameCell.textContent = person.fullName || 'غير محدد';
+
+                const ageCell = row.insertCell();
+                ageCell.textContent = calculateAge(person.birthDate);
+            });
+        }
+
+        // Function to apply filters and search
+        function applyFilters() {
+            let filtered = [...allFamilyMembers]; // Start with all members
+
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const filterMale = document.getElementById('filterMale').checked;
+            const filterFemale = document.getElementById('filterFemale').checked;
+            const filterAbove16 = document.getElementById('filterAbove16').checked;
+            const filterBelow16 = document.getElementById('filterBelow16').checked;
+            const filterMarried = document.getElementById('filterMarried').checked;
+            const filterSingle = document.getElementById('filterSingle').checked;
+            const filterDivorced = document.getElementById('filterDivorced').checked;
+            const filterWidowed = document.getElementById('filterWidowed').checked;
+            const filterAlive = document.getElementById('filterAlive').checked;
+            const filterDeceased = document.getElementById('filterDeceased').checked;
+            const birthYearInput = document.getElementById('birthYearInput').value;
+            const deathYearInput = document.getElementById('deathYearInput').value;
+
+            // Apply search filter
+            if (searchInput) {
+                filtered = filtered.filter(person =>
+                    (person.fullName && person.fullName.toLowerCase().includes(searchInput)) ||
+                    (person.firstName && person.firstName.toLowerCase().includes(searchInput)) ||
+                    (person.familyName && person.familyName.toLowerCase().includes(searchInput))
+                );
+            }
+
+            // Apply gender filters
+            const genderFilters = [];
+            if (filterMale) genderFilters.push('Male');
+            if (filterFemale) genderFilters.push('Female');
+            if (genderFilters.length > 0) {
+                filtered = filtered.filter(person => genderFilters.includes(person.gender));
+            }
+
+            // Apply age group filters
+            const ageGroupFilters = [];
+            if (filterAbove16) ageGroupFilters.push('Above16');
+            if (filterBelow16) ageGroupFilters.push('Below16');
+            if (ageGroupFilters.length > 0) {
+                filtered = filtered.filter(person => {
+                    const isOver16 = isAbove16(person.birthDate);
+                    if (ageGroupFilters.includes('Above16') && isOver16) return true;
+                    if (ageGroupFilters.includes('Below16') && !isOver16) return true;
+                    return false;
+                });
+            }
+
+            // Apply marital status filters
+            const maritalStatusFilters = [];
+            if (filterMarried) maritalStatusFilters.push('Married');
+            if (filterSingle) maritalStatusFilters.push('Single');
+            if (filterDivorced) maritalStatusFilters.push('Divorced');
+            if (filterWidowed) maritalStatusFilters.push('Widowed');
+            if (maritalStatusFilters.length > 0) {
+                filtered = filtered.filter(person => maritalStatusFilters.includes(person.maritalStatus));
+            }
+
+            // Apply alive/deceased filters
+            const lifeStatusFilters = [];
+            if (filterAlive) lifeStatusFilters.push(true);
+            if (filterDeceased) lifeStatusFilters.push(false);
+            if (lifeStatusFilters.length > 0) {
+                filtered = filtered.filter(person => lifeStatusFilters.includes(person.isAlive));
+            }
+
+            // Apply birth year filter
+            if (birthYearInput) {
+                filtered = filtered.filter(person => {
+                    if (person.birthDate && person.birthDate.toDate) {
+                        return person.birthDate.toDate().getFullYear() === parseInt(birthYearInput);
+                    }
+                    return false;
+                });
+            }
+
+            // Apply death year filter
+            if (deathYearInput) {
+                filtered = filtered.filter(person => {
+                    if (!person.isAlive && person.deathDate && person.deathDate.toDate) {
+                        return person.deathDate.toDate().getFullYear() === parseInt(deathYearInput);
+                    }
+                    return false;
+                });
+            }
+
+            currentFilteredMembers = filtered; // Update current filtered members
+            displayFamilyMembers(currentFilteredMembers);
+        }
+
+        // Event Listeners for filters and search
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
+        document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+            // Reset all filter inputs
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterMale').checked = false;
+            document.getElementById('filterFemale').checked = false;
+            document.getElementById('filterAbove16').checked = false;
+            document.getElementById('filterBelow16').checked = false;
+            document.getElementById('filterMarried').checked = false;
+            document.getElementById('filterSingle').checked = false;
+            document.getElementById('filterDivorced').checked = false;
+            document.getElementById('filterWidowed').checked = false;
+            document.getElementById('filterAlive').checked = false;
+            document.getElementById('filterDeceased').checked = false;
+            document.getElementById('birthYearInput').value = '';
+            document.getElementById('deathYearInput').value = '';
+            applyFilters(); // Re-apply filters to show all members
+        });
+    </script>
+</body>
+</html>
