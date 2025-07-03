@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل الشخص</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-danger {
+            background-color: #ef4444; /* Red */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* Darker red */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .detail-value {
+            color: #1f2937;
+        }
+        .relation-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .relation-link:hover {
+            color: #4338ca;
+            text-decoration: underline;
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <!-- Custom Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal for Deletion -->
+    <div id="confirmDeleteModal" class="modal">
+        <div class="modal-content">
+            <span id="closeConfirmDeleteModalBtn" class="close-button">&times;</span>
+            <p class="text-lg font-semibold text-gray-800 mb-4">هل أنت متأكد أنك تريد حذف هذا الشخص؟</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirmDeleteBtn" class="btn-danger">نعم، احذف</button>
+                <button id="cancelDeleteBtn" class="btn-secondary">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">تفاصيل الشخص</h1>
+            <nav class="flex flex-wrap gap-3">
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-primary">إضافة شخص جديد</a>
+            </nav>
+        </div>
+
+        <!-- Person Details Card -->
+        <div id="personDetailsCard" class="card hidden">
+            <div id="loadingIndicator" class="text-center text-gray-600 text-lg mb-4">جاري تحميل البيانات...</div>
+            <div id="noPersonMessage" class="text-center text-gray-600 text-lg mb-4 hidden">لم يتم العثور على بيانات لهذا الشخص.</div>
+
+            <div id="personContent" class="hidden">
+                <h2 id="personFullName" class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4"></h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Personal Information -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">المعلومات الشخصية</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="detail-item"><span class="detail-label">الاسم الأول:</span> <span id="firstName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الأب:</span> <span id="fatherName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الجد:</span> <span id="grandFatherName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم العائلة:</span> <span id="familyName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الأم:</span> <span id="motherName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">رقم الهوية:</span> <span id="idNumber" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">رقم الجوال:</span> <span id="phoneNumber" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">العمر:</span> <span id="age" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">تاريخ الميلاد:</span> <span id="birthDate" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">الحالة:</span> <span id="isAlive" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">تاريخ الوفاة:</span> <span id="deathDate" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">الفئة العمرية:</span> <span id="ageCategory" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">معرف المستخدم (UID):</span> <span id="personUid" class="detail-value text-sm break-all"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- Marital Status and Relationships -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">الحالة الاجتماعية والعلاقات</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="detail-item"><span class="detail-label">الحالة الاجتماعية:</span> <span id="maritalStatus" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الزوج/الزوجة:</span> <span id="spouseName" class="detail-value"></span></div>
+                        </div>
+
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">الأبناء</h3>
+                        <div id="childrenList" class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-600" id="noChildrenMessage">لا يوجد أبناء مسجلون.</p>
+                            <!-- Children will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-4 mt-8 pt-4 border-t">
+                    <button id="editPersonBtn" class="btn-primary">تعديل البيانات</button>
+                    <button id="deletePersonBtn" class="btn-danger">حذف الشخص</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, deleteDoc, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+
+        // Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let currentPersonId = null; // ID of the person whose profile is being viewed
+        let currentPersonData = null; // Store current person's data
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Function to show custom modal messages
+        function showModal(message, modalId = 'messageModal') {
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        // Function to close custom modal messages
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Function to calculate age from birth date
+        function calculateAge(birthDate) {
+            if (!birthDate || !birthDate.toDate) return 'غير محدد';
+            const today = new Date();
+            const birth = birthDate.toDate(); // Convert Firebase Timestamp to Date object
+
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            let days = today.getDate() - birth.getDate();
+
+            if (days < 0) {
+                months--;
+                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); // Days in previous month
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            return `${years} سنة, ${months} شهر, ${days} يوم`;
+        }
+
+        // Function to check if age is above/below 16
+        function isAbove16(birthDate) {
+            if (!birthDate || !birthDate.toDate) return false;
+            const today = new Date();
+            const birth = birthDate.toDate();
+            const ageDate = new Date(birth.getFullYear() + 16, birth.getMonth(), birth.getDate());
+            return today >= ageDate;
+        }
+
+        // Function to fetch and display person data
+        async function fetchAndDisplayPerson(personId) {
+            if (!userId) {
+                console.log("User ID not available yet. Cannot fetch person data.");
+                return;
+            }
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const personDetailsCard = document.getElementById('personDetailsCard');
+            const personContent = document.getElementById('personContent');
+            const noPersonMessage = document.getElementById('noPersonMessage');
+
+            loadingIndicator.classList.remove('hidden');
+            personDetailsCard.classList.remove('hidden'); // Show the card container
+            personContent.classList.add('hidden');
+            noPersonMessage.classList.add('hidden');
+
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, personId);
+                onSnapshot(docRef, async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        currentPersonData = { id: docSnap.id, ...data };
+                        console.log("Fetched person data:", currentPersonData);
+
+                        document.getElementById('personFullName').textContent = currentPersonData.fullName || 'غير محدد';
+                        document.getElementById('firstName').textContent = currentPersonData.firstName || 'غير محدد';
+                        document.getElementById('familyName').textContent = currentPersonData.familyName || 'غير محدد';
+                        document.getElementById('idNumber').textContent = currentPersonData.idNumber || 'غير محدد';
+                        document.getElementById('phoneNumber').textContent = currentPersonData.phoneNumber || 'غير محدد';
+                        document.getElementById('maritalStatus').textContent = currentPersonData.maritalStatus || 'غير محدد';
+                        document.getElementById('personUid').textContent = currentPersonData.id; // Display the document ID/UID
+
+                        document.getElementById('age').textContent = calculateAge(currentPersonData.birthDate);
+                        document.getElementById('birthDate').textContent = currentPersonData.birthDate ? currentPersonData.birthDate.toDate().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : 'غير محدد';
+
+                        document.getElementById('isAlive').textContent = currentPersonData.isAlive ? 'على قيد الحياة' : 'متوفى';
+                        if (!currentPersonData.isAlive && currentPersonData.deathDate) {
+                            document.getElementById('deathDate').textContent = currentPersonData.deathDate ? currentPersonData.deathDate.toDate().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : 'غير محدد';
+                        } else {
+                            document.getElementById('deathDate').textContent = 'غير متوفر';
+                        }
+
+                        document.getElementById('ageCategory').textContent = isAbove16(currentPersonData.birthDate) ? 'فوق 16 سنة' : 'أقل من 16 سنة';
+
+                        // Handle Father, Grandfather, Mother names (clickable links)
+                        await displayRelation('fatherId', 'fatherName');
+                        await displayRelation('grandFatherId', 'grandFatherName');
+                        await displayRelation('motherId', 'motherName');
+
+                        // Handle Spouse name (clickable link)
+                        if (currentPersonData.maritalStatus === 'Married' && currentPersonData.spouseId) {
+                            const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData.spouseId));
+                            if (spouseDoc.exists()) {
+                                const spouseData = spouseDoc.data();
+                                const spouseLink = document.createElement('a');
+                                spouseLink.href = `profile.html?id=${currentPersonData.spouseId}`;
+                                spouseLink.classList.add('relation-link');
+                                spouseLink.textContent = spouseData.fullName || 'غير محدد';
+                                document.getElementById('spouseName').innerHTML = ''; // Clear previous content
+                                document.getElementById('spouseName').appendChild(spouseLink);
+                            } else {
+                                document.getElementById('spouseName').textContent = 'غير متوفر';
+                            }
+                        } else {
+                            document.getElementById('spouseName').textContent = 'غير متوفر';
+                        }
+
+                        // Handle Children list
+                        const childrenListDiv = document.getElementById('childrenList');
+                        childrenListDiv.innerHTML = ''; // Clear previous children
+                        document.getElementById('noChildrenMessage').classList.add('hidden'); // Hide default message
+
+                        if (currentPersonData.childrenIds && currentPersonData.childrenIds.length > 0) {
+                            for (const childId of currentPersonData.childrenIds) {
+                                const childDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, childId));
+                                if (childDoc.exists()) {
+                                    const childData = childDoc.data();
+                                    const childDiv = document.createElement('div');
+                                    childDiv.classList.add('detail-item');
+
+                                    const childLink = document.createElement('a');
+                                    childLink.href = `profile.html?id=${childId}`;
+                                    childLink.classList.add('relation-link');
+                                    childLink.textContent = childData.fullName || 'غير محدد';
+
+                                    const ageSpan = document.createElement('span');
+                                    ageSpan.classList.add('detail-value');
+                                    ageSpan.textContent = calculateAge(childData.birthDate);
+
+                                    childDiv.appendChild(childLink);
+                                    childDiv.appendChild(ageSpan);
+                                    childrenListDiv.appendChild(childDiv);
+                                }
+                            }
+                        } else {
+                            document.getElementById('noChildrenMessage').classList.remove('hidden');
+                        }
+
+                        loadingIndicator.classList.add('hidden');
+                        personContent.classList.remove('hidden');
+                    } else {
+                        loadingIndicator.classList.add('hidden');
+                        noPersonMessage.classList.remove('hidden');
+                        personContent.classList.add('hidden');
+                        console.log("No such document!");
+                    }
+                }, (error) => {
+                    console.error("Error fetching person data:", error);
+                    loadingIndicator.classList.add('hidden');
+                    noPersonMessage.classList.remove('hidden');
+                    personContent.classList.add('hidden');
+                    showModal("حدث خطأ أثناء جلب بيانات الشخص: " + error.message);
+                });
+            } catch (error) {
+                console.error("Error fetching person data:", error);
+                loadingIndicator.classList.add('hidden');
+                noPersonMessage.classList.remove('hidden');
+                personContent.classList.add('hidden');
+                showModal("حدث خطأ غير متوقع أثناء جلب بيانات الشخص: " + error.message);
+            }
+        }
+
+        // Helper function to display related person's name as a clickable link
+        async function displayRelation(idKey, nameElementId) {
+            const element = document.getElementById(nameElementId);
+            if (currentPersonData[idKey]) {
+                const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
+                if (relatedDoc.exists()) {
+                    const relatedData = relatedDoc.data();
+                    const link = document.createElement('a');
+                    link.href = `profile.html?id=${currentPersonData[idKey]}`;
+                    link.classList.add('relation-link');
+                    link.textContent = relatedData.fullName || 'غير محدد';
+                    element.innerHTML = ''; // Clear previous content
+                    element.appendChild(link);
+                } else {
+                    element.textContent = 'غير متوفر';
+                }
+            } else {
+                element.textContent = 'غير متوفر';
+            }
+        }
+
+        // Function to handle person deletion
+        async function deletePerson() {
+            if (!currentPersonId || !userId) {
+                showModal("لا يمكن حذف شخص غير محدد.");
+                return;
+            }
+
+            // Show confirmation modal
+            document.getElementById('confirmDeleteModal').style.display = 'flex';
+
+            // Handle confirmation
+            document.getElementById('confirmDeleteBtn').onclick = async () => {
+                closeModal('confirmDeleteModal');
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonId));
+                    showModal("تم حذف الشخص بنجاح!", 'messageModal');
+                    // Redirect back to the main list after a short delay
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } catch (error) {
+                    console.error("Error deleting person:", error);
+                    showModal("حدث خطأ أثناء حذف الشخص: " + error.message);
+                }
+            };
+
+            document.getElementById('cancelDeleteBtn').onclick = () => {
+                closeModal('confirmDeleteModal');
+            };
+        }
+
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Modal close buttons
+            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('closeConfirmDeleteModalBtn').addEventListener('click', () => closeModal('confirmDeleteModal'));
+
+            // Get person ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            currentPersonId = urlParams.get('id');
+
+            if (!currentPersonId) {
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('noPersonMessage').classList.remove('hidden');
+                document.getElementById('personDetailsCard').classList.remove('hidden');
+                showModal("لم يتم تحديد معرف الشخص. يرجى العودة إلى قائمة العائلة.", 'messageModal');
+                return;
+            }
+
+            // Initial authentication attempt
+            (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                }
+            })();
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+                    fetchAndDisplayPerson(currentPersonId); // Fetch and display data after authentication
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    document.getElementById('loadingIndicator').classList.add('hidden');
+                    document.getElementById('noPersonMessage').classList.remove('hidden');
+                    document.getElementById('personContent').classList.add('hidden');
+                    showModal("يرجى تسجيل الدخول لعرض تفاصيل الشخص.", 'messageModal');
+                }
+            });
+
+            // Edit and Delete buttons
+            document.getElementById('editPersonBtn').addEventListener('click', () => {
+                if (currentPersonId) {
+                    window.location.href = `add_edit_person.html?id=${currentPersonId}`;
+                }
+            });
+            document.getElementById('deletePersonBtn').addEventListener('click', deletePerson);
+        });
+    </script>
+</body>
+</html>
