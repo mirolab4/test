@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أحداث العائلة</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        .input-field {
+            border: 1px solid #d1d5db; /* Light gray border */
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+        .event-item {
+            background-color: #f9fafb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e5e7eb;
+        }
+        .event-item:last-child {
+            margin-bottom: 0;
+        }
+        .event-title {
+            font-weight: 600;
+            color: #374151;
+        }
+        .event-date {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        .event-type {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 500;
+        }
+        .type-birthday { background-color: #ef4444; } /* Red */
+        .type-death { background-color: #6b7280; } /* Gray */
+        .type-marriage { background-color: #22c55e; } /* Green */
+        .type-engagement { background-color: #f59e0b; } /* Amber */
+        .type-custom { background-color: #3b82f6; } /* Blue */
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <!-- Custom Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
+
+    <!-- Add Custom Event Modal -->
+    <div id="addEventModal" class="modal">
+        <div class="modal-content">
+            <span id="closeAddEventModalBtn" class="close-button">&times;</span>
+            <h3 class="text-2xl font-semibold text-gray-700 mb-4">إضافة حدث مخصص</h3>
+            <form id="customEventForm">
+                <div class="mb-4">
+                    <label for="eventTitleInput" class="block text-sm font-medium text-gray-700 mb-1">عنوان الحدث:</label>
+                    <input type="text" id="eventTitleInput" class="input-field" required>
+                </div>
+                <div class="mb-4">
+                    <label for="eventDateInput" class="block text-sm font-medium text-gray-700 mb-1">تاريخ الحدث:</label>
+                    <input type="date" id="eventDateInput" class="input-field" required>
+                </div>
+                <div class="mb-4">
+                    <label for="eventPersonIdInput" class="block text-sm font-medium text-gray-700 mb-1">شخص مرتبط (اختياري):</label>
+                    <input type="text" id="eventPersonNameInput" class="input-field" placeholder="ابحث عن شخص...">
+                    <div id="eventPersonSuggestions" class="suggestions-list hidden"></div>
+                    <input type="hidden" id="eventPersonIdInput">
+                </div>
+                <div class="flex justify-end gap-4 mt-6">
+                    <button type="submit" class="btn-primary">حفظ الحدث</button>
+                    <button type="button" id="cancelAddEventBtn" class="btn-secondary">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">أحداث العائلة</h1>
+            <nav class="flex flex-wrap gap-3">
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="events.html" class="btn-primary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+            </nav>
+        </div>
+
+        <!-- Event Filters and Add Button -->
+        <div class="card mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex flex-wrap gap-3">
+                <button id="filter7DaysBtn" class="btn-secondary">خلال 7 أيام</button>
+                <button id="filterMonthBtn" class="btn-secondary">خلال شهر</button>
+                <button id="filterYearBtn" class="btn-secondary">على مدار السنة</button>
+                <button id="filterAllBtn" class="btn-secondary">جميع الأحداث</button>
+            </div>
+            <button id="addCustomEventBtn" class="btn-primary w-full md:w-auto">إضافة حدث مخصص</button>
+        </div>
+
+        <!-- Events List -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">الأحداث القادمة</h2>
+            <div id="loadingIndicator" class="text-center text-gray-600 text-lg mb-4 hidden">جاري تحميل الأحداث...</div>
+            <div id="noEventsMessage" class="text-center text-gray-600 text-lg mb-4 hidden">لا توجد أحداث قادمة.</div>
+            <div id="eventsList">
+                <!-- Events will be loaded here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let allFamilyMembers = []; // Cache all family members
+        let allEvents = []; // Combined list of all generated and custom events
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // DOM Elements
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const noEventsMessage = document.getElementById('noEventsMessage');
+        const eventsListDiv = document.getElementById('eventsList');
+        const addEventModal = document.getElementById('addEventModal');
+        const customEventForm = document.getElementById('customEventForm');
+        const eventTitleInput = document.getElementById('eventTitleInput');
+        const eventDateInput = document.getElementById('eventDateInput');
+        const eventPersonNameInput = document.getElementById('eventPersonNameInput');
+        const eventPersonSuggestions = document.getElementById('eventPersonSuggestions');
+        const eventPersonIdInput = document.getElementById('eventPersonIdInput');
+        const filter7DaysBtn = document.getElementById('filter7DaysBtn');
+        const filterMonthBtn = document.getElementById('filterMonthBtn');
+        const filterYearBtn = document.getElementById('filterYearBtn');
+        const filterAllBtn = document.getElementById('filterAllBtn');
+
+        // Function to show custom modal messages
+        function showModal(message, modalId = 'messageModal') {
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        // Function to close custom modal messages
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Function to fetch all family members for event generation and suggestions
+        async function fetchAllFamilyMembersForEvents() {
+            if (!userId) {
+                console.log("User ID not available, cannot fetch all family members for events.");
+                return;
+            }
+            try {
+                const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+                const querySnapshot = await getDocs(q);
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("All family members cached for events:", allFamilyMembers);
+            } catch (error) {
+                console.error("Error caching all family members for events:", error);
+                showModal("حدث خطأ أثناء جلب قائمة العائلة للأحداث: " + error.message);
+            }
+        }
+
+        // Function to handle input for related person suggestions in Add Event Modal
+        function handleEventPersonInput() {
+            eventPersonNameInput.addEventListener('input', () => {
+                const searchText = eventPersonNameInput.value.toLowerCase();
+                eventPersonSuggestions.innerHTML = '';
+                eventPersonSuggestions.classList.add('hidden');
+                eventPersonIdInput.value = ''; // Clear hidden ID on input change
+
+                if (searchText.length < 2) return;
+
+                const filteredSuggestions = allFamilyMembers.filter(person =>
+                    person.fullName && person.fullName.toLowerCase().includes(searchText)
+                );
+
+                if (filteredSuggestions.length > 0) {
+                    eventPersonSuggestions.classList.remove('hidden');
+                    filteredSuggestions.forEach(person => {
+                        const div = document.createElement('div');
+                        div.classList.add('suggestions-list-item');
+                        div.textContent = person.fullName;
+                        div.addEventListener('click', () => {
+                            eventPersonNameInput.value = person.fullName;
+                            eventPersonIdInput.value = person.id;
+                            eventPersonSuggestions.classList.add('hidden');
+                        });
+                        eventPersonSuggestions.appendChild(div);
+                    });
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!eventPersonNameInput.parentNode.contains(event.target)) {
+                    eventPersonSuggestions.classList.add('hidden');
+                }
+            });
+        }
+
+        // Function to generate recurring events (birthdays, anniversaries)
+        function generateRecurringEvents() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const events = [];
+
+            allFamilyMembers.forEach(person => {
+                // Birthday
+                if (person.birthDate && person.birthDate.toDate) {
+                    const birth = person.birthDate.toDate();
+                    let nextBirthday = new Date(currentYear, birth.getMonth(), birth.getDate());
+                    if (nextBirthday < today) {
+                        nextBirthday.setFullYear(currentYear + 1); // If already passed this year, show next year
+                    }
+                    events.push({
+                        id: person.id + '-birthday-' + nextBirthday.getFullYear(),
+                        title: `عيد ميلاد ${person.firstName}`,
+                        date: nextBirthday,
+                        type: 'Birthday',
+                        relatedPersonId: person.id,
+                        relatedPersonName: person.fullName
+                    });
+                }
+
+                // Death Anniversary
+                if (!person.isAlive && person.deathDate && person.deathDate.toDate) {
+                    const death = person.deathDate.toDate();
+                    let nextDeathAnniversary = new Date(currentYear, death.getMonth(), death.getDate());
+                    if (nextDeathAnniversary < today) {
+                        nextDeathAnniversary.setFullYear(currentYear + 1);
+                    }
+                    events.push({
+                        id: person.id + '-death-' + nextDeathAnniversary.getFullYear(),
+                        title: `ذكرى وفاة ${person.firstName}`,
+                        date: nextDeathAnniversary,
+                        type: 'Death',
+                        relatedPersonId: person.id,
+                        relatedPersonName: person.fullName
+                    });
+                }
+
+                // Marriage Anniversary (assuming marriageDate field exists in person data)
+                if (person.maritalStatus === 'Married' && person.marriageDate && person.marriageDate.toDate) {
+                    const marriage = person.marriageDate.toDate();
+                    let nextMarriageAnniversary = new Date(currentYear, marriage.getMonth(), marriage.getDate());
+                    if (nextMarriageAnniversary < today) {
+                        nextMarriageAnniversary.setFullYear(currentYear + 1);
+                    }
+                    events.push({
+                        id: person.id + '-marriage-' + nextMarriageAnniversary.getFullYear(),
+                        title: `ذكرى زواج ${person.firstName} و ${person.spouseName || 'الزوج/الزوجة'}`,
+                        date: nextMarriageAnniversary,
+                        type: 'Marriage',
+                        relatedPersonId: person.id,
+                        relatedPersonName: person.fullName
+                    });
+                }
+
+                // Engagement Anniversary (assuming engagementDate field exists in person data)
+                if (person.maritalStatus === 'Engaged' && person.engagementDate && person.engagementDate.toDate) {
+                    const engagement = person.engagementDate.toDate();
+                    let nextEngagementAnniversary = new Date(currentYear, engagement.getMonth(), engagement.getDate());
+                    if (nextEngagementAnniversary < today) {
+                        nextEngagementAnniversary.setFullYear(currentYear + 1);
+                    }
+                    events.push({
+                        id: person.id + '-engagement-' + nextEngagementAnniversary.getFullYear(),
+                        title: `ذكرى خطوبة ${person.firstName} و ${person.spouseName || 'الخطيب/الخطيبة'}`,
+                        date: nextEngagementAnniversary,
+                        type: 'Engagement',
+                        relatedPersonId: person.id,
+                        relatedPersonName: person.fullName
+                    });
+                }
+            });
+            return events;
+        }
+
+        // Function to fetch custom events from Firestore
+        async function fetchCustomEvents() {
+            if (!userId) {
+                console.log("User ID not available, cannot fetch custom events.");
+                return [];
+            }
+            try {
+                const q = collection(db, `artifacts/${appId}/users/${userId}/events`);
+                const querySnapshot = await getDocs(q);
+                return querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        title: data.title,
+                        date: data.date.toDate(), // Convert Timestamp to Date
+                        type: data.type || 'Custom',
+                        relatedPersonId: data.relatedPersonId || null,
+                        relatedPersonName: data.relatedPersonName || null
+                    };
+                });
+            } catch (error) {
+                console.error("Error fetching custom events:", error);
+                showModal("حدث خطأ أثناء جلب الأحداث المخصصة: " + error.message);
+                return [];
+            }
+        }
+
+        // Main function to fetch and combine all events
+        async function fetchAndDisplayAllEvents() {
+            if (!userId) {
+                console.log("User ID not available, skipping event fetch.");
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            noEventsMessage.classList.add('hidden');
+            eventsListDiv.innerHTML = '';
+
+            await fetchAllFamilyMembersForEvents(); // Ensure family members are cached
+            const generatedEvents = generateRecurringEvents();
+            const customEvents = await fetchCustomEvents();
+
+            allEvents = [...generatedEvents, ...customEvents];
+
+            // Sort events by date
+            allEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+            loadingIndicator.classList.add('hidden');
+            displayEvents(allEvents); // Display all events by default
+        }
+
+        // Function to filter and display events
+        function displayEvents(eventsToDisplay) {
+            eventsListDiv.innerHTML = ''; // Clear previous events
+
+            if (eventsToDisplay.length === 0) {
+                noEventsMessage.classList.remove('hidden');
+                return;
+            } else {
+                noEventsMessage.classList.add('hidden');
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize today's date to start of day
+
+            eventsToDisplay.forEach(event => {
+                // Only display events that are today or in the future
+                if (event.date >= today) {
+                    const eventDiv = document.createElement('div');
+                    eventDiv.classList.add('event-item');
+
+                    const eventDetails = document.createElement('div');
+                    const eventTitle = document.createElement('p');
+                    eventTitle.classList.add('event-title');
+                    eventTitle.textContent = event.title;
+                    eventDetails.appendChild(eventTitle);
+
+                    const eventDate = document.createElement('p');
+                    eventDate.classList.add('event-date');
+                    eventDate.textContent = event.date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+                    if (event.relatedPersonName) {
+                        const relatedPersonLink = document.createElement('a');
+                        relatedPersonLink.href = `profile.html?id=${event.relatedPersonId}`;
+                        relatedPersonLink.classList.add('text-indigo-600', 'hover:underline', 'mr-1');
+                        relatedPersonLink.textContent = `(${event.relatedPersonName})`;
+                        eventDate.appendChild(relatedPersonLink);
+                    }
+                    eventDetails.appendChild(eventDate);
+                    eventDiv.appendChild(eventDetails);
+
+                    const eventTypeSpan = document.createElement('span');
+                    eventTypeSpan.classList.add('event-type');
+                    switch (event.type) {
+                        case 'Birthday':
+                            eventTypeSpan.classList.add('type-birthday');
+                            eventTypeSpan.textContent = 'عيد ميلاد';
+                            break;
+                        case 'Death':
+                            eventTypeSpan.classList.add('type-death');
+                            eventTypeSpan.textContent = 'ذكرى وفاة';
+                            break;
+                        case 'Marriage':
+                            eventTypeSpan.classList.add('type-marriage');
+                            eventTypeSpan.textContent = 'ذكرى زواج';
+                            break;
+                        case 'Engagement':
+                            eventTypeSpan.classList.add('type-engagement');
+                            eventTypeSpan.textContent = 'ذكرى خطوبة';
+                            break;
+                        case 'Custom':
+                            eventTypeSpan.classList.add('type-custom');
+                            eventTypeSpan.textContent = 'حدث مخصص';
+                            break;
+                        default:
+                            eventTypeSpan.classList.add('type-custom');
+                            eventTypeSpan.textContent = 'حدث';
+                    }
+                    eventDiv.appendChild(eventTypeSpan);
+
+                    eventsListDiv.appendChild(eventDiv);
+                }
+            });
+
+            if (eventsListDiv.children.length === 0) {
+                noEventsMessage.classList.remove('hidden');
+            } else {
+                noEventsMessage.classList.add('hidden');
+            }
+        }
+
+        // Event Filtering Logic
+        function filterEventsByPeriod(period) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to start of day
+            let endDate = new Date(today);
+
+            if (period === '7days') {
+                endDate.setDate(today.getDate() + 7);
+            } else if (period === 'month') {
+                endDate.setMonth(today.getMonth() + 1);
+            } else if (period === 'year') {
+                endDate.setFullYear(today.getFullYear() + 1);
+            }
+
+            const filtered = allEvents.filter(event => {
+                const eventDate = event.date;
+                eventDate.setHours(0, 0, 0, 0); // Normalize event date
+
+                if (period === 'all') {
+                    return eventDate >= today; // Show all upcoming events
+                } else {
+                    return eventDate >= today && eventDate <= endDate;
+                }
+            });
+            displayEvents(filtered);
+        }
+
+        // Handle custom event submission
+        customEventForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!userId) {
+                showModal("يرجى تسجيل الدخول لإضافة الأحداث.");
+                return;
+            }
+
+            const title = eventTitleInput.value.trim();
+            const date = eventDateInput.value;
+            const relatedPersonId = eventPersonIdInput.value.trim() || null;
+            const relatedPersonName = eventPersonNameInput.value.trim() || null;
+
+            if (!title || !date) {
+                showModal("الرجاء ملء عنوان الحدث وتاريخه.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/events`), {
+                    title: title,
+                    date: Timestamp.fromDate(new Date(date)),
+                    type: 'Custom',
+                    relatedPersonId: relatedPersonId,
+                    relatedPersonName: relatedPersonName
+                });
+                showModal("تم إضافة الحدث المخصص بنجاح!");
+                customEventForm.reset(); // Clear form
+                eventPersonIdInput.value = ''; // Clear hidden ID
+                closeModal('addEventModal');
+                fetchAndDisplayAllEvents(); // Refresh events list
+            } catch (error) {
+                console.error("Error adding custom event:", error);
+                showModal("حدث خطأ أثناء إضافة الحدث المخصص: " + error.message);
+            }
+        });
+
+        // Main DOMContentLoaded listener
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Modal close buttons
+            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('closeAddEventModalBtn').addEventListener('click', () => closeModal('addEventModal'));
+            document.getElementById('cancelAddEventBtn').addEventListener('click', () => closeModal('addEventModal'));
+
+            // Show Add Custom Event Modal
+            document.getElementById('addCustomEventBtn').addEventListener('click', () => {
+                addEventModal.style.display = 'flex';
+                eventTitleInput.focus(); // Focus on first input
+            });
+
+            // Initial authentication attempt
+            (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                }
+            })();
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+                    await fetchAndDisplayAllEvents(); // Fetch and display all events after authentication
+                    handleEventPersonInput(); // Enable person search in add event modal
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    loadingIndicator.classList.add('hidden');
+                    noEventsMessage.classList.remove('hidden');
+                    eventsListDiv.innerHTML = '';
+                    showModal("يرجى تسجيل الدخول لعرض الأحداث.", 'messageModal');
+                }
+            });
+
+            // Filter button event listeners
+            filter7DaysBtn.addEventListener('click', () => filterEventsByPeriod('7days'));
+            filterMonthBtn.addEventListener('click', () => filterEventsByPeriod('month'));
+            filterYearBtn.addEventListener('click', () => filterEventsByPeriod('year'));
+            filterAllBtn.addEventListener('click', () => filterEventsByPeriod('all'));
+        });
+    </script>
+</body>
+</html>
