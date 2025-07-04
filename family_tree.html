@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شجرة العائلة</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        /* Family Tree Specific Styles */
+        #familyTreeContainer {
+            overflow-x: auto; /* Allow horizontal scrolling for wide trees */
+            padding: 1rem;
+            background-color: #fcfcfc;
+            border-radius: 1rem;
+            min-height: 400px; /* Minimum height for the tree area */
+            display: flex; /* Use flexbox for the tree root */
+            justify-content: center; /* Center the tree horizontally */
+        }
+
+        .tree-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0.5rem;
+            position: relative;
+            padding-top: 2rem; /* Space for lines from parent */
+        }
+
+        .person-card {
+            background-color: #e0f2fe; /* Light blue for male */
+            border: 1px solid #90cdf4;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            min-width: 120px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+
+        .person-card.female {
+            background-color: #fce7f3; /* Light pink for female */
+            border: 1px solid #f9a8d4;
+        }
+
+        .person-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .person-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .person-details {
+            font-size: 0.8rem;
+            color: #4a5568;
+        }
+
+        .children-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+            position: relative;
+            padding-top: 1.5rem; /* Space for lines to children */
+        }
+
+        /* Lines for tree connections (simplified) */
+        .tree-node::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 2rem; /* Length of vertical line from parent */
+            background-color: #60a5fa; /* Blue line */
+            z-index: 1;
+        }
+
+        .tree-node:first-child::before {
+            display: none; /* No line for the very first root node */
+        }
+
+        .children-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #60a5fa; /* Horizontal line above children */
+            z-index: 1;
+        }
+
+        .children-container .tree-node::before {
+            height: 1.5rem; /* Shorter line for children from horizontal line */
+            top: -1.5rem;
+        }
+
+        /* No line for the root of the tree if it's the only one */
+        #familyTreeContainer > .tree-node::before {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <!-- Custom Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">شجرة العائلة</h1>
+            <nav class="flex flex-wrap gap-3">
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-primary">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+            </nav>
+        </div>
+
+        <!-- Family Tree Display Area -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">الشجرة البيانية</h2>
+            <div id="loadingIndicator" class="text-center text-gray-600 text-lg mb-4 hidden">جاري بناء شجرة العائلة...</div>
+            <div id="noTreeDataMessage" class="text-center text-gray-600 text-lg mb-4 hidden">لا توجد بيانات كافية لبناء شجرة العائلة. يرجى إضافة أفراد وعلاقاتهم.</div>
+            <div id="familyTreeContainer">
+                <!-- Family tree will be rendered here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let allFamilyMembers = []; // Cache all family members
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // DOM Elements
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const noTreeDataMessage = document.getElementById('noTreeDataMessage');
+        const familyTreeContainer = document.getElementById('familyTreeContainer');
+
+        // Function to show custom modal messages
+        function showModal(message, modalId = 'messageModal') {
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        // Function to close custom modal messages
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Function to calculate age from birth date (re-used from other pages)
+        function calculateAge(birthDate) {
+            if (!birthDate || !birthDate.toDate) return 'غير محدد';
+            const today = new Date();
+            const birth = birthDate.toDate();
+
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            let days = today.getDate() - birth.getDate();
+
+            if (days < 0) {
+                months--;
+                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            return `${years} سنة`; // Only show years for simplicity in tree
+        }
+
+        // Function to fetch all family members
+        async function fetchAllFamilyMembersForTree() {
+            if (!userId) {
+                console.log("User ID not available, cannot fetch family members for tree.");
+                return [];
+            }
+            try {
+                const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+                const querySnapshot = await getDocs(q);
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("All family members fetched for tree:", allFamilyMembers);
+                return allFamilyMembers;
+            } catch (error) {
+                console.error("Error fetching family members for tree:", error);
+                showModal("حدث خطأ أثناء جلب بيانات العائلة لشجرة العائلة: " + error.message);
+                return [];
+            }
+        }
+
+        // Function to build the hierarchical tree data structure
+        function buildFamilyTreeData(members) {
+            const memberMap = new Map(members.map(m => [m.id, { ...m, children: [] }]));
+            const roots = []; // Individuals with no known father
+
+            memberMap.forEach(member => {
+                if (member.fatherId && memberMap.has(member.fatherId)) {
+                    memberMap.get(member.fatherId).children.push(member);
+                } else {
+                    // If no fatherId or father not found, consider as a root
+                    roots.push(member);
+                }
+            });
+
+            // Sort roots by birth date to get the oldest first
+            roots.sort((a, b) => {
+                const dateA = a.birthDate ? a.birthDate.toDate().getTime() : 0;
+                const dateB = b.birthDate ? b.birthDate.toDate().getTime() : 0;
+                return dateA - dateB;
+            });
+
+            // Filter out children that are also roots (e.g., if a father is a root, his child shouldn't also be a root)
+            // This is a simplified approach; a more robust tree might need a dedicated root finding algorithm
+            const uniqueRoots = roots.filter(root => {
+                // Check if this root is a child of any other member in the map
+                return !members.some(m => m.childrenIds && m.childrenIds.includes(root.id));
+            });
+
+            // If no clear roots (e.g., only children added), pick the oldest person as a starting point.
+            if (uniqueRoots.length === 0 && members.length > 0) {
+                members.sort((a, b) => {
+                    const dateA = a.birthDate ? a.birthDate.toDate().getTime() : 0;
+                    const dateB = b.birthDate ? b.birthDate.toDate().getTime() : 0;
+                    return dateA - dateB;
+                });
+                uniqueRoots.push(members[0]);
+                console.warn("No clear roots found, starting tree from the oldest person.");
+            }
+
+            return uniqueRoots;
+        }
+
+
+        // Function to render a single person node
+        function renderPersonNode(person) {
+            const nodeDiv = document.createElement('div');
+            nodeDiv.classList.add('tree-node');
+
+            const personCard = document.createElement('div');
+            personCard.classList.add('person-card', 'rounded-lg', 'p-3', 'shadow-sm', 'transition-all', 'duration-200', 'hover:scale-105');
+            personCard.addEventListener('click', () => {
+                window.location.href = `profile.html?id=${person.id}`;
+            });
+
+            const nameSpan = document.createElement('span');
+            nameSpan.classList.add('person-name', 'block');
+
+            // Display full details for male descendants, only name for females
+            if (person.gender === 'Female') {
+                nameSpan.textContent = person.firstName || 'غير محدد';
+                personCard.classList.add('female');
+            } else {
+                nameSpan.textContent = person.fullName || 'غير محدد';
+                const ageSpan = document.createElement('span');
+                ageSpan.classList.add('person-details', 'block');
+                ageSpan.textContent = `العمر: ${calculateAge(person.birthDate)}`;
+                personCard.appendChild(ageSpan);
+
+                if (!person.isAlive) {
+                    const statusSpan = document.createElement('span');
+                    statusSpan.classList.add('person-details', 'block', 'text-red-600');
+                    statusSpan.textContent = `(متوفى)`;
+                    personCard.appendChild(statusSpan);
+                }
+            }
+
+            personCard.prepend(nameSpan); // Add name at the top
+            nodeDiv.appendChild(personCard);
+
+            return nodeDiv;
+        }
+
+        // Recursive function to render the tree
+        function renderTree(person, parentElement) {
+            if (!person) return;
+
+            const node = renderPersonNode(person);
+            parentElement.appendChild(node);
+
+            // Filter children to include only male descendants for detailed view,
+            // but all children (male/female) will be rendered as nodes if they exist.
+            // The "details" part is handled in renderPersonNode.
+            const childrenToRender = allFamilyMembers.filter(m => person.childrenIds && person.childrenIds.includes(m.id));
+
+            if (childrenToRender.length > 0) {
+                const childrenContainer = document.createElement('div');
+                childrenContainer.classList.add('children-container');
+
+                // Sort children by birth date for consistent display
+                childrenToRender.sort((a, b) => {
+                    const dateA = a.birthDate ? a.birthDate.toDate().getTime() : 0;
+                    const dateB = b.birthDate ? b.birthDate.toDate().getTime() : 0;
+                    return dateA - dateB;
+                });
+
+                childrenToRender.forEach(child => {
+                    renderTree(child, childrenContainer);
+                });
+                node.appendChild(childrenContainer);
+            }
+        }
+
+        // Main function to build and display the tree
+        async function buildAndDisplayFamilyTree() {
+            if (!userId) {
+                console.log("User ID not available, skipping tree build.");
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            noTreeDataMessage.classList.add('hidden');
+            familyTreeContainer.innerHTML = ''; // Clear previous tree
+
+            const members = await fetchAllFamilyMembersForTree();
+
+            if (members.length === 0) {
+                loadingIndicator.classList.add('hidden');
+                noTreeDataMessage.classList.remove('hidden');
+                return;
+            }
+
+            const roots = buildFamilyTreeData(members);
+
+            if (roots.length === 0) {
+                loadingIndicator.classList.add('hidden');
+                noTreeDataMessage.classList.remove('hidden');
+                console.warn("Could not identify any root members for the family tree.");
+                return;
+            }
+
+            // Render each root and its descendants
+            roots.forEach(root => {
+                const rootWrapper = document.createElement('div');
+                rootWrapper.classList.add('flex', 'justify-center', 'w-full'); // Wrapper for each root to center it
+                renderTree(root, rootWrapper);
+                familyTreeContainer.appendChild(rootWrapper);
+            });
+
+            loadingIndicator.classList.add('hidden');
+        }
+
+
+        // Main DOMContentLoaded listener
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Modal close buttons
+            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+
+            // Initial authentication attempt
+            (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                }
+            })();
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+                    await buildAndDisplayFamilyTree(); // Build and display tree after authentication
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    loadingIndicator.classList.add('hidden');
+                    noTreeDataMessage.classList.remove('hidden');
+                    familyTreeContainer.innerHTML = '';
+                    showModal("يرجى تسجيل الدخول لعرض شجرة العائلة.", 'messageModal');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
