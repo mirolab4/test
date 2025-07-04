@@ -254,6 +254,12 @@
                             <input type="date" id="deathDateInput" class="input-field">
                             <p id="deathDateError" class="error-message hidden">تاريخ الوفاة مطلوب إذا كان الشخص متوفى.</p>
                         </div>
+                        <div class="mb-4">
+                            <label for="notesInput" class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-sticky-note text-gray-500 ml-1"></i> ملاحظات:
+                            </label>
+                            <textarea id="notesInput" class="input-field" rows="4" placeholder="أضف أي ملاحظات إضافية عن الشخص..."></textarea>
+                        </div>
                     </div>
 
                     <!-- Marital Status and Relationships -->
@@ -401,6 +407,7 @@
         const facebookLinkInput = document.getElementById('facebookLinkInput');
         const linkedinLinkInput = document.getElementById('linkedinLinkInput');
         const websiteLinkInput = document.getElementById('websiteLinkInput');
+        const notesInput = document.getElementById('notesInput'); // New: Notes input
 
 
         // Use a Map to manage children IDs and their names for uniqueness and easy lookup
@@ -472,7 +479,12 @@
                         div.textContent = person.fullName;
                         div.addEventListener('click', async () => {
                             console.log(`Selected ${relationType}:`, person);
-                            inputElement.value = person.fullName;
+                            // MODIFIED: Fill fatherNameInput with firstName only
+                            if (relationType === 'father') {
+                                inputElement.value = person.firstName; // Use first name for father input
+                            } else {
+                                inputElement.value = person.fullName;
+                            }
                             hiddenIdElement.value = person.id;
                             suggestionsElement.classList.add('hidden');
 
@@ -609,9 +621,10 @@
                         genderFemale.checked = true;
                     }
 
+                    // MODIFIED: Set isAliveInput based on loaded data, then toggle deathDateContainer
                     isAliveInput.checked = data.isAlive !== false; // Default to true if undefined
                     deathDateInput.value = data.deathDate ? data.deathDate.toDate().toISOString().split('T')[0] : '';
-                    deathDateContainer.classList.toggle('hidden', isAliveInput.checked);
+                    deathDateContainer.classList.toggle('hidden', isAliveInput.checked); // Hide if alive, show if not
 
                     maritalStatusInput.value = data.maritalStatus || '';
                     spouseNameInput.value = data.spouseName || '';
@@ -636,256 +649,10 @@
                     facebookLinkInput.value = data.facebookLink || '';
                     linkedinLinkInput.value = data.linkedinLink || '';
                     websiteLinkInput.value = data.websiteLink || '';
+                    notesInput.value = data.notes || ''; // New: Load notes
 
                 } else {
                     showModal("لم يتم العثور على بيانات لهذا الشخص.");
                     editingPersonId = null; // Reset to add mode
                     pageTitle.textContent = 'إضافة شخص جديد';
-                    console.log("No person data found for ID:", personId);
-                }
-            } catch (error) {
-                console.error("Error loading person data:", error);
-                showModal("حدث خطأ أثناء تحميل بيانات الشخص: " + error.message);
-            }
-        }
-
-        // Function to validate the form
-        function validateForm() {
-            let isValid = true;
-
-            // Reset errors
-            document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.input-field').forEach(el => el.classList.remove('error'));
-            document.querySelectorAll('input[name="gender"]').forEach(el => el.classList.remove('error'));
-
-
-            // Validate First Name
-            if (firstNameInput.value.trim() === '') {
-                firstNameError.classList.remove('hidden');
-                firstNameInput.classList.add('error');
-                isValid = false;
-            }
-
-            // Validate Family Name
-            if (familyNameInput.value.trim() === '') {
-                familyNameError.classList.remove('hidden');
-                familyNameInput.classList.add('error');
-                isValid = false;
-            }
-
-            // Validate Birth Date
-            if (birthDateInput.value === '') {
-                birthDateError.classList.remove('hidden');
-                birthDateInput.classList.add('error');
-                isValid = false;
-            }
-
-            // Validate Gender
-            const selectedGender = document.querySelector('input[name="gender"]:checked');
-            if (!selectedGender) {
-                genderError.classList.remove('hidden');
-                genderMale.classList.add('error'); // Highlight one of the radios
-                genderFemale.classList.add('error');
-                isValid = false;
-            }
-
-            // Validate Death Date if not alive
-            if (!isAliveInput.checked && deathDateInput.value.trim() === '') {
-                deathDateError.classList.remove('hidden');
-                deathDateInput.classList.add('error');
-                isValid = false;
-            }
-
-            // Validate Marital Status
-            if (maritalStatusInput.value === '') {
-                maritalStatusError.classList.remove('hidden');
-                maritalStatusInput.classList.add('error');
-                isValid = false;
-            }
-
-            // Validate Spouse Name if Married
-            if (maritalStatusInput.value === 'Married' && spouseNameInput.value.trim() === '') {
-                spouseError.classList.remove('hidden');
-                spouseNameInput.classList.add('error');
-                isValid = false;
-            }
-
-            return isValid;
-        }
-
-
-        // Function to save/update person data
-        personForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log("Form submitted.");
-
-            if (!userId) {
-                showModal("يرجى تسجيل الدخول لحفظ البيانات.");
-                console.error("User ID is null, cannot save data.");
-                return;
-            }
-
-            if (!validateForm()) {
-                showModal("الرجاء تصحيح الأخطاء في النموذج قبل الحفظ.");
-                console.log("Form validation failed.");
-                return;
-            }
-
-            // Gather data from form
-            const personData = {
-                firstName: firstNameInput.value.trim(),
-                fatherName: fatherNameInput.value.trim(),
-                fatherId: fatherIdInput.value.trim() || null,
-                grandFatherName: grandFatherNameInput.value.trim(),
-                familyName: familyNameInput.value.trim(),
-                motherName: motherNameInput.value.trim(),
-                motherId: motherIdInput.value.trim() || null,
-                idNumber: idNumberInput.value.trim(),
-                phoneNumber: phoneNumberInput.value.trim(),
-                birthDate: birthDateInput.value ? Timestamp.fromDate(new Date(birthDateInput.value)) : null,
-                gender: document.querySelector('input[name="gender"]:checked')?.value || null,
-                isAlive: isAliveInput.checked,
-                deathDate: (isAliveInput.checked || !deathDateInput.value) ? null : Timestamp.fromDate(new Date(deathDateInput.value)),
-                maritalStatus: maritalStatusInput.value,
-                spouseName: spouseNameInput.value.trim(),
-                spouseId: spouseIdInput.value.trim() || null,
-                childrenIds: Array.from(currentChildren.keys()), // Save only IDs
-                // New external links
-                facebookLink: facebookLinkInput.value.trim() || null,
-                linkedinLink: linkedinLinkInput.value.trim() || null,
-                websiteLink: websiteLinkInput.value.trim() || null
-            };
-
-            // Generate full name
-            personData.fullName = `${personData.firstName} ${personData.fatherName} ${personData.grandFatherName} ${personData.familyName}`.trim().replace(/\s+/g, ' ');
-            console.log("Prepared personData:", personData);
-
-
-            try {
-                if (editingPersonId) {
-                    // Update existing person
-                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, editingPersonId);
-                    await setDoc(docRef, personData, { merge: true }); // Use merge to avoid overwriting unrelated fields
-                    showModal("تم تحديث بيانات الشخص بنجاح!");
-                    console.log("Person updated successfully with ID:", editingPersonId);
-                } else {
-                    // Add new person
-                    const docRef = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
-                    const newDoc = await addDoc(docRef, personData);
-                    editingPersonId = newDoc.id; // Set to edit mode for the newly added person
-                    pageTitle.textContent = 'تعديل شخص';
-                    showModal("تم إضافة شخص جديد بنجاح!");
-                    console.log("New person added with ID:", editingPersonId);
-                }
-                // Optionally redirect or clear form
-                setTimeout(() => {
-                    window.location.href = `profile.html?id=${editingPersonId}`;
-                }, 1500);
-            } catch (error) {
-                console.error("Error saving person data:", error);
-                showModal("حدث خطأ أثناء حفظ البيانات: " + error.message);
-            }
-        });
-
-        // Event Listeners for conditional display
-        isAliveInput.addEventListener('change', () => {
-            deathDateContainer.classList.toggle('hidden', isAliveInput.checked);
-            if (isAliveInput.checked) {
-                deathDateInput.value = ''; // Clear death date if person is alive
-            }
-        });
-
-        maritalStatusInput.addEventListener('change', () => {
-            spouseContainer.classList.toggle('hidden', maritalStatusInput.value !== 'Married');
-            if (maritalStatusInput.value !== 'Married') {
-                spouseNameInput.value = '';
-                spouseIdInput.value = '';
-            }
-        });
-
-        // Main DOMContentLoaded listener
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Modal close buttons
-            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-
-            // Get person ID from URL for edit mode
-            const urlParams = new URLSearchParams(window.location.search);
-            editingPersonId = urlParams.get('id');
-
-            if (editingPersonId) {
-                pageTitle.textContent = 'تعديل شخص';
-                savePersonBtn.textContent = 'تحديث البيانات';
-                console.log("Page in EDIT mode for ID:", editingPersonId);
-            } else {
-                pageTitle.textContent = 'إضافة شخص جديد';
-                savePersonBtn.textContent = 'حفظ البيانات';
-                console.log("Page in ADD NEW mode.");
-            }
-
-            // Initial authentication attempt
-            (async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
-                } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
-                }
-            })();
-
-            // Listen for auth state changes to get userId and fetch data
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log("Authentication state changed. User ID:", userId);
-                    await fetchAllFamilyMembers(); // Fetch all members for suggestions once authenticated
-
-                    if (editingPersonId) {
-                        await loadPersonData(editingPersonId); // Load data if in edit mode
-                    } else {
-                        // Ensure death date and spouse containers are hidden by default for new entries
-                        deathDateContainer.classList.add('hidden');
-                        spouseContainer.classList.add('hidden');
-                    }
-                } else {
-                    userId = null;
-                    console.log("User signed out or no user.");
-                    showModal("يرجى تسجيل الدخول لإدارة بيانات العائلة.", 'messageModal');
-                }
-            });
-
-            // Apply suggestion logic to relevant inputs
-            handleRelatedPersonInput(fatherNameInput, fatherSuggestions, fatherIdInput, 'father');
-            handleRelatedPersonInput(motherNameInput, motherSuggestions, motherIdInput, 'mother');
-            handleRelatedPersonInput(spouseNameInput, spouseSuggestions, spouseIdInput, 'spouse');
-            handleRelatedPersonInput(addChildInput, childrenSuggestions, addChildIdInput, 'child');
-
-
-            // Cancel button functionality
-            cancelBtn.addEventListener('click', () => {
-                if (editingPersonId) {
-                    window.location.href = `profile.html?id=${editingPersonId}`; // Go back to profile if editing
-                } else {
-                    window.location.href = `index.html`; // Go back to main list if adding new
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+                    console.log("No person data fo
