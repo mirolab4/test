@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Auth Guard Script - MUST BE LOADED FIRST -->
+    <script type="module" src="auth_guard.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -198,6 +200,14 @@
         </div>
     </div>
 
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="modal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p class="text-lg font-semibold text-gray-800">جارٍ تحميل الإحصائيات...</p>
+        </div>
+    </div>
+
     <!-- Modal for Chart Details (Drill-down) -->
     <div id="chartDetailsModal" class="modal">
         <div class="modal-content">
@@ -213,11 +223,16 @@
         <!-- Header and Navigation -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">لوحة إحصائيات العائلة</h1>
-            <nav class="flex flex-wrap gap-3">
-                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
-                <a href="events.html" class="btn-secondary">الأحداث</a>
-                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
-                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+            <nav class="flex flex-wrap gap-3" id="mainNav">
+                <a href="dashboard.html" class="btn-secondary nav-link" data-page="dashboard.html" style="display:none;">لوحة التحكم</a>
+                <a href="index.html" class="btn-secondary nav-link" data-page="index.html" style="display:none;">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary nav-link" data-page="events.html" style="display:none;">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary nav-link" data-page="family_tree.html" style="display:none;">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-secondary nav-link" data-page="add_edit_person.html" style="display:none;">إضافة شخص جديد</a>
+                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html" style="display:none;">تصدير البيانات</a>
+                <a href="statistics.html" class="btn-primary">الإحصائيات</a>
+                <a href="admin_panel.html" class="btn-secondary nav-link" data-page="admin_panel.html" style="display:none;">لوحة المدير</a>
+                <button id="logoutBtn" class="btn-secondary"><i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج</button>
             </nav>
         </div>
 
@@ -474,34 +489,16 @@
 
     <!-- Firebase SDKs -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase configuration (replace with your actual config)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
-            authDomain: "family-9b0b8.firebaseapp.com",
-            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
-            projectId: "family-9b0b8",
-            storageBucket: "family-9b0b8.firebasestorage.app",
-            messagingSenderId: "409089079475",
-            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
-            measurementId: "G-X5LDQB1WC9"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // Import auth, db, appId, and redirectTo from auth_guard.js
+        import { auth, db, appId, redirectTo } from './auth_guard.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, getDocs, Timestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let userId = null;
         let allFamilyMembers = []; // Stores all members fetched from Firestore
         let filteredFamilyMembers = []; // Stores members filtered by the selected family name
-        let selectedFamilyFilter = 'أبو عيسى'; // Default family filter
-
-        // Get app ID from environment or use a default
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let userRole = null; // Store user's role
+        let allowedPages = []; // Store pages allowed for the user
 
         // Chart instances
         let genderChartInstance;
@@ -522,15 +519,76 @@
         const chartDetailsList = document.getElementById('chartDetailsList');
         const familyFilterSelect = document.getElementById('familyFilter'); // New: Family Filter Select element
 
+        // General DOM Elements
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
+        const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
+        const loadingModal = document.getElementById('loadingModal');
+        const mainNav = document.getElementById('mainNav');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Statistics Content Elements
+        const statisticsContent = document.getElementById('statisticsContent');
+        const totalMembersEl = document.getElementById('totalMembers');
+        const aliveMembersEl = document.getElementById('aliveMembers');
+        const deceasedMembersEl = document.getElementById('deceasedMembers');
+        const averageAgeEl = document.getElementById('averageAge');
+        const averageAgeAtDeathEl = document.getElementById('averageAgeAtDeath');
+        const uniqueFamilyNamesEl = document.getElementById('uniqueFamilyNames');
+        const livingMalesEl = document.getElementById('livingMales');
+        const livingFemalesEl = document.getElementById('livingFemales');
+        const livingMarriedEl = document.getElementById('livingMarried');
+        const livingEngagedEl = document.getElementById('livingEngaged');
+        const livingMarriedMalesEl = document.getElementById('livingMarriedMales');
+        const livingMarriedFemalesEl = document.getElementById('livingMarriedFemales');
+        const livingSingleMalesEl = document.getElementById('livingSingleMales');
+        const livingDivorcedMalesEl = document.getElementById('livingDivorcedMales');
+        const livingWidowedMalesEl = document.getElementById('livingWidowedMales');
+        const livingSingleFemalesEl = document.getElementById('livingSingleFemales');
+        const livingDivorcedFemalesEl = document.getElementById('livingDivorcedFemales');
+        const livingWidowedFemalesEl = document.getElementById('livingWidowedFemales');
+        const malesOver16El = document.getElementById('malesOver16');
+        const femalesOver16El = document.getElementById('femalesOver16');
+        const malesUnder16El = document.getElementById('malesUnder16');
+        const femalesUnder16El = document.getElementById('femalesUnder16');
+        const avgChildrenPerParentEl = document.getElementById('avgChildrenPerParent');
+        const membersWithoutChildrenEl = document.getElementById('membersWithoutChildren');
+        const profileCompletionEl = document.getElementById('profileCompletion');
+        const missingBirthDateEl = document.getElementById('missingBirthDate');
+        const missingGenderEl = document.getElementById('missingGender');
+        const missingFamilyNameEl = document.getElementById('missingFamilyName');
+        const avgMaleMarriageAgeEl = document.getElementById('avgMaleMarriageAge');
+        const avgFemaleMarriageAgeEl = document.getElementById('avgFemaleMarriageAge');
+        const avgMaleEngagementAgeEl = document.getElementById('avgMaleEngagementAge');
+        const avgFemaleEngagementAgeEl = document.getElementById('avgFemaleEngagementAge');
+
+        const mostChildrenListEl = document.getElementById('mostChildrenList');
+        const oldestMembersListEl = document.getElementById('oldestMembersList');
+        const youngestMembersListEl = document.getElementById('youngestMembersList');
+        const topSubFamiliesListEl = document.getElementById('topSubFamiliesList');
+        const mostCommonChildrenNamesListEl = document.getElementById('mostCommonChildrenNamesList');
+
+
         // Function to show custom modal messages
         function showModal(message) {
-            document.getElementById('modalMessage').textContent = message;
-            document.getElementById('messageModal').style.display = 'flex';
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
         }
 
         // Function to close custom modal messages
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Function to show loading modal
+        function showLoadingModal() {
+            loadingModal.style.display = 'flex';
+        }
+
+        // Function to hide loading modal
+        function hideLoadingModal() {
+            loadingModal.style.display = 'none';
         }
 
         // Function to calculate age from birth date (returns formatted string)
@@ -578,6 +636,7 @@
                 console.log("User ID not available, cannot fetch family members for statistics.");
                 return;
             }
+            showLoadingModal();
             try {
                 const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
                 const querySnapshot = await getDocs(q);
@@ -587,6 +646,8 @@
             } catch (error) {
                 console.error("Error fetching all family members:", error);
                 showModal("حدث خطأ أثناء جلب بيانات العائلة للإحصائيات: " + error.message);
+            } finally {
+                hideLoadingModal();
             }
         }
 
@@ -605,14 +666,8 @@
                 familyFilterSelect.appendChild(option);
             });
 
-            // Set default selection
-            if (uniqueFamilyNames.has('أبو عيسى')) {
-                familyFilterSelect.value = 'أبو عيسى';
-                selectedFamilyFilter = 'أبو عيسى';
-            } else {
-                familyFilterSelect.value = 'All';
-                selectedFamilyFilter = 'All';
-            }
+            // Set default selection to "All"
+            familyFilterSelect.value = 'All';
             
             applyFamilyFilterAndRender(); // Apply initial filter and render
         }
@@ -620,7 +675,6 @@
         // Function to apply the selected family filter and re-render statistics
         function applyFamilyFilterAndRender() {
             const filterValue = familyFilterSelect.value;
-            selectedFamilyFilter = filterValue;
 
             if (filterValue === 'All') {
                 filteredFamilyMembers = [...allFamilyMembers];
@@ -755,38 +809,38 @@
             const avgFemaleEngagementAge = femaleEngagedAges.length > 0 ? (femaleEngagedAges.reduce((sum, age) => sum + age, 0) / femaleEngagedAges.length).toFixed(1) : 0;
 
 
-            document.getElementById('totalMembers').textContent = totalMembers;
-            document.getElementById('aliveMembers').textContent = aliveMembers;
-            document.getElementById('deceasedMembers').textContent = deceasedMembers;
-            document.getElementById('averageAge').textContent = averageAge;
-            document.getElementById('averageAgeAtDeath').textContent = averageAgeAtDeath;
-            document.getElementById('uniqueFamilyNames').textContent = uniqueFamilyNamesCount; // Still show total unique names
-            document.getElementById('livingMales').textContent = livingMales;
-            document.getElementById('livingFemales').textContent = livingFemales;
-            document.getElementById('livingMarried').textContent = livingMarried;
-            document.getElementById('livingEngaged').textContent = livingEngaged;
-            document.getElementById('livingMarriedMales').textContent = livingMarriedMales;
-            document.getElementById('livingMarriedFemales').textContent = livingMarriedFemales;
-            document.getElementById('livingSingleMales').textContent = livingSingleMales;
-            document.getElementById('livingDivorcedMales').textContent = livingDivorcedMales;
-            document.getElementById('livingWidowedMales').textContent = livingWidowedMales;
-            document.getElementById('livingSingleFemales').textContent = livingSingleFemales;
-            document.getElementById('livingDivorcedFemales').textContent = livingDivorcedFemales;
-            document.getElementById('livingWidowedFemales').textContent = livingWidowedFemales;
-            document.getElementById('malesOver16').textContent = malesOver16;
-            document.getElementById('femalesOver16').textContent = femalesOver16;
-            document.getElementById('malesUnder16').textContent = malesUnder16;
-            document.getElementById('femalesUnder16').textContent = femalesUnder16;
-            document.getElementById('avgChildrenPerParent').textContent = avgChildrenPerParent;
-            document.getElementById('membersWithoutChildren').textContent = membersWithoutChildren;
-            document.getElementById('profileCompletion').textContent = `${profileCompletionPercentage}%`;
-            document.getElementById('missingBirthDate').textContent = missingBirthDateCount;
-            document.getElementById('missingGender').textContent = missingGenderCount;
-            document.getElementById('missingFamilyName').textContent = missingFamilyNameCount; // Update new stat
-            document.getElementById('avgMaleMarriageAge').textContent = avgMaleMarriageAge;
-            document.getElementById('avgFemaleMarriageAge').textContent = avgFemaleMarriageAge;
-            document.getElementById('avgMaleEngagementAge').textContent = avgMaleEngagementAge;
-            document.getElementById('avgFemaleEngagementAge').textContent = avgFemaleEngagementAge;
+            totalMembersEl.textContent = totalMembers;
+            aliveMembersEl.textContent = aliveMembers;
+            deceasedMembersEl.textContent = deceasedMembers;
+            averageAgeEl.textContent = averageAge;
+            averageAgeAtDeathEl.textContent = averageAgeAtDeath;
+            uniqueFamilyNamesEl.textContent = uniqueFamilyNamesCount; // Still show total unique names
+            livingMalesEl.textContent = livingMales;
+            livingFemalesEl.textContent = livingFemales;
+            livingMarriedEl.textContent = livingMarried;
+            livingEngagedEl.textContent = livingEngaged;
+            livingMarriedMalesEl.textContent = livingMarriedMales;
+            livingMarriedFemalesEl.textContent = livingMarriedFemales;
+            livingSingleMalesEl.textContent = livingSingleMales;
+            livingDivorcedMalesEl.textContent = livingDivorcedMales;
+            livingWidowedMalesEl.textContent = livingWidowedMales;
+            livingSingleFemalesEl.textContent = livingSingleFemales;
+            livingDivorcedFemalesEl.textContent = livingDivorcedFemales;
+            livingWidowedFemalesEl.textContent = livingWidowedFemales;
+            malesOver16El.textContent = malesOver16;
+            femalesOver16El.textContent = femalesOver16;
+            malesUnder16El.textContent = malesUnder16;
+            femalesUnder16El.textContent = femalesUnder16;
+            avgChildrenPerParentEl.textContent = avgChildrenPerParent;
+            membersWithoutChildrenEl.textContent = membersWithoutChildren;
+            profileCompletionEl.textContent = `${profileCompletionPercentage}%`;
+            missingBirthDateEl.textContent = missingBirthDateCount;
+            missingGenderEl.textContent = missingGenderCount;
+            missingFamilyNameEl.textContent = missingFamilyNameCount; // Update new stat
+            avgMaleMarriageAgeEl.textContent = avgMaleMarriageAge;
+            avgFemaleMarriageAgeEl.textContent = avgFemaleMarriageAge;
+            avgMaleEngagementAgeEl.textContent = avgMaleEngagementAge;
+            avgFemaleEngagementAgeEl.textContent = avgFemaleEngagementAge;
 
 
             // Chart Colors Palette (extended for more variety)
@@ -937,13 +991,6 @@
                                 beginAtZero: true,
                                 ticks: {
                                     precision: 0,
-                                    font: {
-                                        family: 'Inter'
-                                    }
-                                }
-                            },
-                            x: {
-                                ticks: {
                                     font: {
                                         family: 'Inter'
                                     }
@@ -1225,11 +1272,10 @@
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 5); // Get top 5
 
-            const mostChildrenListDiv = document.getElementById('mostChildrenList');
-            mostChildrenListDiv.innerHTML = ''; // Clear previous content
+            mostChildrenListEl.innerHTML = ''; // Clear previous content
 
             if (sortedByChildren.length === 0) {
-                mostChildrenListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن الأبناء.</p>';
+                mostChildrenListEl.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن الأبناء.</p>';
             } else {
                 const ul = document.createElement('ul');
                 ul.classList.add('list-disc', 'pr-6', 'text-gray-700'); // pr-6 for RTL list bullet
@@ -1242,12 +1288,11 @@
                     li.appendChild(link);
                     ul.appendChild(li);
                 });
-                mostChildrenListDiv.appendChild(ul);
+                mostChildrenListEl.appendChild(ul);
             }
 
             // 8. Oldest Members List
-            const oldestMembersListDiv = document.getElementById('oldestMembersList');
-            oldestMembersListDiv.innerHTML = '';
+            oldestMembersListEl.innerHTML = '';
             const sortedByAgeDesc = aliveMembersArray
                 .filter(p => p.birthDate)
                 .map(p => ({ ...p, age: calculateAgeInYears(p.birthDate) }))
@@ -1255,7 +1300,7 @@
                 .slice(0, 5);
 
             if (sortedByAgeDesc.length === 0) {
-                oldestMembersListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات كافية.</p>';
+                oldestMembersListEl.innerHTML = '<p class="text-gray-600">لا توجد بيانات كافية.</p>';
             } else {
                 const ul = document.createElement('ul');
                 ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
@@ -1268,12 +1313,11 @@
                     li.appendChild(link);
                     ul.appendChild(li);
                 });
-                oldestMembersListDiv.appendChild(ul);
+                oldestMembersListEl.appendChild(ul);
             }
 
             // 9. Youngest Members List
-            const youngestMembersListDiv = document.getElementById('youngestMembersList');
-            youngestMembersListDiv.innerHTML = '';
+            youngestMembersListEl.innerHTML = '';
             const sortedByAgeAsc = aliveMembersArray
                 .filter(p => p.birthDate)
                 .map(p => ({ ...p, age: calculateAgeInYears(p.birthDate) }))
@@ -1281,7 +1325,7 @@
                 .slice(0, 5);
 
             if (sortedByAgeAsc.length === 0) {
-                youngestMembersListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات كافية.</p>';
+                youngestMembersListEl.innerHTML = '<p class="text-gray-600">لا توجد بيانات كافية.</p>';
             } else {
                 const ul = document.createElement('ul');
                 ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
@@ -1294,7 +1338,7 @@
                     li.appendChild(link);
                     ul.appendChild(li);
                 });
-                youngestMembersListDiv.appendChild(ul);
+                youngestMembersListEl.appendChild(ul);
             }
 
             // NEW: Top Sub-Families List
@@ -1310,11 +1354,10 @@
                 .sort(([, countA], [, countB]) => countB - countA)
                 .slice(0, 5); // Get top 5
 
-            const topSubFamiliesListDiv = document.getElementById('topSubFamiliesList');
-            topSubFamiliesListDiv.innerHTML = '';
+            topSubFamiliesListEl.innerHTML = '';
 
             if (sortedFamilyNames.length === 0) {
-                topSubFamiliesListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء العائلات.</p>';
+                topSubFamiliesListEl.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء العائلات.</p>';
             } else {
                 const ul = document.createElement('ul');
                 ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
@@ -1323,7 +1366,7 @@
                     li.textContent = `${name}: ${count} أفراد`;
                     ul.appendChild(li);
                 });
-                topSubFamiliesListDiv.appendChild(ul);
+                topSubFamiliesListEl.appendChild(ul);
             }
 
             // NEW: Most Common Children Names List
@@ -1348,11 +1391,10 @@
                 .sort(([, countA], [, countB]) => countB - countA)
                 .slice(0, 5); // Get top 5
 
-            const mostCommonChildrenNamesListDiv = document.getElementById('mostCommonChildrenNamesList');
-            mostCommonChildrenNamesListDiv.innerHTML = '';
+            mostCommonChildrenNamesListEl.innerHTML = '';
 
             if (sortedCommonNames.length === 0) {
-                mostCommonChildrenNamesListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء الأبناء.</p>';
+                mostCommonChildrenNamesListEl.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء الأبناء.</p>';
             } else {
                 const ul = document.createElement('ul');
                 ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
@@ -1361,7 +1403,7 @@
                     li.textContent = `${name}: ${count} مرات`;
                     ul.appendChild(li);
                 });
-                mostCommonChildrenNamesListDiv.appendChild(ul);
+                mostCommonChildrenNamesListEl.appendChild(ul);
             }
         }
 
@@ -1449,11 +1491,25 @@
             window.print();
         }
 
+        // Function to update navigation and action button visibility based on user's allowed pages and role
+        function updateNavigationAndActionButtons() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                const pageName = link.dataset.page;
+                if (allowedPages.includes(pageName)) {
+                    link.style.display = ''; // Show the link
+                } else {
+                    link.style.display = 'none'; // Hide the link
+                }
+            });
+            // No specific action buttons on this page besides logout, which is handled separately
+        }
+
         // Main DOMContentLoaded listener
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             // Modal close buttons
-            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            closeMessageModalBtn.addEventListener('click', () => closeModal('messageModal'));
+            confirmMessageModalBtn.addEventListener('click', () => closeModal('messageModal'));
             document.getElementById('closeChartDetailsModalBtn').addEventListener('click', () => closeModal('chartDetailsModal'));
 
 
@@ -1492,84 +1548,105 @@
             document.getElementById('statMissingFamilyName').addEventListener('click', () => handleStatBoxClick('أفراد بدون اسم عائلة', p => !p.familyName || p.familyName.trim() === ''));
 
 
-            // Initial authentication attempt
-            (async () => {
+            // Logout button
+            logoutBtn.addEventListener('click', async () => {
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
+                    await signOut(auth);
+                    redirectTo('login.html'); // Redirect to login page after logout
                 } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                    console.error("Error logging out:", error);
+                    showModal("حدث خطأ أثناء تسجيل الخروج: " + error.message);
                 }
-            })();
+            });
 
             // Listen for auth state changes to get userId and fetch data
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
                     console.log("Authentication state changed. User ID:", userId);
-                    await fetchAllFamilyMembers(); // Fetch ALL members initially
+
+                    // Fetch user settings to get role and allowed pages
+                    try {
+                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userId);
+                        const userSettingsSnap = await getDoc(userSettingsRef);
+
+                        if (userSettingsSnap.exists()) {
+                            const settings = userSettingsSnap.data();
+                            userRole = settings.role || 'viewer';
+                            allowedPages = settings.allowedPages || [];
+                            updateNavigationAndActionButtons(); // Update navigation and action buttons based on fetched permissions
+                        } else {
+                            console.warn("User settings not found for current user. Defaulting to viewer role.");
+                            userRole = 'viewer';
+                            allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html']; // Default allowed pages for viewer
+                            updateNavigationAndActionButtons();
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user settings:", error);
+                        showModal("حدث خطأ أثناء جلب إعدادات المستخدم: " + error.message);
+                        userRole = 'viewer'; // Fallback
+                        allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html']; // Fallback
+                        updateNavigationAndActionButtons();
+                    }
+
+                    // No specific role restriction for statistics, but still check if page is allowed
+                    if (!allowedPages.includes('statistics.html')) {
+                        showModal("ليس لديك الصلاحية للوصول إلى هذه الصفحة.", 'messageModal');
+                        setTimeout(() => redirectTo('dashboard.html'), 2000); // Redirect if no permission
+                        return;
+                    }
+
+                    await fetchAllFamilyMembers(); // Fetch and display data after authentication
                 } else {
                     userId = null;
                     console.log("User signed out or no user.");
-                    showModal("يرجى تسجيل الدخول لعرض الإحصائيات.", 'messageModal');
-                    // Clear stats if user logs out
-                    document.getElementById('totalMembers').textContent = '0';
-                    document.getElementById('aliveMembers').textContent = '0';
-                    document.getElementById('deceasedMembers').textContent = '0';
-                    document.getElementById('averageAge').textContent = '0';
-                    document.getElementById('averageAgeAtDeath').textContent = '0';
-                    document.getElementById('uniqueFamilyNames').textContent = '0';
-                    document.getElementById('livingMales').textContent = '0';
-                    document.getElementById('livingFemales').textContent = '0';
-                    document.getElementById('livingMarried').textContent = '0';
-                    document.getElementById('livingEngaged').textContent = '0';
-                    document.getElementById('livingMarriedMales').textContent = '0';
-                    document.getElementById('livingMarriedFemales').textContent = '0';
-                    document.getElementById('livingSingleMales').textContent = '0';
-                    document.getElementById('livingDivorcedMales').textContent = '0';
-                    document.getElementById('livingWidowedMales').textContent = '0';
-                    document.getElementById('livingSingleFemales').textContent = '0';
-                    document.getElementById('livingDivorcedFemales').textContent = '0';
-                    document.getElementById('livingWidowedFemales').textContent = '0';
-                    document.getElementById('malesOver16').textContent = '0';
-                    document.getElementById('femalesOver16').textContent = '0';
-                    document.getElementById('malesUnder16').textContent = '0';
-                    document.getElementById('femalesUnder16').textContent = '0';
-                    document.getElementById('avgChildrenPerParent').textContent = '0';
-                    document.getElementById('membersWithoutChildren').textContent = '0';
-                    document.getElementById('profileCompletion').textContent = '0%';
-                    document.getElementById('missingBirthDate').textContent = '0';
-                    document.getElementById('missingGender').textContent = '0';
-                    document.getElementById('missingFamilyName').textContent = '0';
-                    document.getElementById('avgMaleMarriageAge').textContent = '0';
-                    document.getElementById('avgFemaleMarriageAge').textContent = '0';
-                    document.getElementById('avgMaleEngagementAge').textContent = '0';
-                    document.getElementById('avgFemaleEngagementAge').textContent = '0';
+                    hideLoadingModal(); // Ensure loading modal is hidden
+                    statisticsContent.classList.add('hidden'); // Hide statistics content
+                    document.getElementById('noStatisticsData').classList.remove('hidden'); // Show no data message
+                    document.getElementById('noStatisticsData').textContent = "يرجى تسجيل الدخول لعرض الإحصائيات."; // Update message
+                    
+                    // Clear all stat boxes and lists
+                    totalMembersEl.textContent = '0';
+                    aliveMembersEl.textContent = '0';
+                    deceasedMembersEl.textContent = '0';
+                    averageAgeEl.textContent = '0';
+                    averageAgeAtDeathEl.textContent = '0';
+                    uniqueFamilyNamesEl.textContent = '0';
+                    livingMalesEl.textContent = '0';
+                    livingFemalesEl.textContent = '0';
+                    livingMarriedEl.textContent = '0';
+                    livingEngagedEl.textContent = '0';
+                    livingMarriedMalesEl.textContent = '0';
+                    livingMarriedFemalesEl.textContent = '0';
+                    livingSingleMalesEl.textContent = '0';
+                    livingDivorcedMalesEl.textContent = '0';
+                    livingWidowedMalesEl.textContent = '0';
+                    livingSingleFemalesEl.textContent = '0';
+                    livingDivorcedFemalesEl.textContent = '0';
+                    livingWidowedFemalesEl.textContent = '0';
+                    malesOver16El.textContent = '0';
+                    femalesOver16El.textContent = '0';
+                    malesUnder16El.textContent = '0';
+                    femalesUnder16El.textContent = '0';
+                    avgChildrenPerParentEl.textContent = '0';
+                    membersWithoutChildrenEl.textContent = '0';
+                    profileCompletionEl.textContent = '0%';
+                    missingBirthDateEl.textContent = '0';
+                    missingGenderEl.textContent = '0';
+                    missingFamilyNameEl.textContent = '0';
+                    avgMaleMarriageAgeEl.textContent = '0';
+                    avgFemaleMarriageAgeEl.textContent = '0';
+                    avgMaleEngagementAgeEl.textContent = '0';
+                    avgFemaleEngagementAgeEl.textContent = '0';
+
+                    mostChildrenListEl.innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+                    oldestMembersListEl.innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+                    youngestMembersListEl.innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+                    topSubFamiliesListEl.innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+                    mostCommonChildrenNamesListEl.innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
 
 
-                    document.getElementById('mostChildrenList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
-                    document.getElementById('oldestMembersList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
-                    document.getElementById('youngestMembersList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
-                    document.getElementById('topSubFamiliesList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
-                    document.getElementById('mostCommonChildrenNamesList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
-
-
+                    // Destroy all chart instances
                     if (genderChartInstance) genderChartInstance.destroy();
                     if (maritalStatusChartInstance) maritalStatusChartInstance.destroy();
                     if (maritalStatusAliveChartInstance) maritalStatusAliveChartInstance.destroy();
@@ -1581,6 +1658,10 @@
                     if (birthsPerYearChartInstance) birthsPerYearChartInstance.destroy();
                     if (deathsPerYearChartInstance) deathsPerYearChartInstance.destroy();
                     if (marriagesEngagementsPerYearChartInstance) marriagesEngagementsPerYearChartInstance.destroy();
+                    
+                    // Hide all navigation buttons
+                    document.querySelectorAll('.nav-link').forEach(link => link.style.display = 'none');
+                    document.getElementById('logoutBtn').style.display = 'none'; // Hide logout button too
                 }
             });
         });
