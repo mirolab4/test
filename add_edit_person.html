@@ -376,12 +376,13 @@
 
     <!-- Firebase SDKs -->
     <script type="module">
-        // Wrap the entire script in an IIFE to prevent global scope conflicts
-        (async () => {
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-            import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-            import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Moved import statements outside the IIFE
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Wrap the rest of the script in an IIFE to prevent global scope conflicts
+        (async () => {
             // Firebase configuration provided by the user
             const firebaseConfig = {
                 apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
