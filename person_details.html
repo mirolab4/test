@@ -1,1294 +1,547 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>تفاصيل الشخص - شجرة العائلة</title>
-<style>
-  /* تضمين أكواد CSS هنا (مطابقة لـ index.html للحفاظ على التناسق) */
-  body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f0f2f5;
-    margin: 0; padding: 15px;
-    direction: rtl;
-    line-height: 1.6;
-  }
-  h1, h2 {
-    text-align: center; color: #333;
-    margin-bottom: 20px;
-    font-size: 24px;
-  }
-  .section-container {
-    background-color: #fff;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
-  .details-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    padding: 10px;
-  }
-  .details-grid label {
-    font-weight: bold;
-    color: #555;
-    display: block;
-    margin-bottom: 5px;
-  }
-  .details-grid input[type="text"], 
-  .details-grid input[type="date"], 
-  .details-grid select {
-    width: calc(100% - 20px);
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 15px;
-    box-sizing: border-box;
-    display: block;
-    margin-bottom: 10px;
-  }
-  .details-grid input[disabled] {
-      background-color: #f9f9f9;
-      color: #666;
-  }
-  button, .action-btn, .call-btn, .wa-btn, .view-details-btn {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    margin: 5px;
-    border: none; border-radius: 5px;
-    cursor: pointer;
-    font-size: 15px;
-    transition: background-color 0.2s;
-    width: auto;
-    display: inline-block;
-  }
-  button:hover, .action-btn:hover, .call-btn:hover, .wa-btn:hover, .view-details-btn:hover {
-    background-color: #0056b3;
-  }
-  .save-btn { background-color: #28a745; }
-  .save-btn:hover { background-color: #218838; }
-  .delete-btn { background-color: #dc3545; }
-  .delete-btn:hover { background-color: #c82333; }
-  .add-relation-btn { background-color: #6c757d; }
-  .add-relation-btn:hover { background-color: #5a6268; }
-  .call-btn { background-color: #17a2b8; }
-  .call-btn:hover { background-color: #138496; }
-  .wa-btn { background-color: #25D366; }
-  .wa-btn:hover { background-color: #1eaf53; }
-  .export-btn { background-color: #1abc9c; }
-  .export-btn:hover { background-color: #148f77; }
-  .view-details-btn { background-color: #6f42c1; }
-  .view-details-btn:hover { background-color: #5d34a4; }
-
-  .hidden { display: none !important; }
-
-  .relations-list {
-    list-style: none;
-    padding: 0;
-  }
-  .relations-list li {
-    background-color: #f8f9fa;
-    border: 1px solid #eee;
-    margin-bottom: 8px;
-    padding: 10px;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 15px;
-  }
-  .relations-list li .relation-name {
-    flex-grow: 1;
-  }
-  .relations-list li .relation-actions button {
-    margin-left: 5px;
-    padding: 6px 10px;
-    font-size: 13px;
-  }
-
-  /* Multi-select dropdown styles (for father/mother/spouse/sibling linking) */
-  .multi-select-dropdown {
-    width: calc(100% - 20px);
-    margin: 8px auto;
-    position: relative;
-    text-align: right; /* Adjusted for RTL */
-  }
-  .multi-select-dropdown .selected-items {
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 5px;
-    background-color: #fff;
-    cursor: pointer;
-    min-height: 38px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 5px;
-    justify-content: flex-end; /* Align items to right for RTL */
-  }
-  .multi-select-dropdown .selected-items.active {
-    border-color: #007bff;
-  }
-  .multi-select-dropdown .selected-item {
-    background-color: #e9e9e9;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .multi-select-dropdown .selected-item .remove-item {
-    cursor: pointer;
-    font-weight: bold;
-    color: #888;
-  }
-  .multi-select-dropdown .options-container {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    border: 1px solid #ccc;
-    border-top: none;
-    border-radius: 0 0 5px 5px;
-    background-color: #fff;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 10;
-    display: none;
-    box-shadow: 0 2px 5px rgba(0 0, 0, 0.1);
-    text-align: right; /* Aligned to right for RTL */
-  }
-  .multi-select-dropdown .option {
-    padding: 10px;
-    cursor: pointer;
-    font-size: 15px;
-  }
-  .multi-select-dropdown .option:hover {
-    background-color: #f0f0f0;
-  }
-  .multi-select-dropdown .option.selected {
-    background-color: #e0f0ff;
-    font-weight: bold;
-  }
-  .multi-select-dropdown.active .options-container {
-    display: block;
-  }
-
-  /* Loading Overlay Styles (from index.html) */
-  .loading-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    color: white;
-    font-size: 20px;
-  }
-  .loading-overlay.hidden {
-    display: none;
-  }
-  .spinner {
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 4px solid #fff;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  /* Toast Notifications Styles (from index.html) */
-  #toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-end;
-  }
-  .toast {
-    background-color: #333;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    opacity: 0;
-    animation: fadeInOut 4s forwards;
-    min-width: 200px;
-    text-align: center;
-  }
-  .toast.success { background-color: #28a745; }
-  .toast.error { background-color: #dc3545; }
-  .toast.info { background-color: #17a2b8; }
-
-  @keyframes fadeInOut {
-    0% { opacity: 0; transform: translateY(-20px); }
-    10% { opacity: 1; transform: translateY(0); }
-    90% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-20px); }
-  }
-
-  @media (min-width: 768px) {
-    .details-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  @media (max-width: 768px) {
-    body { padding: 10px; }
-    h1, h2 { font-size: 20px; }
-    .section-container { padding: 10px; }
-    .details-grid input[type="text"], 
-    .details-grid input[type="date"], 
-    .details-grid select {
-      width: calc(100% - 16px);
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-    button, .action-btn, .call-btn, .wa-btn, .view-details-btn {
-      padding: 8px 12px;
-      font-size: 14px;
-      margin: 4px;
-    }
-    .relations-list li {
-      flex-direction: column;
-      align-items: flex-end;
-      padding: 8px;
-    }
-    .relations-list li .relation-name {
-      text-align: right;
-      width: 100%;
-      margin-bottom: 5px;
-    }
-    .relations-list li .relation-actions {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-    .relations-list li .relation-actions button {
-      flex: 1 1 auto; min-width: 80px; font-size: 13px; padding: 6px 8px;
-    }
-  }
-</style>
-</head>
-<body>
-
-<h1>تفاصيل الشخص</h1>
-
-<nav style="text-align: center; margin-bottom: 20px;">
-  <a href="index.html" style="margin: 0 10px;">الرئيسية</a> |
-  <a href="events.html" style="margin: 0 10px;">الأحداث القادمة</a> |
-  <a href="family_tree_graph.html" style="margin: 0 10px;">الشجرة الرسومية</a>
-</nav>
-
-<div class="section-container">
-  <div id="personDetailsContent">
-    <div class="details-grid">
-      <div>
-        <label for="firstName">الاسم الأول:</label>
-        <input type="text" id="firstName" />
-      </div>
-      <div>
-        <label for="familyName">اسم العائلة:</label>
-        <input type="text" id="familyName" />
-      </div>
-      <div>
-        <label for="gender">الجنس:</label>
-        <select id="gender">
-          <option value="ذكر">ذكر</option>
-          <option value="أنثى">أنثى</option>
-        </select>
-      </div>
-      <div>
-        <label for="dob">تاريخ الميلاد:</label>
-        <input type="date" id="dob" />
-      </div>
-      <div>
-        <label for="ageDisplay">العمر:</label>
-        <input type="text" id="ageDisplay" disabled />
-      </div>
-      <div>
-        <label for="idNumber">رقم الهوية:</label>
-        <input type="text" id="idNumber" />
-      </div>
-      <div>
-        <label for="phoneNumber">رقم الجوال:</label>
-        <input type="text" id="phoneNumber" />
-      </div>
-      <div>
-        <label for="maritalStatus">الحالة الاجتماعية:</label>
-        <select id="maritalStatus">
-          <option value="أعزب">أعزب</option>
-          <option value="متزوج">متزوج</option>
-          <option value="مطلق">مطلق</option>
-          <option value="أرمل">أرمل</option>
-        </select>
-      </div>
-      <div>
-        <label for="isAlive">على قيد الحياة:</label>
-        <input type="checkbox" id="isAlive" style="width: auto; margin-top: 10px;" />
-      </div>
-      <div>
-        <label for="dod">تاريخ الوفاة:</label>
-        <input type="date" id="dod" class="hidden" />
-      </div>
-      <div>
-        <label for="tags">العلامات (افصل بفاصلة):</label>
-        <input type="text" id="tags" />
-      </div>
-      <div>
-        <label for="lastModified">آخر تعديل:</label>
-        <input type="text" id="lastModified" disabled />
-      </div>
-    </div>
-
-    <div style="text-align: center; margin-top: 20px;">
-      <button class="save-btn" onclick="updatePersonDetails()">حفظ التعديلات</button>
-      <button class="delete-btn" onclick="confirmDeletePerson()">حذف الشخص</button>
-      <button class="action-btn" onclick="exportSinglePersonVCF()">تصدير VCF</button>
-      <button class="action-btn" onclick="importSinglePersonVCF()">استيراد VCF</button>
-      <button class="call-btn" id="callPersonBtn">اتصال</button>
-      <a class="wa-btn" id="whatsappPersonBtn970" target="_blank">واتساب 970+</a>
-      <a class="wa-btn" id="whatsappPersonBtn972" target="_blank">واتساب 972+</a>
-    </div>
-  </div>
-</div>
-
-<div class="section-container">
-  <h2>العلاقات</h2>
-  <div class="relations-grid">
-    <div class="relation-item">
-      <h3>الأب: <span id="fatherNameDisplay"></span></h3>
-      <div id="fatherActions" style="text-align: center;">
-        <div class="multi-select-dropdown" id="linkFatherSelect" style="margin-bottom: 10px;">
-          <label for="linkFatherInput" style="display: block; text-align: right; margin-bottom: 5px; font-size: 14px;">ربط بالأب (بحث):</label>
-          <input type="text" id="linkFatherInput" placeholder="اكتب أو اختر اسم الأب" onkeyup="filterPersonsForRelation('linkFatherSelect', this.value, 'father')" autocomplete="off" />
-          <div class="options-container" id="linkFatherOptionsContainer"></div>
-        </div>
-        <button class="action-btn" onclick="linkRelation('father')">ربط الأب</button>
-        <button class="delete-btn hidden" id="unlinkFatherBtn" onclick="unlinkRelation('father')">إلغاء ربط الأب</button>
-        <button class="view-details-btn hidden" id="viewFatherDetailsBtn" onclick="viewRelationDetails('father')">عرض تفاصيل الأب</button>
-      </div>
-    </div>
-    <div class="relation-item">
-      <h3>الأم: <span id="motherNameDisplay"></span></h3>
-      <div id="motherActions" style="text-align: center;">
-        <div class="multi-select-dropdown" id="linkMotherSelect" style="margin-bottom: 10px;">
-          <label for="linkMotherInput" style="display: block; text-align: right; margin-bottom: 5px; font-size: 14px;">ربط بالأم (بحث):</label>
-          <input type="text" id="linkMotherInput" placeholder="اكتب أو اختر اسم الأم" onkeyup="filterPersonsForRelation('linkMotherSelect', this.value, 'mother')" autocomplete="off" />
-          <div class="options-container" id="linkMotherOptionsContainer"></div>
-        </div>
-        <button class="action-btn" onclick="linkRelation('mother')">ربط الأم</button>
-        <button class="delete-btn hidden" id="unlinkMotherBtn" onclick="unlinkRelation('mother')">إلغاء ربط الأم</button>
-        <button class="view-details-btn hidden" id="viewMotherDetailsBtn" onclick="viewRelationDetails('mother')">عرض تفاصيل الأم</button>
-      </div>
-    </div>
-    <div class="relation-item">
-      <h3>الجد: <span id="grandfatherNameDisplay"></span></h3>
-      <div id="grandfatherActions" style="text-align: center;">
-        <button class="view-details-btn hidden" id="viewGrandfatherDetailsBtn" onclick="viewRelationDetails('grandfather')">عرض تفاصيل الجد</button>
-      </div>
-    </div>
-  </div>
-
-  <hr style="margin: 20px 0;">
-
-  <h3>الأبناء:</h3>
-  <ul id="childrenList" class="relations-list">
-    </ul>
-  <div style="text-align: center; margin-top: 10px;">
-    <button class="add-relation-btn" onclick="addNewChild()">إضافة ابن/ابنة جديدة</button>
-  </div>
-
-  <hr style="margin: 20px 0;">
-
-  <h3>الزوج/الزوجات:</h3>
-  <ul id="spousesList" class="relations-list">
-    </ul>
-  <div style="text-align: center; margin-top: 10px;">
-    <div class="multi-select-dropdown" id="linkSpouseSelect" style="margin-bottom: 10px;">
-      <label for="linkSpouseInput" style="display: block; text-align: right; margin-bottom: 5px; font-size: 14px;">ربط بـ زوج/زوجة (بحث):</label>
-      <input type="text" id="linkSpouseInput" placeholder="اكتب أو اختر اسم الزوج/الزوجة" onkeyup="filterPersonsForRelation('linkSpouseSelect', this.value, 'spouse')" autocomplete="off" />
-      <div class="options-container" id="linkSpouseOptionsContainer"></div>
-    </div>
-    <button class="add-relation-btn" onclick="linkRelation('spouse')">ربط بـ زوج/زوجة</button>
-  </div>
-
-  <hr style="margin: 20px 0;">
-
-  <h3>الإخوة والأخوات:</h3>
-  <ul id="siblingsList" class="relations-list">
-    </ul>
-  <div style="text-align: center; margin-top: 10px;">
-    <div class="multi-select-dropdown" id="linkSiblingSelect" style="margin-bottom: 10px;">
-      <label for="linkSiblingInput" style="display: block; text-align: right; margin-bottom: 5px; font-size: 14px;">ربط بـ أخ/أخت (بحث):</label>
-      <input type="text" id="linkSiblingInput" placeholder="اكتب أو اختر اسم الأخ/الأخت" onkeyup="filterPersonsForRelation('linkSiblingSelect', this.value, 'sibling')" autocomplete="off" />
-      <div class="options-container" id="linkSiblingOptionsContainer"></div>
-    </div>
-    <button class="add-relation-btn" onclick="linkRelation('sibling')">ربط بـ أخ/أخت</button>
-  </div>
-
-</div>
-
-
-<div id="loadingOverlay" class="loading-overlay hidden">
-  <div class="spinner"></div>
-</div>
-
-<div id="toast-container"></div>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<script>
-  // ======== Firebase Configuration ========
-  const firebaseConfig = {
-    apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
-    authDomain: "family-9b0b8.firebaseapp.com",
-    databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
-    projectId: "family-9b0b8",
-    storageBucket: "family-9b0b8.firebasestorage.app",
-    messagingSenderId: "409089079475",
-    appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
-    measurementId: "G-X5LDQB1WC9"
-  };
-  
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const personsRef = db.ref('persons');
-
-  firebase.database.enablePersistence()
-    .catch(err => {
-      if (err.code === 'failed-precondition') {
-        showToast('التخزين دون اتصال غير متاح.', 'info');
-      } else if (err.code === 'unimplemented') {
-        showToast('التخزين دون اتصال غير مدعوم في متصفحك.', 'error');
-      } else {
-        showToast('فشل تفعيل التخزين دون اتصال.', 'error');
-        console.error("Persistence failed:", err);
-      }
-    });
-
-  let currentPersonId = null;
-  let currentPersonData = null;
-  let allPersonsData = {}; // Store all persons for relationship linking/search
-  let personsDataForSelect = {}; // Filtered data for select dropdowns
-
-  // --- Loading Indicator Functions (from index.html) ---
-  function showLoading() {
-    document.getElementById('loadingOverlay').classList.remove('hidden');
-  }
-
-  function hideLoading() {
-    document.getElementById('loadingOverlay').classList.add('hidden');
-  }
-
-  // --- Toast Notification Functions (from index.html) ---
-  function showToast(message, type = 'info', duration = 3000) {
-    const toastContainer = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-      toast.remove();
-    }, duration);
-  }
-
-  // --- Utility functions (from index.html) ---
-  function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-  }
-
-  function calculateAgeDetails(dobString) {
-    if (!dobString) return { years: 0, months: 0, days: 0 };
-    const birthDate = new Date(dobString);
-    const today = new Date();
-
-    let years = today.getFullYear() - birthDate.getFullYear();
-    let months = today.getMonth() - birthDate.getMonth();
-    let days = today.getDate() - birthDate.getDate();
-
-    if (days < 0) {
-        months--;
-        days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
-    }
-    if (months < 0) {
-        years--;
-        months += 12;
-    }
-    return { years, months, days };
-  }
-
-  function decodeQuotedPrintable(str) {
-    str = str.replace(/=\r?\n/g, ''); 
-    str = str.replace(/=([0-9A-F]{2})/gi, '%$1'); 
-    try {
-      return decodeURIComponent(str); 
-    } catch (e) {
-      console.warn("Failed to decode URI component, falling back. Error:", e);
-      return str.replace(/%([0-9A-F]{2})/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
-    }
-  }
-
-  function parseVCF(data) {
-    const persons = [];
-    const entries = data.split(/END:VCARD\r?\n+/gi);
-    
-    entries.forEach(entry => {
-      if (!entry.trim()) return;
-
-      let firstName = '';
-      let familyName = '';
-      let phoneNumber = '';
-      let note = '';
-      let tags = ''; 
-      let gender = ''; 
-      let dob = ''; 
-      
-      const isQuotedPrintableUtf8 = entry.toUpperCase().includes('CHARSET=UTF-8') && entry.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE');
-
-      const fnMatch = entry.match(/FN(?:;[^:]*)?:\s*(.*)/i);
-      if (fnMatch && fnMatch[1]) {
-        let name = fnMatch[1].trim();
-        if (isQuotedPrintableUtf8) name = decodeQuotedPrintable(name);
-        const nameParts = name.split(' ');
-        firstName = nameParts[0] || '';
-        familyName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-      }
-
-      if (!firstName || !familyName) {
-        const nMatch = entry.match(/N(?:;[^:]*)?:([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)/i);
-        if (nMatch) {
-          let lastName = nMatch[1] || '';
-          let givenName = nMatch[2] || '';
-          if (isQuotedPrintableUtf8) {
-              lastName = decodeQuotedPrintable(lastName);
-              givenName = decodeQuotedPrintable(givenName);
-          }
-          firstName = givenName || firstName;
-          familyName = lastName || familyName;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل الشخص</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
         }
-      }
-      
-      if (!firstName && !familyName) {
-          const orgMatch = entry.match(/ORG(?:;[^:]*)?:(.*)/i);
-          if (orgMatch && orgMatch[1]) {
-              let orgName = orgMatch[1].trim();
-              if (isQuotedPrintableUtf8) orgName = decodeQuotedPrintable(orgName);
-              firstName = orgName;
-          }
-      }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-danger {
+            background-color: #ef4444; /* Red */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* Darker red */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .detail-value {
+            color: #1f2937;
+        }
+        .relation-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .relation-link:hover {
+            color: #4338ca;
+            text-decoration: underline;
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
 
-      const telMatches = entry.match(/TEL(?:;[^:]*)?:(.*)/gi);
-      if (telMatches) {
-        phoneNumber = telMatches[0].split(':').pop().trim().replace(/[^\d+]/g, '');
-        if (phoneNumber.startsWith('tel:')) phoneNumber = phoneNumber.substring(4);
-      }
+    <!-- Custom Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
 
-      const noteMatch = entry.match(/NOTE(?:;[^:]*)?:(.*)/i);
-      if (noteMatch && noteMatch[1]) {
-        note = noteMatch[1].trim();
-        if (isQuotedPrintableUtf8) note = decodeQuotedPrintable(note);
-        note = note.replace(/=\r?\n/g, '').trim();
-      }
+    <!-- Custom Confirmation Modal for Deletion -->
+    <div id="confirmDeleteModal" class="modal">
+        <div class="modal-content">
+            <span id="closeConfirmDeleteModalBtn" class="close-button">&times;</span>
+            <p class="text-lg font-semibold text-gray-800 mb-4">هل أنت متأكد أنك تريد حذف هذا الشخص؟</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirmDeleteBtn" class="btn-danger">نعم، احذف</button>
+                <button id="cancelDeleteBtn" class="btn-secondary">إلغاء</button>
+            </div>
+        </div>
+    </div>
 
-      const categoriesMatch = entry.match(/CATEGORIES(?:;[^:]*)?:(.*)/i);
-      if (categoriesMatch && categoriesMatch[1]) {
-          let categoryStr = categoriesMatch[1].trim();
-          if (isQuotedPrintableUtf8) categoryStr = decodeQuotedPrintable(categoryStr);
-          tags = categoryStr.split(',').map(tag => tag.trim()).filter(Boolean).join(','); 
-      }
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">تفاصيل الشخص</h1>
+            <nav class="flex flex-wrap gap-3">
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-primary">إضافة شخص جديد</a>
+            </nav>
+        </div>
 
-      const bdayMatch = entry.match(/BDAY(?:;[^:]*)?:(.*)/i);
-      if (bdayMatch && bdayMatch[1]) {
-          let bdayStr = bdayMatch[1].trim();
-          if (bdayStr.match(/^\d{8}$/)) { 
-              dob = `${bdayStr.substring(0,4)}-${bdayStr.substring(4,6)}-${bdayStr.substring(6,8)}`;
-          } else if (bdayStr.match(/^\d{4}-\d{2}-\d{2}$/)) { 
-              dob = bdayStr;
-          }
-      }
+        <!-- Person Details Card -->
+        <div id="personDetailsCard" class="card hidden">
+            <div id="loadingIndicator" class="text-center text-gray-600 text-lg mb-4">جاري تحميل البيانات...</div>
+            <div id="noPersonMessage" class="text-center text-gray-600 text-lg mb-4 hidden">لم يتم العثور على بيانات لهذا الشخص.</div>
 
-      if (firstName || familyName || phoneNumber) {
-        persons.push({ 
-            firstName: firstName, 
-            familyName: familyName,
-            phoneNumber: phoneNumber, 
-            note: note, 
-            tags: tags,
-            gender: gender, 
-            dob: dob,
-            maritalStatus: '', 
-            isAlive: true 
-        });
-      }
-    });
-    return persons;
-  }
+            <div id="personContent" class="hidden">
+                <h2 id="personFullName" class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4"></h2>
 
-  // --- Main Load Function ---
-  async function loadPersonDetails() {
-    showLoading();
-    const urlParams = new URLSearchParams(window.location.search);
-    currentPersonId = urlParams.get('id');
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Personal Information -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">المعلومات الشخصية</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="detail-item"><span class="detail-label">الاسم الأول:</span> <span id="firstName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الأب:</span> <span id="fatherName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الجد:</span> <span id="grandFatherName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم العائلة:</span> <span id="familyName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الأم:</span> <span id="motherName" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">رقم الهوية:</span> <span id="idNumber" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">رقم الجوال:</span> <span id="phoneNumber" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">العمر:</span> <span id="age" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">تاريخ الميلاد:</span> <span id="birthDate" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">الحالة:</span> <span id="isAlive" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">تاريخ الوفاة:</span> <span id="deathDate" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">الفئة العمرية:</span> <span id="ageCategory" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">معرف المستخدم (UID):</span> <span id="personUid" class="detail-value text-sm break-all"></span></div>
+                        </div>
+                    </div>
 
-    if (!currentPersonId) {
-      hideLoading();
-      showToast('لم يتم تحديد ID الشخص.', 'error');
-      document.getElementById('personDetailsContent').innerHTML = '<p style="text-align: center; color: red;">خطأ: لم يتم تحديد ID الشخص.</p>';
-      return;
-    }
+                    <!-- Marital Status and Relationships -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">الحالة الاجتماعية والعلاقات</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="detail-item"><span class="detail-label">الحالة الاجتماعية:</span> <span id="maritalStatus" class="detail-value"></span></div>
+                            <div class="detail-item"><span class="detail-label">اسم الزوج/الزوجة:</span> <span id="spouseName" class="detail-value"></span></div>
+                        </div>
 
-    try {
-      const snapshot = await personsRef.child(currentPersonId).once('value');
-      currentPersonData = snapshot.val();
+                        <h3 class="text-xl font-semibold text-gray-700 mb-3">الأبناء</h3>
+                        <div id="childrenList" class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-600" id="noChildrenMessage">لا يوجد أبناء مسجلون.</p>
+                            <!-- Children will be loaded here -->
+                        </div>
+                    </div>
+                </div>
 
-      if (currentPersonData) {
-        document.getElementById('firstName').value = currentPersonData.firstName || '';
-        document.getElementById('familyName').value = currentPersonData.familyName || '';
-        document.getElementById('gender').value = currentPersonData.gender || '';
-        document.getElementById('dob').value = currentPersonData.dob || '';
-        document.getElementById('idNumber').value = currentPersonData.idNumber || '';
-        document.getElementById('phoneNumber').value = currentPersonData.phoneNumber || '';
-        document.getElementById('maritalStatus').value = currentPersonData.maritalStatus || '';
-        document.getElementById('isAlive').checked = (currentPersonData.isAlive !== undefined ? currentPersonData.isAlive : true);
-        document.getElementById('dod').value = currentPersonData.dod || '';
-        document.getElementById('tags').value = currentPersonData.tags || '';
-        document.getElementById('lastModified').value = currentPersonData.lastModified ? new Date(currentPersonData.lastModified).toLocaleString() : '';
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-4 mt-8 pt-4 border-t">
+                    <button id="editPersonBtn" class="btn-primary">تعديل البيانات</button>
+                    <button id="deletePersonBtn" class="btn-danger">حذف الشخص</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Update age display
-        const ageDetails = calculateAgeDetails(currentPersonData.dob);
-        document.getElementById('ageDisplay').value = ageDetails.years > 0 ? `${ageDetails.years} سنة ${ageDetails.months} شهر ${ageDetails.days} يوم` : '';
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, deleteDoc, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Toggle DoD field visibility
-        document.getElementById('dod').classList.toggle('hidden', document.getElementById('isAlive').checked);
 
-        // Update phone links
-        document.getElementById('callPersonBtn').href = `tel:${currentPersonData.phoneNumber || ''}`;
-        document.getElementById('whatsappPersonBtn970').href = `https://wa.me/970${currentPersonData.phoneNumber || ''}`;
-        document.getElementById('whatsappPersonBtn972').href = `https://wa.me/972${currentPersonData.phoneNumber || ''}`;
+        // Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
 
-        await loadAllPersonsForRelations(); // Load all persons for linking/searching
-        await displayRelationships(); // Display all relationships
-      } else {
-        showToast('لم يتم العثور على الشخص.', 'error');
-        document.getElementById('personDetailsContent').innerHTML = '<p style="text-align: center; color: red;">خطأ: لم يتم العثور على تفاصيل الشخص.</p>';
-      }
-    } catch (error) {
-      console.error("Error loading person details:", error);
-      showToast("حدث خطأ أثناء تحميل تفاصيل الشخص.", 'error');
-      document.getElementById('personDetailsContent').innerHTML = '<p style="text-align: center; color: red;">حدث خطأ أثناء تحميل تفاصيل الشخص.</p>';
-    } finally {
-      hideLoading();
-    }
-  }
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-  // Toggle DoD field visibility
-  document.getElementById('isAlive').addEventListener('change', function() {
-    document.getElementById('dod').classList.toggle('hidden', this.checked);
-    if (this.checked) {
-        document.getElementById('dod').value = '';
-    }
-  });
+        let userId = null;
+        let currentPersonId = null; // ID of the person whose profile is being viewed
+        let currentPersonData = null; // Store current person's data
 
-  async function updatePersonDetails() {
-    showLoading();
-    try {
-      const updatedData = {
-        firstName: document.getElementById('firstName').value.trim(),
-        familyName: document.getElementById('familyName').value.trim(),
-        gender: document.getElementById('gender').value,
-        dob: document.getElementById('dob').value,
-        idNumber: document.getElementById('idNumber').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        maritalStatus: document.getElementById('maritalStatus').value,
-        isAlive: document.getElementById('isAlive').checked,
-        dod: document.getElementById('isAlive').checked ? '' : document.getElementById('dod').value,
-        tags: document.getElementById('tags').value.trim(),
-        lastModified: new Date().toISOString()
-      };
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-      // Auto-update tags based on gender, age, marital status, life status
-      let currentTags = updatedData.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-      
-      // Clear old implicit tags (gender, life status, marital status, age group)
-      currentTags = currentTags.filter(tag => 
-          !['ذكر', 'أنثى', 'متوفى', 'على_قيد_الحياة', 'متزوج', 'أعزب', 'مطلق', 'أرمل', 'فوق_16', 'أقل_من_16'].includes(tag)
-      );
+        // Function to show custom modal messages
+        function showModal(message, modalId = 'messageModal') {
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById(modalId).style.display = 'flex';
+        }
 
-      // Add new implicit tags
-      if (updatedData.gender === "ذكر") currentTags.push("ذكر");
-      if (updatedData.gender === "أنثى") currentTags.push("أنثى");
-      if (updatedData.maritalStatus === "متزوج") currentTags.push("متزوج");
-      if (!updatedData.isAlive) currentTags.push("متوفى");
-      else currentTags.push("على_قيد_الحياة");
+        // Function to close custom modal messages
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
 
-      const ageInYears = calculateAgeDetails(updatedData.dob).years;
-      if (ageInYears >= 16) currentTags.push("فوق_16");
-      else currentTags.push("أقل_من_16");
-      
-      updatedData.tags = currentTags.filter((value, index, self) => self.indexOf(value) === index).join(','); // Remove duplicates
+        // Function to calculate age from birth date
+        function calculateAge(birthDate) {
+            if (!birthDate || !birthDate.toDate) return 'غير محدد';
+            const today = new Date();
+            const birth = birthDate.toDate(); // Convert Firebase Timestamp to Date object
 
-      await personsRef.child(currentPersonId).update(updatedData);
-      showToast('تم تحديث تفاصيل الشخص بنجاح.', 'success');
-      // Reload details to reflect updates and ensure relationships are correct
-      await loadPersonDetails(); 
-    } catch (error) {
-      console.error("Error updating person details:", error);
-      showToast("حدث خطأ أثناء تحديث تفاصيل الشخص.", 'error');
-    } finally {
-      hideLoading();
-    }
-  }
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            let days = today.getDate() - birth.getDate();
 
-  function confirmDeletePerson() {
-    if (confirm('هل أنت متأكد من حذف هذا الشخص؟ هذا الإجراء لا يمكن التراجع عنه.')) {
-      deletePerson();
-    }
-  }
+            if (days < 0) {
+                months--;
+                days += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); // Days in previous month
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            return `${years} سنة, ${months} شهر, ${days} يوم`;
+        }
 
-  async function deletePerson() {
-    showLoading();
-    try {
-      // Step 1: Remove this person's ID from any spouse, father, or mother relationships
-      const updates = {};
-      const relatedPersons = [];
+        // Function to check if age is above/below 16
+        function isAbove16(birthDate) {
+            if (!birthDate || !birthDate.toDate) return false;
+            const today = new Date();
+            const birth = birthDate.toDate();
+            const ageDate = new Date(birth.getFullYear() + 16, birth.getMonth(), birth.getDate());
+            return today >= ageDate;
+        }
 
-      // Find children
-      for (const key in allPersonsData) {
-          if (allPersonsData[key].fatherId === currentPersonId || allPersonsData[key].motherId === currentPersonId) {
-              relatedPersons.push({ id: key, relation: 'child' });
-          }
-      }
-      // Find spouses
-      if (currentPersonData.spouseId) {
-          relatedPersons.push({ id: currentPersonData.spouseId, relation: 'spouse' });
-      }
-      // If this person is linked as a father or mother to anyone
-      if (currentPersonData.fatherId) {
-          relatedPersons.push({ id: currentPersonData.fatherId, relation: 'parent' });
-      }
-      if (currentPersonData.motherId) {
-          relatedPersons.push({ id: currentPersonData.motherId, relation: 'parent' });
-      }
+        // Function to fetch and display person data
+        async function fetchAndDisplayPerson(personId) {
+            if (!userId) {
+                console.log("User ID not available yet. Cannot fetch person data.");
+                return;
+            }
 
-      for (const rel of relatedPersons) {
-          if (rel.relation === 'child') {
-              updates[`${rel.id}/fatherId`] = firebase.database.ServerValue.TIMESTAMP; // Use a placeholder or special value
-              updates[`${rel.id}/motherId`] = firebase.database.ServerValue.TIMESTAMP;
-              updates[`${rel.id}/fatherNameDisplay`] = null; // Clear display names
-              updates[`${rel.id}/motherNameDisplay`] = null;
-          } else if (rel.relation === 'spouse') {
-              updates[`${rel.id}/spouseId`] = null;
-          } else if (rel.relation === 'parent') {
-              // No direct need to update parent, as the deleted person is the child
-              // This case handles if the deleted person was *someone's* parent
-              // We've already gathered direct relationships so this is mostly covered
-          }
-      }
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const personDetailsCard = document.getElementById('personDetailsCard');
+            const personContent = document.getElementById('personContent');
+            const noPersonMessage = document.getElementById('noPersonMessage');
 
-      // Perform updates to clear relationships first
-      await personsRef.update(updates);
+            loadingIndicator.classList.remove('hidden');
+            personDetailsCard.classList.remove('hidden'); // Show the card container
+            personContent.classList.add('hidden');
+            noPersonMessage.classList.add('hidden');
 
-      // Step 2: Delete the person
-      await personsRef.child(currentPersonId).remove();
-      
-      showToast('تم حذف الشخص بنجاح.', 'success');
-      window.location.href = 'index.html'; // Redirect back to dashboard
-    } catch (error) {
-      console.error("Error deleting person:", error);
-      showToast("حدث خطأ أثناء حذف الشخص.", 'error');
-    } finally {
-      hideLoading();
-    }
-  }
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, personId);
+                onSnapshot(docRef, async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        currentPersonData = { id: docSnap.id, ...data };
+                        console.log("Fetched person data:", currentPersonData);
 
-  // --- Relation Linking Functions ---
-  let selectedRelationPersonId = {
-    father: null,
-    mother: null,
-    spouse: null,
-    sibling: null
-  };
+                        document.getElementById('personFullName').textContent = currentPersonData.fullName || 'غير محدد';
+                        document.getElementById('firstName').textContent = currentPersonData.firstName || 'غير محدد';
+                        document.getElementById('familyName').textContent = currentPersonData.familyName || 'غير محدد';
+                        document.getElementById('idNumber').textContent = currentPersonData.idNumber || 'غير محدد';
+                        document.getElementById('phoneNumber').textContent = currentPersonData.phoneNumber || 'غير محدد';
+                        document.getElementById('maritalStatus').textContent = currentPersonData.maritalStatus || 'غير محدد';
+                        document.getElementById('personUid').textContent = currentPersonData.id; // Display the document ID/UID
 
-  async function loadAllPersonsForRelations() {
-    const snapshot = await personsRef.once('value');
-    allPersonsData = snapshot.val() || {};
-    personsDataForSelect = {};
-    for (const key in allPersonsData) {
-        if (allPersonsData.hasOwnProperty(key)) {
-            // Exclude the current person from relation linking options
-            if (key !== currentPersonId) {
-                personsDataForSelect[key] = {
-                    firstName: allPersonsData[key].firstName || '',
-                    familyName: allPersonsData[key].familyName || '',
-                    id: key
-                };
+                        document.getElementById('age').textContent = calculateAge(currentPersonData.birthDate);
+                        document.getElementById('birthDate').textContent = currentPersonData.birthDate ? currentPersonData.birthDate.toDate().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : 'غير محدد';
+
+                        document.getElementById('isAlive').textContent = currentPersonData.isAlive ? 'على قيد الحياة' : 'متوفى';
+                        if (!currentPersonData.isAlive && currentPersonData.deathDate) {
+                            document.getElementById('deathDate').textContent = currentPersonData.deathDate ? currentPersonData.deathDate.toDate().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : 'غير محدد';
+                        } else {
+                            document.getElementById('deathDate').textContent = 'غير متوفر';
+                        }
+
+                        document.getElementById('ageCategory').textContent = isAbove16(currentPersonData.birthDate) ? 'فوق 16 سنة' : 'أقل من 16 سنة';
+
+                        // Handle Father, Grandfather, Mother names (clickable links)
+                        await displayRelation('fatherId', 'fatherName');
+                        await displayRelation('grandFatherId', 'grandFatherName');
+                        await displayRelation('motherId', 'motherName');
+
+                        // Handle Spouse name (clickable link)
+                        const spouseNameElement = document.getElementById('spouseName');
+                        if (spouseNameElement) { // Added null check
+                            if (currentPersonData.maritalStatus === 'Married' && currentPersonData.spouseId) {
+                                const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData.spouseId));
+                                if (spouseDoc.exists()) {
+                                    const spouseData = spouseDoc.data();
+                                    const spouseLink = document.createElement('a');
+                                    spouseLink.href = `profile.html?id=${currentPersonData.spouseId}`;
+                                    spouseLink.classList.add('relation-link');
+                                    spouseLink.textContent = spouseData.fullName || 'غير محدد';
+                                    spouseNameElement.innerHTML = ''; // Clear previous content
+                                    spouseNameElement.appendChild(spouseLink);
+                                } else {
+                                    spouseNameElement.textContent = 'غير متوفر';
+                                }
+                            } else {
+                                spouseNameElement.textContent = 'غير متوفر';
+                            }
+                        }
+
+
+                        // Handle Children list
+                        const childrenListDiv = document.getElementById('childrenList');
+                        const noChildrenMessage = document.getElementById('noChildrenMessage');
+                        if (childrenListDiv && noChildrenMessage) { // Added null check
+                            childrenListDiv.innerHTML = ''; // Clear previous children
+                            noChildrenMessage.classList.add('hidden'); // Hide default message
+
+                            if (currentPersonData.childrenIds && currentPersonData.childrenIds.length > 0) {
+                                for (const childId of currentPersonData.childrenIds) {
+                                    const childDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, childId));
+                                    if (childDoc.exists()) {
+                                        const childData = childDoc.data();
+                                        const childDiv = document.createElement('div');
+                                        childDiv.classList.add('detail-item');
+
+                                        const childLink = document.createElement('a');
+                                        childLink.href = `profile.html?id=${childId}`;
+                                        childLink.classList.add('relation-link');
+                                        childLink.textContent = childData.fullName || 'غير محدد';
+
+                                        const ageSpan = document.createElement('span');
+                                        ageSpan.classList.add('detail-value');
+                                        ageSpan.textContent = calculateAge(childData.birthDate);
+
+                                        childDiv.appendChild(childLink);
+                                        childDiv.appendChild(ageSpan);
+                                        childrenListDiv.appendChild(childDiv);
+                                    }
+                                }
+                            } else {
+                                noChildrenMessage.classList.remove('hidden');
+                            }
+                        }
+
+
+                        loadingIndicator.classList.add('hidden');
+                        personContent.classList.remove('hidden');
+                    } else {
+                        loadingIndicator.classList.add('hidden');
+                        noPersonMessage.classList.remove('hidden');
+                        personContent.classList.add('hidden');
+                        console.log("No such document!");
+                    }
+                }, (error) => {
+                    console.error("Error fetching person data:", error);
+                    loadingIndicator.classList.add('hidden');
+                    noPersonMessage.classList.remove('hidden');
+                    personContent.classList.add('hidden');
+                    showModal("حدث خطأ أثناء جلب بيانات الشخص: " + error.message);
+                });
+            } catch (error) {
+                console.error("Error fetching person data:", error);
+                loadingIndicator.classList.add('hidden');
+                noPersonMessage.classList.remove('hidden');
+                personContent.classList.add('hidden');
+                showModal("حدث خطأ غير متوقع أثناء جلب بيانات الشخص: " + error.message);
             }
         }
-    }
-  }
 
-  function filterPersonsForRelation(dropdownId, inputValue, type) {
-    const optionsContainer = document.querySelector(`#${dropdownId} .options-container`);
-    optionsContainer.innerHTML = '';
-    
-    const searchTerm = inputValue.toLowerCase().trim();
+        // Helper function to display related person's name as a clickable link
+        async function displayRelation(idKey, nameElementId) {
+            const element = document.getElementById(nameElementId);
+            if (!element) { // Added null check
+                console.error(`Element with ID '${nameElementId}' not found.`);
+                return;
+            }
 
-    if (searchTerm.length < 2) { 
-        optionsContainer.style.display = 'none';
-        return;
-    }
+            if (currentPersonData[idKey]) {
+                const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
+                if (relatedDoc.exists()) {
+                    const relatedData = relatedDoc.data();
+                    const link = document.createElement('a');
+                    link.href = `profile.html?id=${currentPersonData[idKey]}`;
+                    link.classList.add('relation-link');
+                    link.textContent = relatedData.fullName || 'غير محدد';
+                    element.innerHTML = ''; // Clear previous content
+                    element.appendChild(link);
+                } else {
+                    element.textContent = 'غير متوفر';
+                }
+            } else {
+                element.textContent = 'غير متوفر';
+            }
+        }
 
-    const filtered = Object.values(personsDataForSelect).filter(person => 
-        (person.firstName.toLowerCase().includes(searchTerm) || person.familyName.toLowerCase().includes(searchTerm))
-    ).slice(0, 10); 
+        // Function to handle person deletion
+        async function deletePerson() {
+            if (!currentPersonId || !userId) {
+                showModal("لا يمكن حذف شخص غير محدد.");
+                return;
+            }
 
-    if (filtered.length > 0) {
-        filtered.forEach(person => {
-            const option = document.createElement('div');
-            option.className = 'option';
-            option.textContent = `${person.firstName} ${person.familyName}`;
-            option.setAttribute('data-id', person.id);
-            option.onclick = () => selectPersonForRelation(dropdownId, person.id, `${person.firstName} ${person.familyName}`, type);
-            optionsContainer.appendChild(option);
+            // Show confirmation modal
+            document.getElementById('confirmDeleteModal').style.display = 'flex';
+
+            // Handle confirmation
+            document.getElementById('confirmDeleteBtn').onclick = async () => {
+                closeModal('confirmDeleteModal');
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonId));
+                    showModal("تم حذف الشخص بنجاح!", 'messageModal');
+                    // Redirect back to the main list after a short delay
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } catch (error) {
+                    console.error("Error deleting person:", error);
+                    showModal("حدث خطأ أثناء حذف الشخص: " + error.message);
+                }
+            };
+
+            document.getElementById('cancelDeleteBtn').onclick = () => {
+                closeModal('confirmDeleteModal');
+            };
+        }
+
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Modal close buttons
+            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            document.getElementById('closeConfirmDeleteModalBtn').addEventListener('click', () => closeModal('confirmDeleteModal'));
+
+            // Get person ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            currentPersonId = urlParams.get('id');
+
+            if (!currentPersonId) {
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('noPersonMessage').classList.remove('hidden');
+                document.getElementById('personDetailsCard').classList.remove('hidden');
+                showModal("لم يتم تحديد معرف الشخص. يرجى العودة إلى قائمة العائلة.", 'messageModal');
+                return;
+            }
+
+            // Initial authentication attempt
+            (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                }
+            })();
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+                    fetchAndDisplayPerson(currentPersonId); // Fetch and display data after authentication
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    document.getElementById('loadingIndicator').classList.add('hidden');
+                    document.getElementById('noPersonMessage').classList.remove('hidden');
+                    document.getElementById('personContent').classList.add('hidden');
+                    showModal("يرجى تسجيل الدخول لعرض تفاصيل الشخص.", 'messageModal');
+                }
+            });
+
+            // Edit and Delete buttons
+            document.getElementById('editPersonBtn').addEventListener('click', () => {
+                if (currentPersonId) {
+                    window.location.href = `add_edit_person.html?id=${currentPersonId}`;
+                }
+            });
+            document.getElementById('deletePersonBtn').addEventListener('click', deletePerson);
         });
-        optionsContainer.style.display = 'block';
-    } else {
-        optionsContainer.style.display = 'none';
-    }
-  }
-
-  function selectPersonForRelation(dropdownId, personId, personName, type) {
-    const inputElement = document.querySelector(`#${dropdownId} input[type="text"]`);
-    inputElement.value = personName;
-    document.querySelector(`#${dropdownId} .options-container`).style.display = 'none';
-    selectedRelationPersonId[type] = personId;
-  }
-
-  async function linkRelation(relationType) {
-    const targetPersonId = selectedRelationPersonId[relationType];
-    if (!targetPersonId || targetPersonId === currentPersonId) {
-      showToast('يرجى اختيار شخص صالح للربط.', 'error');
-      return;
-    }
-
-    showLoading();
-    try {
-      const updates = { lastModified: new Date().toISOString() };
-      const targetPersonUpdates = { lastModified: new Date().toISOString() };
-      
-      const currentPersonRef = personsRef.child(currentPersonId);
-      const targetPersonRef = personsRef.child(targetPersonId);
-
-      const targetPersonDataSnapshot = await targetPersonRef.once('value');
-      const targetPersonData = targetPersonDataSnapshot.val();
-
-      if (!targetPersonData) {
-          showToast('الشخص المراد ربطه غير موجود.', 'error');
-          hideLoading();
-          return;
-      }
-
-      if (relationType === 'father') {
-        updates.fatherId = targetPersonId;
-        updates.fatherNameDisplay = targetPersonData.firstName || '';
-        updates.grandfatherNameDisplay = targetPersonData.fatherNameDisplay || ''; // Auto-fill grandfather's name
-      } else if (relationType === 'mother') {
-        updates.motherId = targetPersonId;
-        updates.motherNameDisplay = targetPersonData.firstName || '';
-      } else if (relationType === 'spouse') {
-        updates.spouseId = targetPersonId;
-        targetPersonUpdates.spouseId = currentPersonId; // Link back
-        await targetPersonRef.update(targetPersonUpdates);
-      } else if (relationType === 'sibling') {
-        // For siblings, link by setting common parent IDs if not already linked
-        if (currentPersonData.fatherId && targetPersonData.fatherId && currentPersonData.fatherId === targetPersonData.fatherId) {
-            // Already siblings through father
-        } else if (currentPersonData.motherId && targetPersonData.motherId && currentPersonData.motherId === targetPersonData.motherId) {
-            // Already siblings through mother
-        } else {
-            showToast('لا يمكن ربطهم كإخوة تلقائيًا. يرجى ربطهم بنفس الأب أو الأم أولاً.', 'info');
-            hideLoading();
-            return;
-        }
-      }
-
-      await currentPersonRef.update(updates);
-      showToast(`تم ربط العلاقة بنجاح: ${relationType}.`, 'success');
-      selectedRelationPersonId[relationType] = null; // Clear selected
-      document.querySelector(`#link${relationType.charAt(0).toUpperCase() + relationType.slice(1)}Input`).value = '';
-      await loadPersonDetails(); // Reload to refresh display
-    } catch (error) {
-      console.error(`Error linking ${relationType}:`, error);
-      showToast(`حدث خطأ أثناء ربط ${relationType}.`, 'error');
-    } finally {
-      hideLoading();
-    }
-  }
-
-  async function unlinkRelation(relationType) {
-    if (!currentPersonId) return;
-
-    showLoading();
-    try {
-      const updates = { lastModified: new Date().toISOString() };
-      const currentPersonRef = personsRef.child(currentPersonId);
-
-      if (relationType === 'father') {
-        updates.fatherId = null;
-        updates.fatherNameDisplay = null;
-        updates.grandfatherNameDisplay = null;
-      } else if (relationType === 'mother') {
-        updates.motherId = null;
-        updates.motherNameDisplay = null;
-      } else if (relationType === 'spouse') {
-        const spouseId = currentPersonData.spouseId;
-        if (spouseId) {
-            const spouseRef = personsRef.child(spouseId);
-            await spouseRef.update({ spouseId: null, lastModified: new Date().toISOString() });
-        }
-        updates.spouseId = null;
-      }
-      
-      await currentPersonRef.update(updates);
-      showToast(`تم إلغاء ربط العلاقة بنجاح: ${relationType}.`, 'success');
-      await loadPersonDetails();
-    } catch (error) {
-      console.error(`Error unlinking ${relationType}:`, error);
-      showToast(`حدث خطأ أثناء إلغاء ربط ${relationType}.`, 'error');
-    } finally {
-      hideLoading();
-    }
-  }
-
-  function viewRelationDetails(relationType) {
-    let targetId = null;
-    if (relationType === 'father' && currentPersonData.fatherId) {
-      targetId = currentPersonData.fatherId;
-    } else if (relationType === 'mother' && currentPersonData.motherId) {
-      targetId = currentPersonData.motherId;
-    } else if (relationType === 'spouse' && currentPersonData.spouseId) {
-      targetId = currentPersonData.spouseId;
-    } else if (relationType === 'grandfather' && currentPersonData.fatherId && allPersonsData[currentPersonData.fatherId] && allPersonsData[currentPersonData.fatherId].fatherId) {
-      targetId = allPersonsData[currentPersonData.fatherId].fatherId;
-    } else if (relationType === 'child' && event.target.dataset.childId) { // For dynamically generated child buttons
-        targetId = event.target.dataset.childId;
-    } else if (relationType === 'sibling' && event.target.dataset.siblingId) { // For dynamically generated sibling buttons
-        targetId = event.target.dataset.siblingId;
-    } else {
-      showToast('لا يوجد تفاصيل عرض لهذه العلاقة.', 'info');
-      return;
-    }
-    
-    if (targetId) {
-      window.location.href = `person_details.html?id=${targetId}`;
-    } else {
-        showToast('لم يتم العثور على ID الشخص ذي الصلة.', 'error');
-    }
-  }
-
-  async function displayRelationships() {
-    // Father, Mother, Grandfather display
-    document.getElementById('fatherNameDisplay').textContent = currentPersonData.fatherNameDisplay || 'غير محدد';
-    document.getElementById('motherNameDisplay').textContent = currentPersonData.motherNameDisplay || 'غير محدد';
-    document.getElementById('grandfatherNameDisplay').textContent = currentPersonData.grandfatherNameDisplay || 'غير محدد';
-
-    document.getElementById('unlinkFatherBtn').classList.toggle('hidden', !currentPersonData.fatherId);
-    document.getElementById('viewFatherDetailsBtn').classList.toggle('hidden', !currentPersonData.fatherId);
-    document.getElementById('unlinkMotherBtn').classList.toggle('hidden', !currentPersonData.motherId);
-    document.getElementById('viewMotherDetailsBtn').classList.toggle('hidden', !currentPersonData.motherId);
-    document.getElementById('viewGrandfatherDetailsBtn').classList.toggle('hidden', !currentPersonData.fatherId || !allPersonsData[currentPersonData.fatherId] || !allPersonsData[currentPersonData.fatherId].fatherId);
-
-    // Children
-    const childrenList = document.getElementById('childrenList');
-    childrenList.innerHTML = '';
-    const children = Object.values(allPersonsData).filter(p => p.fatherId === currentPersonId || p.motherId === currentPersonId);
-    
-    if (children.length > 0) {
-      children.forEach(child => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <span class="relation-name">${escapeHTML(child.firstName || '')} ${escapeHTML(child.familyName || '')}</span>
-          <div class="relation-actions">
-            <button class="view-details-btn" data-child-id="${child.key}" onclick="viewRelationDetails('child')">عرض التفاصيل</button>
-            <button class="delete-btn" onclick="unlinkChild('${child.key}')">إلغاء ربط</button>
-          </div>
-        `;
-        childrenList.appendChild(li);
-      });
-    } else {
-      childrenList.innerHTML = '<li>لا يوجد أبناء مسجلون.</li>';
-    }
-
-    // Spouses
-    const spousesList = document.getElementById('spousesList');
-    spousesList.innerHTML = '';
-    if (currentPersonData.spouseId && allPersonsData[currentPersonData.spouseId]) {
-      const spouse = allPersonsData[currentPersonData.spouseId];
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <span class="relation-name">${escapeHTML(spouse.firstName || '')} ${escapeHTML(spouse.familyName || '')}</span>
-        <div class="relation-actions">
-          <button class="view-details-btn" data-spouse-id="${spouse.key}" onclick="viewRelationDetails('spouse')">عرض التفاصيل</button>
-          <button class="delete-btn" onclick="unlinkRelation('spouse')">إلغاء ربط</button>
-        </div>
-      `;
-      spousesList.appendChild(li);
-    } else {
-      spousesList.innerHTML = '<li>لا يوجد زوج/زوجات مسجلون.</li>';
-    }
-
-    // Siblings
-    const siblingsList = document.getElementById('siblingsList');
-    siblingsList.innerHTML = '';
-    const siblings = Object.values(allPersonsData).filter(p => {
-      // Is a sibling if they share a father OR a mother, and are not the current person
-      const sharesFather = currentPersonData.fatherId && p.fatherId === currentPersonData.fatherId;
-      const sharesMother = currentPersonData.motherId && p.motherId === currentPersonData.motherId;
-      return (sharesFather || sharesMother) && p.key !== currentPersonId;
-    });
-
-    if (siblings.length > 0) {
-      siblings.forEach(sibling => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <span class="relation-name">${escapeHTML(sibling.firstName || '')} ${escapeHTML(sibling.familyName || '')}</span>
-          <div class="relation-actions">
-            <button class="view-details-btn" data-sibling-id="${sibling.key}" onclick="viewRelationDetails('sibling')">عرض التفاصيل</button>
-            <button class="delete-btn" onclick="unlinkSibling('${sibling.key}')">إلغاء ربط</button>
-          </div>
-        `;
-        siblingsList.appendChild(li);
-      });
-    } else {
-      siblingsList.innerHTML = '<li>لا يوجد إخوة/أخوات مسجلون.</li>';
-    }
-  }
-
-  async function unlinkChild(childId) {
-      showLoading();
-      try {
-          const childRef = personsRef.child(childId);
-          const childDataSnapshot = await childRef.once('value');
-          const childData = childDataSnapshot.val();
-
-          const updates = { lastModified: new Date().toISOString() };
-          if (childData.fatherId === currentPersonId) {
-              updates.fatherId = null;
-              updates.fatherNameDisplay = null;
-          }
-          if (childData.motherId === currentPersonId) {
-              updates.motherId = null;
-              updates.motherNameDisplay = null;
-          }
-
-          await childRef.update(updates);
-          showToast('تم إلغاء ربط الابن بنجاح.', 'success');
-          await loadPersonDetails(); // Refresh relations
-      } catch (error) {
-          console.error("Error unlinking child:", error);
-          showToast("حدث خطأ أثناء إلغاء ربط الابن.", 'error');
-      } finally {
-          hideLoading();
-      }
-  }
-
-  async function unlinkSibling(siblingId) {
-      showLoading();
-      try {
-          const siblingRef = personsRef.child(siblingId);
-          const currentPersonRef = personsRef.child(currentPersonId);
-
-          const siblingDataSnapshot = await siblingRef.once('value');
-          const siblingData = siblingDataSnapshot.val();
-
-          // Unlink current person's parent from sibling if only one shared parent
-          if (currentPersonData.fatherId === siblingData.fatherId && currentPersonData.motherId !== siblingData.motherId) {
-              await siblingRef.update({ fatherId: null, fatherNameDisplay: null, lastModified: new Date().toISOString() });
-          } else if (currentPersonData.motherId === siblingData.motherId && currentPersonData.fatherId !== siblingData.fatherId) {
-              await siblingRef.update({ motherId: null, motherNameDisplay: null, lastModified: new Date().toISOString() });
-          } else if (currentPersonData.fatherId === siblingData.fatherId && currentPersonData.motherId === siblingData.motherId) {
-              // If both parents are shared, you might need to decide which link to break
-              // For simplicity, we'll break the father link for the sibling
-              await siblingRef.update({ fatherId: null, fatherNameDisplay: null, lastModified: new Date().toISOString() });
-              // And also update current person if they still reference this sibling
-              // This is complex, better approach is to manage a sibling array on parents or remove links entirely.
-              // For now, removing the direct parent link from one sibling is sufficient to break "sibling" status via that parent.
-          }
-          
-          showToast('تم إلغاء ربط الأخ/الأخت بنجاح.', 'success');
-          await loadPersonDetails(); // Refresh relations
-      } catch (error) {
-          console.error("Error unlinking sibling:", error);
-          showToast("حدث خطأ أثناء إلغاء ربط الأخ/الأخت.", 'error');
-      } finally {
-          hideLoading();
-      }
-  }
-
-  async function addNewChild() {
-    showLoading();
-    try {
-        const firstName = prompt('أدخل الاسم الأول للابن/الابنة:');
-        if (!firstName) {
-            hideLoading();
-            showToast('تم إلغاء إضافة الابن.', 'info');
-            return;
-        }
-
-        const familyName = prompt('أدخل اسم العائلة للابن/الابنة:');
-        if (!familyName) {
-            hideLoading();
-            showToast('تم إلغاء إضافة الابن.', 'info');
-            return;
-        }
-
-        const gender = prompt('أدخل الجنس (ذكر/أنثى):').trim();
-        if (!['ذكر', 'أنثى'].includes(gender)) {
-            hideLoading();
-            showToast('جنس غير صالح. يرجى إدخال "ذكر" أو "أنثى".', 'error');
-            return;
-        }
-
-        const newChildRef = personsRef.push();
-        const newChildData = {
-            firstName: firstName,
-            familyName: familyName,
-            gender: gender,
-            fatherId: (currentPersonData.gender === 'ذكر' ? currentPersonId : null),
-            motherId: (currentPersonData.gender === 'أنثى' ? currentPersonId : null),
-            fatherNameDisplay: (currentPersonData.gender === 'ذكر' ? currentPersonData.firstName : null),
-            motherNameDisplay: (currentPersonData.gender === 'أنثى' ? currentPersonData.firstName : null),
-            dob: '', idNumber: '', phoneNumber: '', maritalStatus: '', isAlive: true, dod: '', tags: '',
-            lastModified: new Date().toISOString()
-        };
-        await newChildRef.set(newChildData);
-        showToast('تم إضافة الابن/الابنة بنجاح.', 'success');
-        await loadPersonDetails(); // Refresh relations
-    } catch (error) {
-        console.error("Error adding new child:", error);
-        showToast("حدث خطأ أثناء إضافة الابن/الابنة.", 'error');
-    } finally {
-        hideLoading();
-    }
-  }
-
-  // --- Single Person VCF Export/Import ---
-  function exportSinglePersonVCF() {
-    if (!currentPersonData) {
-      showToast('لا توجد بيانات للشخص للتصدير.', 'info');
-      return;
-    }
-    const vcfContent = generatePersonsVCF([currentPersonData]); // Re-use the existing VCF generator
-    const fileName = `${currentPersonData.firstName}_${currentPersonData.familyName}.vcf`;
-
-    const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    showToast('تم تصدير تفاصيل الشخص إلى ملف VCF.', 'success');
-  }
-
-  function importSinglePersonVCF() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.vcf';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput);
-
-    fileInput.onchange = function(e) {
-      const file = e.target.files[0];
-      if (!file) {
-        showToast('لم يتم اختيار ملف VCF.', 'info');
-        return;
-      }
-
-      showLoading();
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const vcfContent = e.target.result;
-        const parsedPersons = parseVCF(vcfContent);
-
-        if (parsedPersons.length === 0) {
-          hideLoading();
-          showToast('لم يتم العثور على بيانات صالحة في ملف VCF.', 'error');
-          return;
-        }
-
-        // We expect only one person from single VCF import for this specific functionality
-        const importedPerson = parsedPersons[0];
-        const updates = {
-            firstName: importedPerson.firstName || '',
-            familyName: importedPerson.familyName || '',
-            phoneNumber: importedPerson.phoneNumber || '',
-            dob: importedPerson.dob || '',
-            gender: importedPerson.gender || currentPersonData.gender, // Keep existing if VCF empty
-            idNumber: importedPerson.idNumber || currentPersonData.idNumber,
-            maritalStatus: importedPerson.maritalStatus || currentPersonData.maritalStatus,
-            isAlive: importedPerson.isAlive !== undefined ? importedPerson.isAlive : currentPersonData.isAlive,
-            dod: importedPerson.dod || currentPersonData.dod,
-            tags: importedPerson.tags || currentPersonData.tags,
-            lastModified: new Date().toISOString()
-        };
-
-        try {
-            await personsRef.child(currentPersonId).update(updates);
-            showToast('تم استيراد وتحديث تفاصيل الشخص بنجاح من VCF.', 'success');
-            await loadPersonDetails(); // Reload page to show updated details
-        } catch (error) {
-            console.error("Error updating person from VCF:", error);
-            showToast("حدث خطأ أثناء تحديث الشخص من VCF.", 'error');
-        } finally {
-            hideLoading();
-            document.body.removeChild(fileInput); // Clean up
-        }
-      };
-      reader.onerror = function(e) {
-        hideLoading();
-        console.error("Error reading VCF file:", e);
-        showToast('حدث خطأ أثناء قراءة ملف VCF.', 'error');
-        document.body.removeChild(fileInput); // Clean up
-      };
-      reader.readAsText(file);
-    };
-    fileInput.click(); // Trigger file selection dialog
-  }
-
-  // --- Event Listeners ---
-  document.addEventListener('click', function(event) {
-    const multiSelectDropdowns = document.querySelectorAll('.multi-select-dropdown');
-    multiSelectDropdowns.forEach(dropdown => {
-      if (!dropdown.contains(event.target)) {
-        document.querySelector(`#${dropdown.id} .options-container`).style.display = 'none';
-      }
-    });
-  });
-
-  // Call the function to load person details when the page loads
-  window.onload = loadPersonDetails;
-</script>
-
+    </script>
 </body>
 </html>
