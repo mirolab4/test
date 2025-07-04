@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المسؤول</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <!-- Auth Guard Script - MUST BE LOADED FIRST -->
+    <script type="module" src="auth_guard.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        .input-field {
+            border: 1px solid #d1d5db; /* Light gray border */
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+        /* Table styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            text-align: right;
+        }
+        .data-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f3f4f6;
+        }
+        .data-table tbody tr:hover {
+            background-color: #e5e7eb;
+        }
+        /* Loading Modal Specific Styles */
+        #loadingModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .role-select {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            background-color: white;
+        }
+        .permissions-checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+            margin-top: 0.5rem;
+        }
+        .permissions-checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .error-message {
+            color: #ef4444; /* Red color for errors */
+            font-size: 0.875rem; /* Small text */
+            margin-top: 0.25rem;
+            text-align: right;
+        }
+        .input-field.error {
+            border-color: #ef4444; /* Red border for invalid fields */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <!-- Custom Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="modal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p class="text-lg font-semibold text-gray-800">جارٍ تحميل البيانات...</p>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <span id="closeAddUserModalBtn" class="close-button">&times;</span>
+            <h3 class="text-2xl font-semibold text-gray-700 mb-4">إضافة مستخدم جديد</h3>
+            <p class="text-gray-600 mb-4">
+                أدخل البريد الإلكتروني للمستخدم والدور الافتراضي. سيحتاج المستخدم إلى التسجيل باستخدام نفس البريد الإلكتروني لتفعيل حسابه.
+            </p>
+            <div class="mb-4">
+                <label for="newUserEmailInput" class="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني:</label>
+                <input type="email" id="newUserEmailInput" class="input-field" placeholder="example@domain.com" required>
+                <p id="newUserEmailError" class="error-message hidden">البريد الإلكتروني مطلوب أو غير صالح.</p>
+            </div>
+            <div class="mb-4">
+                <label for="newUserRoleSelect" class="block text-sm font-medium text-gray-700 mb-1">الدور الافتراضي:</label>
+                <select id="newUserRoleSelect" class="role-select w-full">
+                    <option value="viewer">Viewer</option>
+                    <option value="editor">Editor</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <button id="addNewUserBtn" class="btn-primary">إضافة مستخدم</button>
+        </div>
+    </div>
+
+    <!-- Edit User Permissions Modal -->
+    <div id="editUserPermissionsModal" class="modal">
+        <div class="modal-content">
+            <span id="closeEditUserPermissionsModalBtn" class="close-button">&times;</span>
+            <h3 id="editUserPermissionsTitle" class="text-2xl font-semibold text-gray-700 mb-4">تعديل صلاحيات المستخدم</h3>
+            <p id="editUserPermissionsEmail" class="text-gray-600 mb-4">المستخدم: </p>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">الصفحات المسموح بها لهذا المستخدم:</label>
+                <div id="userSpecificPagesCheckboxes" class="permissions-checkbox-group">
+                    <!-- Checkboxes for user-specific pages will be populated here -->
+                </div>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button id="saveUserPermissionsBtn" class="btn-primary" data-user-id="">حفظ الصلاحيات</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">لوحة تحكم المسؤول</h1>
+            <nav class="flex flex-wrap gap-3" id="mainNav">
+                <a href="dashboard.html" class="btn-secondary nav-link" data-page="dashboard.html" style="display:none;">لوحة التحكم</a>
+                <a href="index.html" class="btn-secondary nav-link" data-page="index.html" style="display:none;">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary nav-link" data-page="events.html" style="display:none;">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary nav-link" data-page="family_tree.html" style="display:none;">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-secondary nav-link" data-page="add_edit_person.html" style="display:none;">إضافة شخص جديد</a>
+                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html" style="display:none;">تصدير البيانات</a>
+                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="display:none;">الإحصائيات</a>
+                <a href="admin_panel.html" class="btn-primary">لوحة المدير</a>
+                <button id="logoutBtn" class="btn-secondary"><i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج</button>
+            </nav>
+        </div>
+
+        <!-- Add New User Section -->
+        <div class="card mb-6">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">إضافة مستخدم جديد</h2>
+            <p class="text-gray-600 mb-4">
+                لإضافة مستخدم جديد، انقر على الزر أدناه وأدخل تفاصيله.
+            </p>
+            <div class="flex justify-end">
+                <button id="openAddUserModalBtn" class="btn-primary">
+                    <i class="fas fa-user-plus ml-2"></i> إضافة مستخدم
+                </button>
+            </div>
+        </div>
+
+        <!-- User Management Section -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">إدارة المستخدمين الحاليين</h2>
+            <p class="text-gray-600 mb-4">
+                يمكنك هنا عرض المستخدمين المسجلين وتعديل أدوارهم وصلاحياتهم.
+            </p>
+            <div class="overflow-x-auto">
+                <table id="usersTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>معرف المستخدم (UID)</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>الدور</th>
+                            <th>الصلاحيات</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- User data will be loaded here -->
+                        <tr><td colspan="5" class="text-center text-gray-500">جاري تحميل المستخدمين...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Role Permissions Management Section -->
+        <div class="card mt-6">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">إدارة صلاحيات الأدوار الافتراضية</h2>
+            <p class="text-gray-600 mb-4">
+                حدد الصفحات التي يمكن لكل دور الوصول إليها بشكل افتراضي. هذه الصلاحيات تنطبق إذا لم يتم تعيين صلاحيات فردية للمستخدم.
+            </p>
+            <div class="mb-4">
+                <label for="roleSelect" class="block text-sm font-medium text-gray-700 mb-1">اختر الدور:</label>
+                <select id="roleSelect" class="role-select w-full md:w-1/3">
+                    <option value="viewer">Viewer</option>
+                    <option value="editor">Editor</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">الصفحات المسموح بها لهذا الدور:</label>
+                <div id="allowedPagesCheckboxes" class="permissions-checkbox-group">
+                    <!-- Checkboxes for pages will be populated here -->
+                </div>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button id="saveRolePermissionsBtn" class="btn-primary">حفظ صلاحيات الدور</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import auth, db, appId, and redirectTo from auth_guard.js
+        import { auth, db, appId, redirectTo } from './auth_guard.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, doc, getDoc, setDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let userId = null;
+        let userRole = null; // Store current user's role
+        let allowedPages = []; // Store current user's allowed pages
+        let allUsersSettings = []; // Cache all users' settings
+        let allRolesPermissions = {}; // Cache permissions for each role
+
+        // DOM Elements
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
+        const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
+        const loadingModal = document.getElementById('loadingModal');
+        const mainNav = document.getElementById('mainNav');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Add User Modal Elements
+        const addUserModal = document.getElementById('addUserModal');
+        const closeAddUserModalBtn = document.getElementById('closeAddUserModalBtn');
+        const newUserEmailInput = document.getElementById('newUserEmailInput');
+        const newUserEmailError = document.getElementById('newUserEmailError');
+        const newUserRoleSelect = document.getElementById('newUserRoleSelect');
+        const addNewUserBtn = document.getElementById('addNewUserBtn');
+        const openAddUserModalBtn = document.getElementById('openAddUserModalBtn');
+
+
+        // Edit User Permissions Modal Elements
+        const editUserPermissionsModal = document.getElementById('editUserPermissionsModal');
+        const closeEditUserPermissionsModalBtn = document.getElementById('closeEditUserPermissionsModalBtn');
+        const editUserPermissionsTitle = document.getElementById('editUserPermissionsTitle');
+        const editUserPermissionsEmail = document.getElementById('editUserPermissionsEmail');
+        const userSpecificPagesCheckboxes = document.getElementById('userSpecificPagesCheckboxes');
+        const saveUserPermissionsBtn = document.getElementById('saveUserPermissionsBtn');
+
+
+        const usersTableBody = document.getElementById('usersTableBody');
+        const roleSelect = document.getElementById('roleSelect');
+        const allowedPagesCheckboxes = document.getElementById('allowedPagesCheckboxes');
+        const saveRolePermissionsBtn = document.getElementById('saveRolePermissionsBtn');
+
+        // Define all possible pages and their display names
+        const allPages = [
+            { id: 'dashboard.html', name: 'لوحة التحكم' },
+            { id: 'index.html', name: 'قائمة العائلة' },
+            { id: 'events.html', name: 'الأحداث' },
+            { id: 'family_tree.html', name: 'شجرة العائلة' },
+            { id: 'add_edit_person.html', name: 'إضافة/تعديل شخص' },
+            { id: 'export_data.html', name: 'تصدير البيانات' },
+            { id: 'statistics.html', name: 'الإحصائيات' },
+            { id: 'admin_panel.html', name: 'لوحة المدير' }
+        ];
+
+        // Function to show custom modal messages
+        function showModal(message, modalId = 'messageModal') {
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        // Function to close custom modal messages
+        function closeModal(modalId = 'messageModal') {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Function to show loading modal
+        function showLoadingModal() {
+            loadingModal.style.display = 'flex';
+        }
+
+        // Function to hide loading modal
+        function hideLoadingModal() {
+            loadingModal.style.display = 'none';
+        }
+
+        // Function to fetch all user settings
+        async function fetchAllUserSettings() {
+            showLoadingModal();
+            try {
+                const q = collection(db, `artifacts/${appId}/userSettings`);
+                const querySnapshot = await getDocs(q);
+                allUsersSettings = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("All user settings fetched:", allUsersSettings);
+                renderUsersTable();
+            } catch (error) {
+                console.error("Error fetching all user settings:", error);
+                showModal("حدث خطأ أثناء جلب إعدادات المستخدمين: " + error.message);
+            } finally {
+                hideLoadingModal();
+            }
+        }
+
+        // Function to fetch all role permissions
+        async function fetchAllRolePermissions() {
+            showLoadingModal();
+            try {
+                const q = collection(db, `artifacts/${appId}/rolePermissions`);
+                const querySnapshot = await getDocs(q);
+                allRolesPermissions = {};
+                querySnapshot.docs.forEach(doc => {
+                    allRolesPermissions[doc.id] = doc.data().allowedPages || [];
+                });
+                console.log("All role permissions fetched:", allRolesPermissions);
+                populateRolePermissionsEditor();
+            } catch (error) {
+                console.error("Error fetching all role permissions:", error);
+                showModal("حدث خطأ أثناء جلب صلاحيات الأدوار: " + error.message);
+            } finally {
+                hideLoadingModal();
+            }
+        }
+
+        // Render users table
+        function renderUsersTable() {
+            usersTableBody.innerHTML = '';
+            if (allUsersSettings.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500">لا يوجد مستخدمون مسجلون.</td></tr>';
+                return;
+            }
+
+            allUsersSettings.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-sm">${user.id}</td>
+                    <td class="text-sm">${user.email || 'N/A'}</td>
+                    <td>
+                        <select class="role-select" data-user-id="${user.id}">
+                            <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                            <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
+                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button type="button" class="btn-secondary px-3 py-1 text-sm view-permissions-btn" data-user-id="${user.id}">
+                            عرض
+                        </button>
+                        <button type="button" class="btn-primary px-3 py-1 text-sm edit-user-permissions-btn ml-2" data-user-id="${user.id}">
+                            تعديل
+                        </button>
+                    </td>
+                    <td>
+                        <button type="button" class="btn-primary px-3 py-1 text-sm save-user-role-btn" data-user-id="${user.id}">
+                            حفظ الدور
+                        </button>
+                    </td>
+                `;
+                usersTableBody.appendChild(tr);
+            });
+
+            // Add event listeners for role selects and save buttons
+            usersTableBody.querySelectorAll('.role-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    const userIdToUpdate = e.target.dataset.userId;
+                    const newRole = e.target.value;
+                    const userToUpdate = allUsersSettings.find(u => u.id === userIdToUpdate);
+                    if (userToUpdate) {
+                        userToUpdate.role = newRole; // Update cached data
+                    }
+                });
+            });
+
+            usersTableBody.querySelectorAll('.save-user-role-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const userIdToUpdate = e.target.dataset.userId;
+                    const selectElement = usersTableBody.querySelector(`select[data-user-id="${userIdToUpdate}"]`);
+                    const newRole = selectElement.value;
+                    await saveUserRole(userIdToUpdate, newRole);
+                });
+            });
+
+            usersTableBody.querySelectorAll('.view-permissions-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const userIdToView = e.target.dataset.userId;
+                    const userSettings = allUsersSettings.find(u => u.id === userIdToView);
+                    if (userSettings) {
+                        // Determine actual allowed pages (user-specific overrides role-based)
+                        const effectiveAllowedPages = userSettings.allowedPages || allRolesPermissions[userSettings.role] || [];
+                        showModal(`
+                            <h4 class="text-xl font-semibold mb-2">صلاحيات المستخدم: ${userSettings.email || userSettings.id}</h4>
+                            <p class="mb-2">الدور: ${userSettings.role || 'viewer'}</p>
+                            <p class="mb-2">الصفحات المسموح بها:</p>
+                            <ul class="list-disc pr-6 text-right inline-block">
+                                ${effectiveAllowedPages.length > 0
+                                    ? effectiveAllowedPages.map(pageId => `<li>${allPages.find(p => p.id === pageId)?.name || pageId}</li>`).join('')
+                                    : '<li>لا توجد صلاحيات محددة.</li>'
+                                }
+                            </ul>
+                        `);
+                    }
+                });
+            });
+
+            usersTableBody.querySelectorAll('.edit-user-permissions-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const userIdToEdit = e.target.dataset.userId;
+                    const userSettings = allUsersSettings.find(u => u.id === userIdToEdit);
+                    if (userSettings) {
+                        openEditUserPermissionsModal(userSettings);
+                    }
+                });
+            });
+        }
+
+        // Save individual user role
+        async function saveUserRole(id, role) {
+            showLoadingModal();
+            try {
+                const userRef = doc(db, `artifacts/${appId}/userSettings`, id);
+                await setDoc(userRef, { role: role }, { merge: true });
+                showModal("تم تحديث دور المستخدم بنجاح.");
+                await fetchAllUserSettings(); // Re-fetch to update table
+                // If the current user's role was changed, trigger a navigation update
+                if (id === userId) {
+                    await updateCurrentUserPermissions();
+                }
+            } catch (error) {
+                console.error("Error saving user role:", error);
+                showModal("حدث خطأ أثناء حفظ دور المستخدم: " + error.message);
+            } finally {
+                hideLoadingModal();
+            }
+        }
+
+        // Populate role permissions editor
+        function populateRolePermissionsEditor() {
+            allowedPagesCheckboxes.innerHTML = ''; // Clear previous checkboxes
+
+            allPages.forEach(page => {
+                const label = document.createElement('label');
+                label.innerHTML = `
+                    <input type="checkbox" value="${page.id}" class="form-checkbox text-indigo-600 rounded-md">
+                    <span class="mr-2 text-gray-700">${page.name}</span>
+                `;
+                allowedPagesCheckboxes.appendChild(label);
+            });
+
+            // Set initial checkboxes based on selected role
+            updateAllowedPagesCheckboxes();
+        }
+
+        // Update checkboxes based on selected role
+        function updateAllowedPagesCheckboxes() {
+            const selectedRole = roleSelect.value;
+            const currentRolePermissions = allRolesPermissions[selectedRole] || [];
+
+            allowedPagesCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = currentRolePermissions.includes(checkbox.value);
+            });
+        }
+
+        // Save role permissions
+        async function saveRolePermissions() {
+            showLoadingModal();
+            try {
+                const selectedRole = roleSelect.value;
+                const selectedPages = Array.from(allowedPagesCheckboxes.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+                const rolePermissionsRef = doc(db, `artifacts/${appId}/rolePermissions`, selectedRole);
+                await setDoc(rolePermissionsRef, { allowedPages: selectedPages }, { merge: true });
+
+                showModal(`تم حفظ صلاحيات الدور "${selectedRole}" بنجاح.`);
+                await fetchAllRolePermissions(); // Re-fetch to update cached permissions
+                await fetchAllUserSettings(); // Re-fetch user settings to ensure current user's nav updates
+                // Also update current user's permissions if their role's default permissions changed
+                await updateCurrentUserPermissions();
+
+            } catch (error) {
+                console.error("Error saving role permissions:", error);
+                showModal("حدث خطأ أثناء حفظ صلاحيات الدور: " + error.message);
+            } finally {
+                hideLoadingModal();
+            }
+        }
+
+        // Function to add a new user (creates userSettings document)
+        async function addNewUser() {
+            newUserEmailError.classList.add('hidden');
+            newUserEmailInput.classList.remove('error');
+
+            const email = newUserEmailInput.value.trim();
+            const role = newUserRoleSelect.value;
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                newUserEmailError.textContent = "البريد الإلكتروني مطلوب أو غير صالح.";
+                newUserEmailError.classList.remove('hidden');
+                newUserEmailInput.classList.add('error');
+                return;
+            }
+
+            // Check if userSettings for this email already exists
+            const existingUser = allUsersSettings.find(u => u.email === email);
+            if (existingUser) {
+                newUserEmailError.textContent = "هذا البريد الإلكتروني مسجل بالفعل في إعدادات المستخدمين.";
+                newUserEmailError.classList.remove('hidden');
+                newUserEmailInput.classList.add('error');
+                return;
+            }
+
+            showLoadingModal();
+            try {
+                // Generate a pseudo-UID for the user settings document if Firebase Auth UID is not available yet
+                // This is a placeholder. The actual UID will be set if the user registers.
+                // For now, we use the email as the document ID for simplicity, assuming emails are unique.
+                // In a real app, you'd integrate with Firebase Auth user creation and use their actual UID.
+                const userSettingsDocRef = doc(db, `artifacts/${appId}/userSettings`, email); // Using email as doc ID for simplicity
+                await setDoc(userSettingsDocRef, {
+                    email: email,
+                    role: role,
+                    allowedPages: allRolesPermissions[role] || [] // Set default role permissions
+                });
+
+                showModal("تمت إضافة إعدادات المستخدم بنجاح. سيحتاج المستخدم إلى التسجيل باستخدام هذا البريد الإلكتروني لتفعيل حسابه.", 'addUserModal');
+                newUserEmailInput.value = ''; // Clear form
+                newUserRoleSelect.value = 'viewer';
+                closeModal('addUserModal');
+                await fetchAllUserSettings(); // Re-fetch users to update table
+            } catch (error) {
+                console.error("Error adding new user settings:", error);
+                showModal("حدث خطأ أثناء إضافة إعدادات المستخدم: " + error.message);
+            } finally {
+                hideLoadingModal();
+            }
+        }
+
+        // Function to open Edit User Permissions Modal
+        function openEditUserPermissionsModal(userSettings) {
+            editUserPermissionsTitle.textContent = `تعديل صلاحيات المستخدم: ${userSettings.email || userSettings.id}`;
+            editUserPermissionsEmail.textContent = `المستخدم: ${userSettings.email || userSettings.id}`;
+            saveUserPermissionsBtn.dataset.userId = userSettings.id; // Store user ID on the save button
+
+            userSpecificPagesCheckboxes.innerHTML = ''; // Clear previous checkboxes
+
+            // Get the user's specific allowed pages, or fall back to role-based if not set
+            const userAllowedPages = userSettings.allowedPages || allRolesPermissions[userSettings.role] || [];
+
+            allPages.forEach(page => {
+                const label = document.createElement('label');
+                label.innerHTML = `
+                    <input type="checkbox" value="${page.id}" class="form-checkbox text-indigo-600 rounded-md">
+                    <span class="mr-2 text-gray-700">${page.name}</span>
+                `;
+                const checkbox = label.querySelector('input[type="checkbox"]');
+                checkbox.checked = userAllowedPages.includes(page.id);
+                userSpecificPagesCheckboxes.appendChild(label);
+            });
+
+            editUserPermissionsModal.style.display = 'flex';
+        }
+
+        // Function to save user-specific permissions
+        async function saveUserPermissions() {
+            const userIdToUpdate = saveUserPermissionsBtn.dataset.userId;
+            const selectedPages = Array.from(userSpecificPagesCheckboxes.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            showLoadingModal();
+            try {
+                const userRef = doc(db, `artifacts/${appId}/userSettings`, userIdToUpdate);
+                await updateDoc(userRef, { allowedPages: selectedPages });
+
+                showModal("تم حفظ صلاحيات المستخدم بنجاح.");
+                closeModal('editUserPermissionsModal');
+                await fetchAllUserSettings(); // Re-fetch to update table
+                // If the current user's permissions were changed, trigger a navigation update
+                if (userIdToUpdate === userId) {
+                    await updateCurrentUserPermissions();
+                }
+            } catch (error) {
+                console.error("Error saving user permissions:", error);
+                showModal("حدث خطأ أثناء حفظ صلاحيات المستخدم: " + error.message);
+            } finally {
+                hideLoadingModal();
+            }
+        }
+
+        // Function to update current user's permissions and navigation after changes
+        async function updateCurrentUserPermissions() {
+            if (userId) {
+                try {
+                    const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userId);
+                    const userSettingsSnap = await getDoc(userSettingsRef);
+
+                    if (userSettingsSnap.exists()) {
+                        const settings = userSettingsSnap.data();
+                        userRole = settings.role || 'viewer';
+                        // Prioritize user-specific allowedPages, then role-based, then default fallback
+                        allowedPages = settings.allowedPages || allRolesPermissions[userRole] || ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html'];
+                        updateNavigationAndActionButtons(); // Update navigation based on fetched permissions
+                        // If the current user's admin access was revoked, redirect them
+                        if (userRole !== 'admin' && window.location.pathname.endsWith('admin_panel.html')) {
+                            showModal("تم إلغاء صلاحيات المسؤول الخاصة بك. سيتم إعادة توجيهك.", 'messageModal');
+                            setTimeout(() => redirectTo('dashboard.html'), 2000);
+                        }
+                    } else {
+                        // Fallback if settings are somehow lost
+                        userRole = 'viewer';
+                        allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html'];
+                        updateNavigationAndActionButtons();
+                        // If current user is on admin page but no settings, redirect
+                        if (window.location.pathname.endsWith('admin_panel.html')) {
+                            showModal("لم يتم العثور على إعدادات المستخدم الخاصة بك. سيتم إعادة توجيهك.", 'messageModal');
+                            setTimeout(() => redirectTo('dashboard.html'), 2000);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error updating current user permissions:", error);
+                    showModal("حدث خطأ أثناء تحديث صلاحياتك: " + error.message);
+                }
+            }
+        }
+
+
+        // Function to update navigation button visibility based on user's allowed pages and role
+        function updateNavigationAndActionButtons() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                const pageName = link.dataset.page;
+                if (allowedPages.includes(pageName)) {
+                    link.style.display = ''; // Show the link
+                } else {
+                    link.style.display = 'none'; // Hide the link
+                }
+            });
+            // No specific action buttons on this page besides logout, which is handled separately
+        }
+
+        // Main DOMContentLoaded listener
+        document.addEventListener('DOMContentLoaded', () => {
+            // Modal close buttons
+            closeMessageModalBtn.addEventListener('click', () => closeModal('messageModal'));
+            confirmMessageModalBtn.addEventListener('click', () => closeModal('messageModal'));
+            closeAddUserModalBtn.addEventListener('click', () => closeModal('addUserModal'));
+            closeEditUserPermissionsModalBtn.addEventListener('click', () => closeModal('editUserPermissionsModal'));
+
+            // Event listener for role select change (for default role permissions)
+            roleSelect.addEventListener('change', updateAllowedPagesCheckboxes);
+
+            // Event listener for saving role permissions
+            saveRolePermissionsBtn.addEventListener('click', saveRolePermissions);
+
+            // Event listener for opening Add User Modal
+            openAddUserModalBtn.addEventListener('click', () => {
+                newUserEmailInput.value = ''; // Clear previous input
+                newUserEmailError.classList.add('hidden'); // Hide error
+                newUserEmailInput.classList.remove('error'); // Remove error style
+                newUserRoleSelect.value = 'viewer'; // Default role
+                showModal('', 'addUserModal'); // Show modal
+            });
+
+            // Event listener for adding new user
+            addNewUserBtn.addEventListener('click', addNewUser);
+
+            // Event listener for saving user-specific permissions
+            saveUserPermissionsBtn.addEventListener('click', saveUserPermissions);
+
+            // Logout button
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    redirectTo('login.html'); // Redirect to login page after logout
+                } catch (error) {
+                    console.error("Error logging out:", error);
+                    showModal("حدث خطأ أثناء تسجيل الخروج: " + error.message);
+                }
+            });
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+
+                    // Fetch current user's settings to determine their role and allowed pages
+                    try {
+                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userId);
+                        const userSettingsSnap = await getDoc(userSettingsRef);
+
+                        if (userSettingsSnap.exists()) {
+                            const settings = userSettingsSnap.data();
+                            userRole = settings.role || 'viewer';
+                            // Initially, allowedPages will be based on role or user-specific if present
+                            // This will be re-evaluated after fetching allRolesPermissions
+                            allowedPages = settings.allowedPages || [];
+                        } else {
+                            console.warn("User settings not found for current user. Defaulting to viewer role.");
+                            userRole = 'viewer';
+                            allowedPages = []; // Will be populated by rolePermissions fallback
+                        }
+                    } catch (error) {
+                        console.error("Error fetching current user settings:", error);
+                        showModal("حدث خطأ أثناء جلب إعدادات المستخدم الحالية: " + error.message);
+                        userRole = 'viewer'; // Fallback
+                        allowedPages = [];
+                    }
+
+                    // Fetch all role permissions first, as they are needed to determine effective allowedPages
+                    await fetchAllRolePermissions();
+
+                    // Now that allRolesPermissions is populated, re-evaluate allowedPages for the current user
+                    const currentUserSettings = allUsersSettings.find(u => u.id === userId);
+                    if (currentUserSettings) {
+                        allowedPages = currentUserSettings.allowedPages || allRolesPermissions[currentUserSettings.role] || ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html'];
+                    } else {
+                        // This case should ideally not happen if user is authenticated and userSettings are created on signup
+                        allowedPages = allRolesPermissions[userRole] || ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html'];
+                    }
+
+                    updateNavigationAndActionButtons(); // Update navigation based on final allowedPages
+
+                    // Only admin can access this page
+                    if (userRole !== 'admin') {
+                        showModal("ليس لديك الصلاحية للوصول إلى لوحة تحكم المسؤول.");
+                        setTimeout(() => redirectTo('dashboard.html'), 2000); // Redirect if not admin
+                        return;
+                    }
+
+                    // Fetch data for admin panel if user is admin
+                    await fetchAllUserSettings(); // This will render the table
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    hideLoadingModal();
+                    showModal("يرجى تسجيل الدخول للوصول إلى لوحة تحكم المسؤول.");
+                    // Hide all navigation links
+                    document.querySelectorAll('.nav-link').forEach(link => link.style.display = 'none');
+                    document.getElementById('logoutBtn').style.display = 'none'; // Hide logout button too
+                }
+            });
+        });
+    </script>
+</body>
+</html>
