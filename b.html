@@ -419,6 +419,7 @@
         const hasSpouseFilter = document.getElementById('hasSpouseFilter');
 
         // Relationship filter elements - these will be re-assigned inside DOMContentLoaded
+        // Declared with `let` to allow reassignment inside DOMContentLoaded
         let filterByFatherInput;
         let filterByFatherSuggestions;
         let filterByFatherId;
@@ -694,7 +695,7 @@
                         updateCounts(); // Update counts on individual checkbox change
                     });
                     checkboxContainer.appendChild(checkbox);
-                    personCard.appendChild(checkboxContainer);
+                    personCard.appendChild(contentDiv);
 
                     // Card content
                     const contentDiv = document.createElement('div');
@@ -867,10 +868,10 @@
             handleRelatedPersonFilterInput(filterByMotherInput, filterByMotherSuggestions, filterByMotherId);
             handleRelatedPersonFilterInput(filterBySiblingInput, filterBySiblingSuggestions, filterBySiblingId);
 
-            // Add event listeners for relationship search inputs here too
-            filterByFatherInput.addEventListener('input', displayFamilyMembers);
-            filterByMotherInput.addEventListener('input', displayFamilyMembers);
-            filterBySiblingInput.addEventListener('input', displayFamilyMembers);
+            // Removed redundant event listeners as handleRelatedPersonFilterInput already adds them
+            // filterByFatherInput.addEventListener('input', displayFamilyMembers);
+            // filterByMotherInput.addEventListener('input', displayFamilyMembers);
+            // filterBySiblingInput.addEventListener('input', displayFamilyMembers);
 
 
             // Initial authentication attempt
