@@ -137,6 +137,23 @@
         .person-link:hover {
             text-decoration: underline;
         }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .filter-group label {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .filter-group select {
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: white;
+            cursor: pointer;
+        }
 
         /* Print specific styles */
         @media print {
@@ -150,8 +167,8 @@
                 margin: 0;
                 padding: 0;
             }
-            .btn-primary, .btn-secondary, nav, .flex.flex-wrap.justify-end.gap-4.mt-6.mb-6 {
-                display: none; /* Hide buttons and navigation when printing */
+            .btn-primary, .btn-secondary, nav, .flex.flex-wrap.justify-end.gap-4.mt-6.mb-6, .filter-group {
+                display: none; /* Hide buttons, navigation, and filter when printing */
             }
             .card {
                 box-shadow: none;
@@ -207,6 +224,13 @@
         <!-- General Statistics -->
         <div class="card">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">إحصائيات عامة</h2>
+            <div class="filter-group">
+                <label for="familyFilter">تحديد العائلة:</label>
+                <select id="familyFilter" class="input-field w-auto">
+                    <option value="All">الكل</option>
+                    <!-- Family names will be populated here by JavaScript -->
+                </select>
+            </div>
             <div id="statisticsContent" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 <div class="stat-box" id="statTotalMembers">
                     <div id="totalMembers" class="value">0</div>
@@ -472,7 +496,9 @@
         const auth = getAuth(app);
 
         let userId = null;
-        let allFamilyMembers = [];
+        let allFamilyMembers = []; // Stores all members fetched from Firestore
+        let filteredFamilyMembers = []; // Stores members filtered by the selected family name
+        let selectedFamilyFilter = 'أبو عيسى'; // Default family filter
 
         // Get app ID from environment or use a default
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -494,6 +520,7 @@
         const chartDetailsModal = document.getElementById('chartDetailsModal');
         const chartDetailsTitle = document.getElementById('chartDetailsTitle');
         const chartDetailsList = document.getElementById('chartDetailsList');
+        const familyFilterSelect = document.getElementById('familyFilter'); // New: Family Filter Select element
 
         // Function to show custom modal messages
         function showModal(message) {
@@ -545,8 +572,8 @@
             return age;
         }
 
-        // Function to fetch all family members
-        async function fetchFamilyMembers() {
+        // Function to fetch all family members (initial fetch, no filtering)
+        async function fetchAllFamilyMembers() {
             if (!userId) {
                 console.log("User ID not available, cannot fetch family members for statistics.");
                 return;
@@ -555,20 +582,62 @@
                 const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
                 const querySnapshot = await getDocs(q);
                 allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("Family members fetched for statistics:", allFamilyMembers);
-                renderStatistics(); // Render statistics after fetching data
+                console.log("All family members fetched:", allFamilyMembers);
+                initializeFamilyFilterAndRender(); // Initialize filter and render after fetching all data
             } catch (error) {
-                console.error("Error fetching family members for statistics:", error);
+                console.error("Error fetching all family members:", error);
                 showModal("حدث خطأ أثناء جلب بيانات العائلة للإحصائيات: " + error.message);
             }
         }
+
+        // Function to populate the family filter dropdown and set default
+        function initializeFamilyFilterAndRender() {
+            const uniqueFamilyNames = new Set(allFamilyMembers.map(p => p.familyName).filter(name => name && name.trim() !== ''));
+            
+            // Clear existing options except "الكل"
+            familyFilterSelect.innerHTML = '<option value="All">الكل</option>';
+
+            // Add unique family names
+            uniqueFamilyNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                familyFilterSelect.appendChild(option);
+            });
+
+            // Set default selection
+            if (uniqueFamilyNames.has('أبو عيسى')) {
+                familyFilterSelect.value = 'أبو عيسى';
+                selectedFamilyFilter = 'أبو عيسى';
+            } else {
+                familyFilterSelect.value = 'All';
+                selectedFamilyFilter = 'All';
+            }
+            
+            applyFamilyFilterAndRender(); // Apply initial filter and render
+        }
+
+        // Function to apply the selected family filter and re-render statistics
+        function applyFamilyFilterAndRender() {
+            const filterValue = familyFilterSelect.value;
+            selectedFamilyFilter = filterValue;
+
+            if (filterValue === 'All') {
+                filteredFamilyMembers = [...allFamilyMembers];
+            } else {
+                filteredFamilyMembers = allFamilyMembers.filter(p => p.familyName === filterValue);
+            }
+            console.log("Filtered members:", filteredFamilyMembers);
+            renderStatistics(); // Render statistics with the filtered data
+        }
+
 
         // Function to handle stat box click for drill-down
         function handleStatBoxClick(categoryLabel, filterFunction) {
             chartDetailsTitle.textContent = `الأفراد في فئة: ${categoryLabel}`;
             chartDetailsList.innerHTML = '';
 
-            const filteredPeople = allFamilyMembers.filter(filterFunction);
+            const filteredPeople = filteredFamilyMembers.filter(filterFunction); // Use filteredFamilyMembers
 
             if (filteredPeople.length > 0) {
                 filteredPeople.forEach(person => {
@@ -604,11 +673,11 @@
             if (deathsPerYearChartInstance) deathsPerYearChartInstance.destroy();
             if (marriagesEngagementsPerYearChartInstance) marriagesEngagementsPerYearChartInstance.destroy();
 
-            // 1. General Statistics
-            const totalMembers = allFamilyMembers.length;
-            const aliveMembersArray = allFamilyMembers.filter(p => p.isAlive !== false);
+            // 1. General Statistics (using filteredFamilyMembers)
+            const totalMembers = filteredFamilyMembers.length;
+            const aliveMembersArray = filteredFamilyMembers.filter(p => p.isAlive !== false);
             const aliveMembers = aliveMembersArray.length;
-            const deceasedMembersArray = allFamilyMembers.filter(p => p.isAlive === false);
+            const deceasedMembersArray = filteredFamilyMembers.filter(p => p.isAlive === false);
             const deceasedMembers = deceasedMembersArray.length;
 
             const ages = aliveMembersArray.filter(p => p.birthDate).map(p => calculateAgeInYears(p.birthDate)).filter(age => age !== null);
@@ -617,9 +686,12 @@
             const agesAtDeath = deceasedMembersArray.filter(p => p.birthDate && p.deathDate).map(p => calculateAgeAtDeath(p.birthDate, p.deathDate)).filter(age => age !== null);
             const averageAgeAtDeath = agesAtDeath.length > 0 ? (agesAtDeath.reduce((sum, age) => sum + age, 0) / agesAtDeath.length).toFixed(1) : 0;
 
-            const uniqueFamilyNames = new Set(allFamilyMembers.map(p => p.familyName).filter(name => name && name.trim() !== '')).size;
+            // For unique family names, we still use allFamilyMembers to count unique names across the entire dataset
+            // but the stat box itself will be clickable to show members of the *filtered* family.
+            const uniqueFamilyNamesCount = new Set(allFamilyMembers.map(p => p.familyName).filter(name => name && name.trim() !== '')).size;
 
-            // New General Statistics Calculations (for living members only)
+
+            // New General Statistics Calculations (for living members only, using filteredFamilyMembers)
             const livingMales = aliveMembersArray.filter(p => p.gender === 'Male').length;
             const livingFemales = aliveMembersArray.filter(p => p.gender === 'Female').length;
             const livingMarried = aliveMembersArray.filter(p => p.maritalStatus === 'Married').length;
@@ -639,10 +711,10 @@
             const malesUnder16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null).length;
             const femalesUnder16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null).length;
 
-            const parentsWithChildren = allFamilyMembers.filter(p => p.childrenIds && p.childrenIds.length > 0);
+            const parentsWithChildren = filteredFamilyMembers.filter(p => p.childrenIds && p.childrenIds.length > 0);
             const totalChildrenCount = parentsWithChildren.reduce((sum, p) => sum + p.childrenIds.length, 0);
             const avgChildrenPerParent = parentsWithChildren.length > 0 ? (totalChildrenCount / parentsWithChildren.length).toFixed(2) : 0;
-            const membersWithoutChildren = allFamilyMembers.filter(p => !p.childrenIds || p.childrenIds.length === 0).length;
+            const membersWithoutChildren = filteredFamilyMembers.filter(p => !p.childrenIds || p.childrenIds.length === 0).length;
 
             // Data Quality & Completion Stats
             let totalCompletionScore = 0;
@@ -650,7 +722,7 @@
             let missingGenderCount = 0;
             let missingFamilyNameCount = 0;
 
-            allFamilyMembers.forEach(person => {
+            filteredFamilyMembers.forEach(person => {
                 let score = 0;
                 let totalFields = 0;
                 if (person.firstName) { score++; totalFields++; } else { totalFields++; }
@@ -666,19 +738,19 @@
             const profileCompletionPercentage = totalMembers > 0 ? ((totalCompletionScore / totalMembers) * 100).toFixed(1) : 0;
 
             // Average Age at Marriage/Engagement
-            const maleMarriedAges = allFamilyMembers.filter(p => p.gender === 'Male' && p.maritalStatus === 'Married' && p.birthDate && p.marriageDate)
+            const maleMarriedAges = filteredFamilyMembers.filter(p => p.gender === 'Male' && p.maritalStatus === 'Married' && p.birthDate && p.marriageDate)
                 .map(p => calculateAgeAtDeath(p.birthDate, p.marriageDate)).filter(age => age !== null);
             const avgMaleMarriageAge = maleMarriedAges.length > 0 ? (maleMarriedAges.reduce((sum, age) => sum + age, 0) / maleMarriedAges.length).toFixed(1) : 0;
 
-            const femaleMarriedAges = allFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Married' && p.birthDate && p.marriageDate)
+            const femaleMarriedAges = filteredFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Married' && p.birthDate && p.marriageDate)
                 .map(p => calculateAgeAtDeath(p.birthDate, p.marriageDate)).filter(age => age !== null);
             const avgFemaleMarriageAge = femaleMarriedAges.length > 0 ? (femaleMarriedAges.reduce((sum, age) => sum + age, 0) / femaleMarriedAges.length).toFixed(1) : 0;
 
-            const maleEngagedAges = allFamilyMembers.filter(p => p.gender === 'Male' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
+            const maleEngagedAges = filteredFamilyMembers.filter(p => p.gender === 'Male' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
                 .map(p => calculateAgeAtDeath(p.birthDate, p.engagementDate)).filter(age => age !== null);
             const avgMaleEngagementAge = maleEngagedAges.length > 0 ? (maleEngagedAges.reduce((sum, age) => sum + age, 0) / maleEngagedAges.length).toFixed(1) : 0;
 
-            const femaleEngagedAges = allFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
+            const femaleEngagedAges = filteredFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
                 .map(p => calculateAgeAtDeath(p.birthDate, p.engagementDate)).filter(age => age !== null);
             const avgFemaleEngagementAge = femaleEngagedAges.length > 0 ? (femaleEngagedAges.reduce((sum, age) => sum + age, 0) / femaleEngagedAges.length).toFixed(1) : 0;
 
@@ -688,7 +760,7 @@
             document.getElementById('deceasedMembers').textContent = deceasedMembers;
             document.getElementById('averageAge').textContent = averageAge;
             document.getElementById('averageAgeAtDeath').textContent = averageAgeAtDeath;
-            document.getElementById('uniqueFamilyNames').textContent = uniqueFamilyNames;
+            document.getElementById('uniqueFamilyNames').textContent = uniqueFamilyNamesCount; // Still show total unique names
             document.getElementById('livingMales').textContent = livingMales;
             document.getElementById('livingFemales').textContent = livingFemales;
             document.getElementById('livingMarried').textContent = livingMarried;
@@ -731,56 +803,56 @@
                     chartDetailsTitle.textContent = `الأفراد في فئة: ${label}`;
                     chartDetailsList.innerHTML = '';
 
-                    let filteredPeople = [];
+                    let filteredPeopleForChartClick = [];
                     if (chartType === 'pie') {
                         // For pie charts, filter based on the label directly
                         if (labelKey === 'gender') {
-                            filteredPeople = allFamilyMembers.filter(p => (p.gender || 'غير محدد') === label);
+                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => (p.gender || 'غير محدد') === label);
                         } else if (labelKey === 'maritalStatus') {
-                            filteredPeople = allFamilyMembers.filter(p => (p.maritalStatus || 'غير محدد') === label);
+                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => (p.maritalStatus || 'غير محدد') === label);
                         } else if (labelKey === 'maritalStatusAlive') {
-                            filteredPeople = aliveMembersArray.filter(p => (p.maritalStatus || 'غير محدد') === label);
+                            filteredPeopleForChartClick = aliveMembersArray.filter(p => (p.maritalStatus || 'غير محدد') === label);
                         }
                     } else if (chartType === 'bar') {
                         // For bar charts, filter based on label (year, month, age group, family name)
                         if (labelKey === 'ageGroup') {
                             const [minAge, maxAge] = label.split('-').map(Number);
                             if (label.includes('+')) { // Handle '81+' case
-                                filteredPeople = aliveMembersArray.filter(p => calculateAgeInYears(p.birthDate) >= minAge);
+                                filteredPeopleForChartClick = aliveMembersArray.filter(p => calculateAgeInYears(p.birthDate) >= minAge);
                             } else {
-                                filteredPeople = aliveMembersArray.filter(p => {
+                                filteredPeopleForChartClick = aliveMembersArray.filter(p => {
                                     const age = calculateAgeInYears(p.birthDate);
                                     return age >= minAge && age <= maxAge;
                                 });
                             }
                         } else if (labelKey === 'birthMonth') {
                             const monthIndex = monthNames.indexOf(label);
-                            filteredPeople = allFamilyMembers.filter(p => p.birthDate && p.birthDate.toDate().getMonth() === monthIndex);
+                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.birthDate && p.birthDate.toDate().getMonth() === monthIndex);
                         } else if (labelKey === 'familyName') {
-                            filteredPeople = allFamilyMembers.filter(p => (p.familyName || 'غير محدد') === label);
+                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => (p.familyName || 'غير محدد') === label);
                         } else if (labelKey === 'birthYear') {
-                            filteredPeople = allFamilyMembers.filter(p => p.birthDate && p.birthDate.toDate().getFullYear().toString() === label);
+                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.birthDate && p.birthDate.toDate().getFullYear().toString() === label);
                         } else if (labelKey === 'deathYear') {
-                            filteredPeople = allFamilyMembers.filter(p => p.deathDate && p.deathDate.toDate().getFullYear().toString() === label);
+                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.deathDate && p.deathDate.toDate().getFullYear().toString() === label);
                         } else if (labelKey === 'maritalStatusGender') {
                             // This case is for male/female marital status charts
                             const gender = filterKey; // 'Male' or 'Female'
                             const status = label;
-                            filteredPeople = allFamilyMembers.filter(p => p.gender === gender && (p.maritalStatus || 'غير محدد') === status && p.isAlive !== false);
+                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.gender === gender && (p.maritalStatus || 'غير محدد') === status && p.isAlive !== false);
                         } else if (labelKey === 'marriageEngagementYear') {
                             const year = parseInt(label);
                             const datasetIndex = firstElement.datasetIndex; // 0 for marriages, 1 for engagements
                             if (datasetIndex === 0) { // Marriages
-                                filteredPeople = allFamilyMembers.filter(p => p.maritalStatus === 'Married' && p.marriageDate && p.marriageDate.toDate().getFullYear() === year);
+                                filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.maritalStatus === 'Married' && p.marriageDate && p.marriageDate.toDate().getFullYear() === year);
                             } else if (datasetIndex === 1) { // Engagements
-                                filteredPeople = allFamilyMembers.filter(p => p.maritalStatus === 'Engaged' && p.engagementDate && p.engagementDate.toDate().getFullYear() === year);
+                                filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.maritalStatus === 'Engaged' && p.engagementDate && p.engagementDate.toDate().getFullYear() === year);
                             }
                         }
                     }
 
 
-                    if (filteredPeople.length > 0) {
-                        filteredPeople.forEach(person => {
+                    if (filteredPeopleForChartClick.length > 0) {
+                        filteredPeopleForChartClick.forEach(person => {
                             const li = document.createElement('li');
                             const link = document.createElement('a');
                             link.href = `profile.html?id=${person.id}`;
@@ -885,7 +957,7 @@
 
 
             // 2. Gender Distribution Chart
-            const genderData = allFamilyMembers.reduce((acc, person) => {
+            const genderData = filteredFamilyMembers.reduce((acc, person) => {
                 const gender = person.gender || 'غير محدد';
                 acc[gender] = (acc[gender] || 0) + 1;
                 return acc;
@@ -899,7 +971,7 @@
             );
 
             // 3. Marital Status Distribution Chart (All Members)
-            const maritalStatusData = allFamilyMembers.reduce((acc, person) => {
+            const maritalStatusData = filteredFamilyMembers.reduce((acc, person) => {
                 const status = person.maritalStatus || 'غير محدد';
                 acc[status] = (acc[status] || 0) + 1;
                 return acc;
@@ -958,7 +1030,7 @@
                 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
                 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
             ];
-            allFamilyMembers.filter(p => p.birthDate).forEach(person => {
+            filteredFamilyMembers.filter(p => p.birthDate).forEach(person => {
                 const month = person.birthDate.toDate().getMonth();
                 birthMonthData[month]++;
             });
@@ -971,8 +1043,8 @@
                 'birthMonth'
             );
 
-            // 7. Family Name Distribution Chart
-            const familyNameDataCounts = allFamilyMembers.reduce((acc, person) => {
+            // 7. Family Name Distribution Chart (This chart will always show the selected family name if not "All")
+            const familyNameDataCounts = filteredFamilyMembers.reduce((acc, person) => {
                 const familyName = person.familyName || 'غير محدد';
                 acc[familyName] = (acc[familyName] || 0) + 1;
                 return acc;
@@ -987,8 +1059,8 @@
             );
 
             // Marital Status Breakdown by Gender (Bar Charts)
-            const maleMembers = allFamilyMembers.filter(p => p.gender === 'Male' && p.isAlive !== false);
-            const femaleMembers = allFamilyMembers.filter(p => p.gender === 'Female' && p.isAlive !== false);
+            const maleMembers = filteredFamilyMembers.filter(p => p.gender === 'Male' && p.isAlive !== false);
+            const femaleMembers = filteredFamilyMembers.filter(p => p.gender === 'Female' && p.isAlive !== false);
 
             const maleMaritalStatusData = maleMembers.reduce((acc, person) => {
                 const status = person.maritalStatus || 'غير محدد';
@@ -1022,7 +1094,7 @@
 
             // NEW: Births Per Year Chart
             const birthsPerYear = {};
-            allFamilyMembers.filter(p => p.birthDate).forEach(person => {
+            filteredFamilyMembers.filter(p => p.birthDate).forEach(person => {
                 const year = person.birthDate.toDate().getFullYear();
                 birthsPerYear[year] = (birthsPerYear[year] || 0) + 1;
             });
@@ -1039,7 +1111,7 @@
 
             // NEW: Deaths Per Year Chart
             const deathsPerYear = {};
-            allFamilyMembers.filter(p => p.deathDate).forEach(person => {
+            filteredFamilyMembers.filter(p => p.deathDate).forEach(person => {
                 const year = person.deathDate.toDate().getFullYear();
                 deathsPerYear[year] = (deathsPerYear[year] || 0) + 1;
             });
@@ -1059,12 +1131,12 @@
             const engagementsPerYear = {};
             const allEventYears = new Set();
 
-            allFamilyMembers.filter(p => p.maritalStatus === 'Married' && p.marriageDate).forEach(person => {
+            filteredFamilyMembers.filter(p => p.maritalStatus === 'Married' && p.marriageDate).forEach(person => {
                 const year = person.marriageDate.toDate().getFullYear();
                 marriagesPerYear[year] = (marriagesPerYear[year] || 0) + 1;
                 allEventYears.add(year);
             });
-            allFamilyMembers.filter(p => p.maritalStatus === 'Engaged' && p.engagementDate).forEach(person => {
+            filteredFamilyMembers.filter(p => p.maritalStatus === 'Engaged' && p.engagementDate).forEach(person => {
                 const year = person.engagementDate.toDate().getFullYear();
                 engagementsPerYear[year] = (engagementsPerYear[year] || 0) + 1;
                 allEventYears.add(year);
@@ -1138,7 +1210,7 @@
 
             // 5. Most Children List
             const childrenCounts = new Map(); // Map to store personId -> count of children
-            allFamilyMembers.forEach(person => {
+            filteredFamilyMembers.forEach(person => {
                 if (person.childrenIds && person.childrenIds.length > 0) {
                     childrenCounts.set(person.id, person.childrenIds.length);
                 }
@@ -1147,7 +1219,7 @@
             // Convert map to array, sort by children count descending
             const sortedByChildren = Array.from(childrenCounts.entries())
                 .map(([personId, count]) => {
-                    const person = allFamilyMembers.find(p => p.id === personId);
+                    const person = filteredFamilyMembers.find(p => p.id === personId); // Find in filtered members
                     return { name: person ? person.fullName : 'غير معروف', count: count, id: person ? person.id : null };
                 })
                 .sort((a, b) => b.count - a.count)
@@ -1226,13 +1298,15 @@
             }
 
             // NEW: Top Sub-Families List
-            const familyNameCounts = allFamilyMembers.reduce((acc, person) => {
+            // This list should reflect the *overall* top sub-families, not just the filtered one.
+            // So, we use allFamilyMembers here.
+            const allFamilyNameCounts = allFamilyMembers.reduce((acc, person) => {
                 const familyName = person.familyName || 'غير محدد';
                 acc[familyName] = (acc[familyName] || 0) + 1;
                 return acc;
             }, {});
 
-            const sortedFamilyNames = Object.entries(familyNameCounts)
+            const sortedFamilyNames = Object.entries(allFamilyNameCounts)
                 .sort(([, countA], [, countB]) => countB - countA)
                 .slice(0, 5); // Get top 5
 
@@ -1254,10 +1328,10 @@
 
             // NEW: Most Common Children Names List
             const childrenFirstNames = [];
-            allFamilyMembers.forEach(person => {
+            filteredFamilyMembers.forEach(person => { // Use filteredFamilyMembers for this list
                 if (person.childrenIds && person.childrenIds.length > 0) {
                     person.childrenIds.forEach(childId => {
-                        const child = allFamilyMembers.find(p => p.id === childId);
+                        const child = filteredFamilyMembers.find(p => p.id === childId); // Find in filtered members
                         if (child && child.firstName) {
                             childrenFirstNames.push(child.firstName);
                         }
@@ -1388,6 +1462,9 @@
             document.getElementById('exportChartsBtn').addEventListener('click', exportAllChartsAsPng);
             document.getElementById('printPageBtn').addEventListener('click', printPage); // New print button listener
 
+            // Add event listener for family filter dropdown
+            familyFilterSelect.addEventListener('change', applyFamilyFilterAndRender);
+
             // Add event listeners for stat boxes
             document.getElementById('statTotalMembers').addEventListener('click', () => handleStatBoxClick('إجمالي أفراد العائلة', p => true));
             document.getElementById('statAliveMembers').addEventListener('click', () => handleStatBoxClick('أفراد على قيد الحياة', p => p.isAlive !== false));
@@ -1446,7 +1523,7 @@
                 if (user) {
                     userId = user.uid;
                     console.log("Authentication state changed. User ID:", userId);
-                    await fetchFamilyMembers(); // Fetch and display statistics after authentication
+                    await fetchAllFamilyMembers(); // Fetch ALL members initially
                 } else {
                     userId = null;
                     console.log("User signed out or no user.");
