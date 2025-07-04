@@ -228,9 +228,9 @@
                         <i class="fas fa-heartbeat ml-1 text-gray-500"></i> الحالة الحياتية:
                     </label>
                     <select id="lifeStatusFilter" class="input-field">
+                        <option value="All">الكل (أحياء وأموات)</option>
                         <option value="Alive">أحياء فقط</option>
                         <option value="Deceased">أموات فقط</option>
-                        <option value="All">الكل (أحياء وأموات)</option>
                     </select>
                 </div>
 
@@ -403,23 +403,21 @@
         // Get app ID from environment or use a default
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // DOM Elements (defined globally for initial access)
-        const familyMembersGrid = document.getElementById('familyMembersGrid');
-        const noMembersMessage = document.getElementById('noMembersMessage');
-        const searchInput = document.getElementById('searchInput');
-        const genderFilter = document.getElementById('genderFilter');
-        const maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatusCheckbox"]');
-        const lifeStatusFilter = document.getElementById('lifeStatusFilter');
-        const ageFilter = document.getElementById('ageFilter');
-        const ageMinFilter = document.getElementById('ageMinFilter');
-        const ageMaxFilter = document.getElementById('ageMaxFilter');
-        const hasFatherFilter = document.getElementById('hasFatherFilter');
-        const hasMotherFilter = document.getElementById('hasMotherFilter');
-        const hasChildrenFilter = document.getElementById('hasChildrenFilter');
-        const hasSpouseFilter = document.getElementById('hasSpouseFilter');
+        // Declare DOM elements globally but assign them inside DOMContentLoaded
+        let familyMembersGrid;
+        let noMembersMessage;
+        let searchInput;
+        let genderFilter;
+        let maritalStatusCheckboxes;
+        let lifeStatusFilter;
+        // ageFilter removed as it's no longer in HTML
+        let ageMinFilter;
+        let ageMaxFilter;
+        let hasFatherFilter;
+        let hasMotherFilter;
+        let hasChildrenFilter;
+        let hasSpouseFilter;
 
-        // Relationship filter elements - these will be re-assigned inside DOMContentLoaded
-        // Declared with `let` to allow reassignment inside DOMContentLoaded
         let filterByFatherInput;
         let filterByFatherSuggestions;
         let filterByFatherId;
@@ -430,20 +428,19 @@
         let filterBySiblingSuggestions;
         let filterBySiblingId;
 
-        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const exportExcelBtn = document.getElementById('exportExcelBtn');
-        const messageModal = document.getElementById('messageModal');
-        const modalMessage = document.getElementById('modalMessage');
-        const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
-        const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
-        const loadingModal = document.getElementById('loadingModal');
+        let clearFiltersBtn;
+        let selectAllCheckbox;
+        let exportExcelBtn;
+        let messageModal;
+        let modalMessage;
+        let closeMessageModalBtn;
+        let confirmMessageModalBtn;
+        let loadingModal;
 
-        // Count display elements
-        const displayedCountSpan = document.getElementById('displayedCount');
-        const selectedCountSpan = document.getElementById('selectedCount');
-        const totalDisplayedCountSpan = document.getElementById('totalDisplayedCount');
-        const totalFamilyCountSpan = document.getElementById('totalFamilyCount');
+        let displayedCountSpan;
+        let selectedCountSpan;
+        let totalDisplayedCountSpan;
+        let totalFamilyCountSpan;
 
 
         // --- Utility Functions ---
@@ -502,6 +499,12 @@
 
         // --- Handle Related Person Filter Input (Generic for Father, Mother, Sibling filters) ---
         function handleRelatedPersonFilterInput(inputElement, suggestionsElement, hiddenIdElement) {
+            // Add a check to ensure inputElement is not null before adding event listener
+            if (!inputElement) {
+                console.error("Input element is null for handleRelatedPersonFilterInput. Cannot add event listener.");
+                return;
+            }
+
             inputElement.addEventListener('input', () => {
                 const searchText = inputElement.value.toLowerCase();
                 suggestionsElement.innerHTML = '';
@@ -534,11 +537,14 @@
             });
 
             // Hide suggestions when clicking outside
-            document.addEventListener('click', (event) => {
-                if (!inputElement.parentNode.contains(event.target)) {
-                    suggestionsElement.classList.add('hidden');
-                }
-            });
+            // Add a check to ensure inputElement is not null before adding event listener
+            if (document && inputElement) {
+                document.addEventListener('click', (event) => {
+                    if (!inputElement.parentNode.contains(event.target)) {
+                        suggestionsElement.classList.add('hidden');
+                    }
+                });
+            }
         }
 
 
@@ -563,9 +569,10 @@
             const selectedHasChildren = hasChildrenFilter.value;
             const selectedHasSpouse = hasSpouseFilter.value;
 
-            const filterByFatherIdValue = filterByFatherId.value;
-            const filterByMotherIdValue = filterByMotherId.value;
-            const filterBySiblingIdValue = filterBySiblingId.value;
+            // Ensure relationship filter IDs are valid before accessing .value
+            const filterByFatherIdValue = filterByFatherId ? filterByFatherId.value : '';
+            const filterByMotherIdValue = filterByMotherId ? filterByMotherId.value : '';
+            const filterBySiblingIdValue = filterBySiblingId ? filterBySiblingId.value : '';
 
             const filteredMembers = allFamilyMembers.filter(person => {
                 const matchesSearch = searchTerm === '' ||
@@ -695,7 +702,7 @@
                         updateCounts(); // Update counts on individual checkbox change
                     });
                     checkboxContainer.appendChild(checkbox);
-                    personCard.appendChild(contentDiv);
+                    personCard.appendChild(checkboxContainer);
 
                     // Card content
                     const contentDiv = document.createElement('div');
@@ -729,7 +736,7 @@
             updateCounts(); // Update counts after filtering and displaying
         }
 
-        // Function to update displayed and selected counts (NEW)
+        // Function to update displayed and selected counts
         function updateCounts() {
             displayedCountSpan.textContent = displayedFamilyMembers.length;
             selectedCountSpan.textContent = selectedPersonIds.size;
@@ -740,117 +747,24 @@
                                         displayedFamilyMembers.every(p => selectedPersonIds.has(p.id));
         }
 
-        // --- Event Listeners for Filters and Search ---
-
-        searchInput.addEventListener('input', displayFamilyMembers);
-        genderFilter.addEventListener('change', displayFamilyMembers);
-        // Add event listeners for marital status checkboxes
-        maritalStatusCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', displayFamilyMembers);
-        });
-        lifeStatusFilter.addEventListener('change', displayFamilyMembers);
-        ageFilter.addEventListener('input', displayFamilyMembers); // Keep this if 'exact age' filter is still desired
-        ageMinFilter.addEventListener('input', displayFamilyMembers); // NEW
-        ageMaxFilter.addEventListener('input', displayFamilyMembers); // NEW
-        hasFatherFilter.addEventListener('change', displayFamilyMembers);
-        hasMotherFilter.addEventListener('change', displayFamilyMembers);
-        hasChildrenFilter.addEventListener('change', displayFamilyMembers);
-        hasSpouseFilter.addEventListener('change', displayFamilyMembers);
-
-
-        clearFiltersBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            genderFilter.value = 'All';
-            // Clear marital status checkboxes
-            maritalStatusCheckboxes.forEach(checkbox => checkbox.checked = false);
-            lifeStatusFilter.value = 'Alive'; // Default to Alive Only
-            ageFilter.value = ''; // Clear exact age filter
-            ageMinFilter.value = ''; // Clear age range filters
-            ageMaxFilter.value = ''; // Clear age range filters
-            hasFatherFilter.value = 'All';
-            hasMotherFilter.value = 'All';
-            hasChildrenFilter.value = 'All';
-            hasSpouseFilter.value = 'All';
-            // Clear relationship filters
-            filterByFatherInput.value = '';
-            filterByFatherId.value = '';
-            filterByFatherSuggestions.classList.add('hidden');
-            filterByMotherInput.value = '';
-            filterByMotherId.value = '';
-            filterByMotherSuggestions.classList.add('hidden');
-            filterBySiblingInput.value = '';
-            filterBySiblingId.value = '';
-            filterBySiblingSuggestions.classList.add('hidden');
-
-            displayFamilyMembers();
-        });
-
-        // --- Selection Logic ---
-
-        selectAllCheckbox.addEventListener('change', () => {
-            selectedPersonIds.clear(); // Clear existing selections
-            if (selectAllCheckbox.checked) {
-                displayedFamilyMembers.forEach(person => {
-                    selectedPersonIds.add(person.id);
-                });
-            }
-            // Re-render to update all checkboxes and card highlights
-            displayFamilyMembers(); // This will call updateCounts() internally
-        });
-
-        // --- Export to Excel (CSV) ---
-
-        exportExcelBtn.addEventListener('click', () => {
-            if (selectedPersonIds.size === 0) {
-                showModal("الرجاء تحديد شخص واحد على الأقل للتصدير.");
-                return;
-            }
-
-            const selectedData = allFamilyMembers.filter(person => selectedPersonIds.has(person.id));
-
-            if (selectedData.length === 0) {
-                showModal("لا توجد بيانات للأشخاص المحددين للتصدير.");
-                return;
-            }
-
-            let csvContent = "الاسم,رقم الهاتف,رقم الهوية\n"; // CSV Header
-
-            selectedData.forEach(person => {
-                const name = person.fullName || '';
-                const phoneNumber = person.phoneNumber || '';
-                const idNumber = person.idNumber || '';
-                // Escape commas in fields if necessary (simple approach for now)
-                csvContent += `"${name.replace(/"/g, '""')}","${phoneNumber.replace(/"/g, '""')}","${idNumber.replace(/"/g, '""')}"\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            if (link.download !== undefined) { // Feature detection
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', 'family_members_data.csv');
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showModal("تم تصدير البيانات بنجاح إلى ملف Excel (CSV).");
-            } else {
-                showModal("متصفحك لا يدعم التصدير المباشر لملفات CSV.");
-            }
-        });
-
-
         // --- Initial Load and Authentication ---
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // Modal close buttons
-            closeMessageModalBtn.addEventListener('click', closeModal);
-            confirmMessageModalBtn.addEventListener('click', closeModal);
+            // Assign DOM elements inside DOMContentLoaded
+            familyMembersGrid = document.getElementById('familyMembersGrid');
+            noMembersMessage = document.getElementById('noMembersMessage');
+            searchInput = document.getElementById('searchInput');
+            genderFilter = document.getElementById('genderFilter');
+            maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatusCheckbox"]');
+            lifeStatusFilter = document.getElementById('lifeStatusFilter');
+            // ageFilter was removed from HTML, so it's removed from JS too.
+            ageMinFilter = document.getElementById('ageMinFilter');
+            ageMaxFilter = document.getElementById('ageMaxFilter');
+            hasFatherFilter = document.getElementById('hasFatherFilter');
+            hasMotherFilter = document.getElementById('hasMotherFilter');
+            hasChildrenFilter = document.getElementById('hasChildrenFilter');
+            hasSpouseFilter = document.getElementById('hasSpouseFilter');
 
-            // Set default filter for life status to "Alive"
-            lifeStatusFilter.value = 'Alive';
-
-            // Assign DOM elements for relationship filters inside DOMContentLoaded
             filterByFatherInput = document.getElementById('filterByFatherInput');
             filterByFatherSuggestions = document.getElementById('filterByFatherSuggestions');
             filterByFatherId = document.getElementById('filterByFatherId');
@@ -863,15 +777,135 @@
             filterBySiblingSuggestions = document.getElementById('filterBySiblingSuggestions');
             filterBySiblingId = document.getElementById('filterBySiblingId');
 
-            // Apply related person filter input handlers
-            handleRelatedPersonFilterInput(filterByFatherInput, filterByFatherSuggestions, filterByFatherId);
-            handleRelatedPersonFilterInput(filterByMotherInput, filterByMotherSuggestions, filterByMotherId);
-            handleRelatedPersonFilterInput(filterBySiblingInput, filterBySiblingSuggestions, filterBySiblingId);
+            clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            exportExcelBtn = document.getElementById('exportExcelBtn');
+            messageModal = document.getElementById('messageModal');
+            modalMessage = document.getElementById('modalMessage');
+            closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
+            confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
+            loadingModal = document.getElementById('loadingModal');
 
-            // Removed redundant event listeners as handleRelatedPersonFilterInput already adds them
-            // filterByFatherInput.addEventListener('input', displayFamilyMembers);
-            // filterByMotherInput.addEventListener('input', displayFamilyMembers);
-            // filterBySiblingInput.addEventListener('input', displayFamilyMembers);
+            displayedCountSpan = document.getElementById('displayedCount');
+            selectedCountSpan = document.getElementById('selectedCount');
+            totalDisplayedCountSpan = document.getElementById('totalDisplayedCount');
+            totalFamilyCountSpan = document.getElementById('totalFamilyCount');
+
+
+            // Modal close buttons
+            closeMessageModalBtn.addEventListener('click', closeModal);
+            confirmMessageModalBtn.addEventListener('click', closeModal);
+
+            // Set default filter for life status to "Alive"
+            lifeStatusFilter.value = 'Alive';
+
+            // Apply related person filter input handlers with null checks
+            if (filterByFatherInput && filterByFatherSuggestions && filterByFatherId) {
+                handleRelatedPersonFilterInput(filterByFatherInput, filterByFatherSuggestions, filterByFatherId);
+            } else {
+                console.error("One or more elements for filterByFather are null:", { filterByFatherInput, filterByFatherSuggestions, filterByFatherId });
+            }
+
+            if (filterByMotherInput && filterByMotherSuggestions && filterByMotherId) {
+                handleRelatedPersonFilterInput(filterByMotherInput, filterByMotherSuggestions, filterByMotherId);
+            } else {
+                console.error("One or more elements for filterByMother are null:", { filterByMotherInput, filterByMotherSuggestions, filterByMotherId });
+            }
+
+            if (filterBySiblingInput && filterBySiblingSuggestions && filterBySiblingId) {
+                handleRelatedPersonFilterInput(filterBySiblingInput, filterBySiblingSuggestions, filterBySiblingId);
+            } else {
+                console.error("One or more elements for filterBySibling are null:", { filterBySiblingInput, filterBySiblingSuggestions, filterBySiblingId });
+            }
+
+            // Event Listeners for Filters and Search (moved inside DOMContentLoaded)
+            searchInput.addEventListener('input', displayFamilyMembers);
+            genderFilter.addEventListener('change', displayFamilyMembers);
+            maritalStatusCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', displayFamilyMembers);
+            });
+            lifeStatusFilter.addEventListener('change', displayFamilyMembers);
+            // ageFilter.addEventListener('input', displayFamilyMembers); // Removed this line
+            ageMinFilter.addEventListener('input', displayFamilyMembers);
+            ageMaxFilter.addEventListener('input', displayFamilyMembers);
+            hasFatherFilter.addEventListener('change', displayFamilyMembers);
+            hasMotherFilter.addEventListener('change', displayFamilyMembers);
+            hasChildrenFilter.addEventListener('change', displayFamilyMembers);
+            hasSpouseFilter.addEventListener('change', displayFamilyMembers);
+
+            clearFiltersBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                genderFilter.value = 'All';
+                maritalStatusCheckboxes.forEach(checkbox => checkbox.checked = false);
+                lifeStatusFilter.value = 'Alive';
+                // ageFilter.value = ''; // Removed this line
+                ageMinFilter.value = '';
+                ageMaxFilter.value = '';
+                hasFatherFilter.value = 'All';
+                hasMotherFilter.value = 'All';
+                hasChildrenFilter.value = 'All';
+                hasSpouseFilter.value = 'All';
+
+                if (filterByFatherInput) filterByFatherInput.value = '';
+                if (filterByFatherId) filterByFatherId.value = '';
+                if (filterByFatherSuggestions) filterByFatherSuggestions.classList.add('hidden');
+                if (filterByMotherInput) filterByMotherInput.value = '';
+                if (filterByMotherId) filterByMotherId.value = '';
+                if (filterByMotherSuggestions) filterByMotherSuggestions.classList.add('hidden');
+                if (filterBySiblingInput) filterBySiblingInput.value = '';
+                if (filterBySiblingId) filterBySiblingId.value = '';
+                if (filterBySiblingSuggestions) filterBySiblingSuggestions.classList.add('hidden');
+
+                displayFamilyMembers();
+            });
+
+            selectAllCheckbox.addEventListener('change', () => {
+                selectedPersonIds.clear();
+                if (selectAllCheckbox.checked) {
+                    displayedFamilyMembers.forEach(person => {
+                        selectedPersonIds.add(person.id);
+                    });
+                }
+                displayFamilyMembers();
+            });
+
+            exportExcelBtn.addEventListener('click', () => {
+                if (selectedPersonIds.size === 0) {
+                    showModal("الرجاء تحديد شخص واحد على الأقل للتصدير.");
+                    return;
+                }
+
+                const selectedData = allFamilyMembers.filter(person => selectedPersonIds.has(person.id));
+
+                if (selectedData.length === 0) {
+                    showModal("لا توجد بيانات للأشخاص المحددين للتصدير.");
+                    return;
+                }
+
+                let csvContent = "الاسم,رقم الهاتف,رقم الهوية\n";
+
+                selectedData.forEach(person => {
+                    const name = person.fullName || '';
+                    const phoneNumber = person.phoneNumber || '';
+                    const idNumber = person.idNumber || '';
+                    csvContent += `"${name.replace(/"/g, '""')}","${phoneNumber.replace(/"/g, '""')}","${idNumber.replace(/"/g, '""')}"\n`;
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', 'family_members_data.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showModal("تم تصدير البيانات بنجاح إلى ملف Excel (CSV).");
+                } else {
+                    showModal("متصفحك لا يدعم التصدير المباشر لملفات CSV.");
+                }
+            });
 
 
             // Initial authentication attempt
