@@ -680,7 +680,7 @@
 
             const femaleEngagedAges = allFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
                 .map(p => calculateAgeAtDeath(p.birthDate, p.engagementDate)).filter(age => age !== null);
-            const avgFemaleEngagementAge = femaleEngagedAages.length > 0 ? (femaleEngagedAges.reduce((sum, age) => sum + age, 0) / femaleEngagedAges.length).toFixed(1) : 0;
+            const avgFemaleEngagementAge = femaleEngagedAges.length > 0 ? (femaleEngagedAges.reduce((sum, age) => sum + age, 0) / femaleEngagedAges.length).toFixed(1) : 0;
 
 
             document.getElementById('totalMembers').textContent = totalMembers;
