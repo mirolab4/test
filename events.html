@@ -6,10 +6,12 @@
     <title>أحداث العائلة</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome CDN -->
+    <!-- Font Awesome CDN for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Inter Font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <!-- Auth Guard Script - MUST BE LOADED FIRST -->
+    <script type="module" src="auth_guard.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -108,11 +110,6 @@
         .event-title {
             font-weight: 600;
             color: #374151;
-            display: flex; /* To align icon and text */
-            align-items: center;
-        }
-        .event-title i {
-            margin-left: 0.5rem; /* Space between icon and text for RTL */
         }
         .event-date {
             color: #6b7280;
@@ -139,18 +136,15 @@
             overflow-y: auto;
             width: 100%;
             z-index: 10;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .suggestions-list-item {
             padding: 0.75rem 1rem;
             cursor: pointer;
-            border-bottom: 1px solid #eee;
+            text-align: right;
         }
         .suggestions-list-item:hover {
             background-color: #f3f4f6;
-        }
-        .suggestions-list-item:last-child {
-            border-bottom: none;
         }
     </style>
 </head>
@@ -180,20 +174,12 @@
                     <input type="date" id="eventDateInput" class="input-field" required>
                 </div>
                 <div class="mb-4">
-                    <label for="eventTypeSelect" class="block text-sm font-medium text-gray-700 mb-1">نوع الحدث:</label>
-                    <select id="eventTypeSelect" class="input-field" required>
-                        <option value="Custom">حدث مخصص</option>
-                        <option value="Birthday">عيد ميلاد</option>
-                        <option value="Death">ذكرى وفاة</option>
-                        <option value="Marriage">ذكرى زواج</option>
-                        <option value="Engagement">ذكرى خطوبة</option>
-                    </select>
-                </div>
-                <div class="mb-4 relative">
                     <label for="eventPersonNameInput" class="block text-sm font-medium text-gray-700 mb-1">شخص مرتبط (اختياري):</label>
-                    <input type="text" id="eventPersonNameInput" class="input-field" placeholder="ابحث عن شخص...">
-                    <div id="eventPersonSuggestions" class="suggestions-list hidden"></div>
-                    <input type="hidden" id="eventPersonIdInput">
+                    <div class="relative">
+                        <input type="text" id="eventPersonNameInput" class="input-field" placeholder="ابحث عن شخص...">
+                        <div id="eventPersonSuggestions" class="suggestions-list hidden"></div>
+                        <input type="hidden" id="eventPersonIdInput">
+                    </div>
                 </div>
                 <div class="flex justify-end gap-4 mt-6">
                     <button type="submit" class="btn-primary">حفظ الحدث</button>
@@ -208,11 +194,16 @@
         <!-- Header and Navigation -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">أحداث العائلة</h1>
-            <nav class="flex flex-wrap gap-3">
-                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+            <nav class="flex flex-wrap gap-3" id="mainNav">
+                <a href="dashboard.html" class="btn-secondary nav-link" data-page="dashboard.html" style="display:none;">لوحة التحكم</a>
+                <a href="index.html" class="btn-secondary nav-link" data-page="index.html" style="display:none;">قائمة العائلة</a>
                 <a href="events.html" class="btn-primary">الأحداث</a>
-                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
-                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+                <a href="family_tree.html" class="btn-secondary nav-link" data-page="family_tree.html" style="display:none;">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-secondary nav-link" data-page="add_edit_person.html" style="display:none;">إضافة شخص جديد</a>
+                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html" style="display:none;">تصدير البيانات</a>
+                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="display:none;">الإحصائيات</a>
+                <a href="admin_panel.html" class="btn-secondary nav-link" data-page="admin_panel.html" style="display:none;">لوحة المدير</a>
+                <button id="logoutBtn" class="btn-secondary"><i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج</button>
             </nav>
         </div>
 
@@ -224,7 +215,7 @@
                 <button id="filterYearBtn" class="btn-secondary">على مدار السنة</button>
                 <button id="filterAllBtn" class="btn-secondary">جميع الأحداث</button>
             </div>
-            <button id="addCustomEventBtn" class="btn-primary w-full md:w-auto">إضافة حدث مخصص</button>
+            <button id="addCustomEventBtn" class="btn-primary w-full md:w-auto nav-action-btn" data-action-role="editor,admin" style="display:none;">إضافة حدث مخصص</button>
         </div>
 
         <!-- Events List -->
@@ -240,33 +231,16 @@
 
     <!-- Firebase SDKs -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase configuration provided by the user
-        const firebaseConfig = {
-            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
-            authDomain: "family-9b0b8.firebaseapp.com",
-            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
-            projectId: "family-9b0b8",
-            storageBucket: "family-9b0b8.firebasestorage.app",
-            messagingSenderId: "409089079475",
-            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
-            measurementId: "G-X5LDQB1WC9"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // Import auth, db, appId, and redirectTo from auth_guard.js
+        import { auth, db, appId, redirectTo } from './auth_guard.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let userId = null;
         let allFamilyMembers = []; // Cache all family members
         let allEvents = []; // Combined list of all generated and custom events
-
-        // Get app ID from environment or use a default
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let userRole = null; // Store user's role
+        let allowedPages = []; // Store pages allowed for the user
 
         // DOM Elements
         const loadingIndicator = document.getElementById('loadingIndicator');
@@ -276,7 +250,6 @@
         const customEventForm = document.getElementById('customEventForm');
         const eventTitleInput = document.getElementById('eventTitleInput');
         const eventDateInput = document.getElementById('eventDateInput');
-        const eventTypeSelect = document.getElementById('eventTypeSelect'); // New: Event Type Select
         const eventPersonNameInput = document.getElementById('eventPersonNameInput');
         const eventPersonSuggestions = document.getElementById('eventPersonSuggestions');
         const eventPersonIdInput = document.getElementById('eventPersonIdInput');
@@ -284,6 +257,10 @@
         const filterMonthBtn = document.getElementById('filterMonthBtn');
         const filterYearBtn = document.getElementById('filterYearBtn');
         const filterAllBtn = document.getElementById('filterAllBtn');
+        const mainNav = document.getElementById('mainNav'); // Get main navigation element
+        const logoutBtn = document.getElementById('logoutBtn'); // Get logout button
+        const addCustomEventBtn = document.getElementById('addCustomEventBtn');
+
 
         // Function to show custom modal messages
         function showModal(message, modalId = 'messageModal') {
@@ -306,7 +283,7 @@
                 const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
                 const querySnapshot = await getDocs(q);
                 allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("All family members cached for events:", allFamilyMembers);
+                console.log("All family members cached for events:", allFamilyMembers.length);
             } catch (error) {
                 console.error("Error caching all family members for events:", error);
                 showModal("حدث خطأ أثناء جلب قائمة العائلة للأحداث: " + error.message);
@@ -375,7 +352,7 @@
                 }
 
                 // Death Anniversary
-                if (person.isAlive === false && person.deathDate && person.deathDate.toDate) { // Only if explicitly deceased
+                if (!person.isAlive && person.deathDate && person.deathDate.toDate) {
                     const death = person.deathDate.toDate();
                     let nextDeathAnniversary = new Date(currentYear, death.getMonth(), death.getDate());
                     if (nextDeathAnniversary < today) {
@@ -398,20 +375,9 @@
                     if (nextMarriageAnniversary < today) {
                         nextMarriageAnniversary.setFullYear(currentYear + 1);
                     }
-                    // Find spouse's name for display
-                    let spouseDisplayName = 'الزوج/الزوجة';
-                    if (person.spouseIds && person.spouseIds.length > 0) {
-                        const linkedSpouse = allFamilyMembers.find(member => member.id === person.spouseIds[0]); // Assuming first spouse for simplicity
-                        if (linkedSpouse) {
-                            spouseDisplayName = linkedSpouse.fullName;
-                        }
-                    } else if (person.manualSpouseNames && person.manualSpouseNames.length > 0) {
-                        spouseDisplayName = person.manualSpouseNames[0]; // Assuming first manual spouse
-                    }
-
                     events.push({
                         id: person.id + '-marriage-' + nextMarriageAnniversary.getFullYear(),
-                        title: `ذكرى زواج ${person.firstName} و ${spouseDisplayName}`,
+                        title: `ذكرى زواج ${person.firstName} و ${person.spouseName || 'الزوج/الزوجة'}`,
                         date: nextMarriageAnniversary,
                         type: 'Marriage',
                         relatedPersonId: person.id,
@@ -420,28 +386,15 @@
                 }
 
                 // Engagement Anniversary (assuming engagementDate field exists in person data)
-                // Note: 'Engaged' marital status is not standard in the provided add_edit_person.html,
-                // but if added, this logic would apply.
                 if (person.maritalStatus === 'Engaged' && person.engagementDate && person.engagementDate.toDate) {
                     const engagement = person.engagementDate.toDate();
                     let nextEngagementAnniversary = new Date(currentYear, engagement.getMonth(), engagement.getDate());
                     if (nextEngagementAnniversary < today) {
                         nextEngagementAnniversary.setFullYear(currentYear + 1);
                     }
-                     // Find spouse's name for display
-                     let spouseDisplayName = 'الخطيب/الخطيبة';
-                     if (person.spouseIds && person.spouseIds.length > 0) {
-                         const linkedSpouse = allFamilyMembers.find(member => member.id === person.spouseIds[0]);
-                         if (linkedSpouse) {
-                             spouseDisplayName = linkedSpouse.fullName;
-                         }
-                     } else if (person.manualSpouseNames && person.manualSpouseNames.length > 0) {
-                         spouseDisplayName = person.manualSpouseNames[0];
-                     }
-
                     events.push({
                         id: person.id + '-engagement-' + nextEngagementAnniversary.getFullYear(),
-                        title: `ذكرى خطوبة ${person.firstName} و ${spouseDisplayName}`,
+                        title: `ذكرى خطوبة ${person.firstName} و ${person.spouseName || 'الخطيب/الخطيبة'}`,
                         date: nextEngagementAnniversary,
                         type: 'Engagement',
                         relatedPersonId: person.id,
@@ -526,35 +479,13 @@
                 const eventDetails = document.createElement('div');
                 const eventTitle = document.createElement('p');
                 eventTitle.classList.add('event-title');
-
-                // Add icon based on event type
-                let iconClass = '';
-                switch (event.type) {
-                    case 'Birthday':
-                        iconClass = 'fas fa-birthday-cake';
-                        break;
-                    case 'Death':
-                        iconClass = 'fas fa-skull-crossbones';
-                        break;
-                    case 'Marriage':
-                        iconClass = 'fas fa-ring';
-                        break;
-                    case 'Engagement':
-                        iconClass = 'fas fa-heart';
-                        break;
-                    case 'Custom':
-                        iconClass = 'fas fa-calendar-alt';
-                        break;
-                    default:
-                        iconClass = 'fas fa-calendar-day';
-                }
-                eventTitle.innerHTML = `<i class="${iconClass} ml-1"></i> ${event.title}`;
+                eventTitle.textContent = event.title;
                 eventDetails.appendChild(eventTitle);
 
                 const eventDate = document.createElement('p');
                 eventDate.classList.add('event-date');
                 eventDate.textContent = event.date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-                if (event.relatedPersonName && event.relatedPersonId) { // Ensure both are present for the link
+                if (event.relatedPersonName) {
                     const relatedPersonLink = document.createElement('a');
                     relatedPersonLink.href = `profile.html?id=${event.relatedPersonId}`;
                     relatedPersonLink.classList.add('text-indigo-600', 'hover:underline', 'mr-1');
@@ -618,7 +549,7 @@
             }
 
             const filtered = allEvents.filter(event => {
-                const eventDate = new Date(event.date); // Create a new Date object to avoid modifying original
+                const eventDate = event.date;
                 eventDate.setHours(0, 0, 0, 0); // Normalize event date
 
                 if (period === 'all') {
@@ -641,7 +572,6 @@
 
             const title = eventTitleInput.value.trim();
             const date = eventDateInput.value;
-            const type = eventTypeSelect.value; // Get selected event type
             const relatedPersonId = eventPersonIdInput.value.trim() || null;
             const relatedPersonName = eventPersonNameInput.value.trim() || null;
 
@@ -654,22 +584,45 @@
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/events`), {
                     title: title,
                     date: Timestamp.fromDate(new Date(date)),
-                    type: type, // Save the selected type
+                    type: 'Custom',
                     relatedPersonId: relatedPersonId,
                     relatedPersonName: relatedPersonName
                 });
                 showModal("تم إضافة الحدث المخصص بنجاح!");
                 customEventForm.reset(); // Clear form
                 eventPersonIdInput.value = ''; // Clear hidden ID
-                eventPersonNameInput.value = ''; // Clear person name input
-                eventTypeSelect.value = 'Custom'; // Reset type select
                 closeModal('addEventModal');
-                fetchAndDisplayAllEvents(); // Refresh events list
+                // Re-fetch and display all events to include the new one
+                await fetchAndDisplayAllEvents();
             } catch (error) {
                 console.error("Error adding custom event:", error);
                 showModal("حدث خطأ أثناء إضافة الحدث المخصص: " + error.message);
             }
         });
+
+        // Function to update navigation and action button visibility based on user's allowed pages and role
+        function updateNavigationAndActionButtons() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                const pageName = link.dataset.page;
+                if (allowedPages.includes(pageName)) {
+                    link.style.display = ''; // Show the link
+                } else {
+                    link.style.display = 'none'; // Hide the link
+                }
+            });
+
+            const actionButtons = document.querySelectorAll('.nav-action-btn');
+            actionButtons.forEach(button => {
+                const requiredRoles = button.dataset.actionRole ? button.dataset.actionRole.split(',') : [];
+                if (requiredRoles.includes(userRole)) {
+                    button.style.display = ''; // Show the button
+                } else {
+                    button.style.display = 'none'; // Hide the button
+                }
+            });
+        }
+
 
         // Main DOMContentLoaded listener
         document.addEventListener('DOMContentLoaded', async () => {
@@ -680,42 +633,52 @@
             document.getElementById('cancelAddEventBtn').addEventListener('click', () => closeModal('addEventModal'));
 
             // Show Add Custom Event Modal
-            document.getElementById('addCustomEventBtn').addEventListener('click', () => {
+            addCustomEventBtn.addEventListener('click', () => {
                 addEventModal.style.display = 'flex';
                 eventTitleInput.focus(); // Focus on first input
             });
 
-            // Initial authentication attempt
-            (async () => {
+            // Logout button
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
+                    await signOut(auth);
+                    redirectTo('login.html'); // Redirect to login page after logout
                 } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                    console.error("Error logging out:", error);
+                    showModal("حدث خطأ أثناء تسجيل الخروج: " + error.message);
                 }
-            })();
+            });
 
             // Listen for auth state changes to get userId and fetch data
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
                     console.log("Authentication state changed. User ID:", userId);
+
+                    // Fetch user settings to get role and allowed pages
+                    try {
+                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userId);
+                        const userSettingsSnap = await getDoc(userSettingsRef);
+
+                        if (userSettingsSnap.exists()) {
+                            const settings = userSettingsSnap.data();
+                            userRole = settings.role || 'viewer';
+                            allowedPages = settings.allowedPages || [];
+                            updateNavigationAndActionButtons(); // Update navigation and action buttons based on fetched permissions
+                        } else {
+                            console.warn("User settings not found for current user. Defaulting to viewer role.");
+                            userRole = 'viewer';
+                            allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html'];
+                            updateNavigationAndActionButtons();
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user settings:", error);
+                        showModal("حدث خطأ أثناء جلب إعدادات المستخدم: " + error.message);
+                        userRole = 'viewer'; // Fallback
+                        allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html']; // Fallback
+                        updateNavigationAndActionButtons();
+                    }
+
                     await fetchAndDisplayAllEvents(); // Fetch and display all events after authentication
                     handleEventPersonInput(); // Enable person search in add event modal
                 } else {
@@ -725,6 +688,9 @@
                     noEventsMessage.classList.remove('hidden');
                     eventsListDiv.innerHTML = '';
                     showModal("يرجى تسجيل الدخول لعرض الأحداث.", 'messageModal');
+                    // Hide all navigation and action buttons
+                    document.querySelectorAll('.nav-link').forEach(link => link.style.display = 'none');
+                    document.querySelectorAll('.nav-action-btn').forEach(button => button.style.display = 'none');
                 }
             });
 
