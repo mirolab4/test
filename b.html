@@ -403,33 +403,31 @@
         // Get app ID from environment or use a default
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // DOM Elements
+        // DOM Elements (defined globally for initial access)
         const familyMembersGrid = document.getElementById('familyMembersGrid');
         const noMembersMessage = document.getElementById('noMembersMessage');
         const searchInput = document.getElementById('searchInput');
         const genderFilter = document.getElementById('genderFilter');
-        const maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatusCheckbox"]'); // Changed to checkboxes
+        const maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatusCheckbox"]');
         const lifeStatusFilter = document.getElementById('lifeStatusFilter');
         const ageFilter = document.getElementById('ageFilter');
-        const ageMinFilter = document.getElementById('ageMinFilter'); // NEW
-        const ageMaxFilter = document.getElementById('ageMaxFilter'); // NEW
+        const ageMinFilter = document.getElementById('ageMinFilter');
+        const ageMaxFilter = document.getElementById('ageMaxFilter');
         const hasFatherFilter = document.getElementById('hasFatherFilter');
         const hasMotherFilter = document.getElementById('hasMotherFilter');
         const hasChildrenFilter = document.getElementById('hasChildrenFilter');
         const hasSpouseFilter = document.getElementById('hasSpouseFilter');
 
-        // New filter elements for relationships
-        const filterByFatherInput = document.getElementById('filterByFatherInput');
-        const filterByFatherSuggestions = document.getElementById('filterByFatherSuggestions');
-        const filterByFatherId = document.getElementById('filterByFatherId');
-
-        const filterByMotherInput = document.getElementById('filterByMotherInput');
-        const filterByMotherSuggestions = document.getElementById('filterByMotherSuggestions');
-        const filterByMotherId = document.getElementById('filterByMotherId');
-
-        const filterBySiblingInput = document.getElementById('filterBySiblingInput');
-        const filterBySiblingSuggestions = document.getElementById('filterBySiblingSuggestions');
-        const filterBySiblingId = document.getElementById('filterBySiblingId');
+        // Relationship filter elements - these will be re-assigned inside DOMContentLoaded
+        let filterByFatherInput;
+        let filterByFatherSuggestions;
+        let filterByFatherId;
+        let filterByMotherInput;
+        let filterByMotherSuggestions;
+        let filterByMotherId;
+        let filterBySiblingInput;
+        let filterBySiblingSuggestions;
+        let filterBySiblingId;
 
         const clearFiltersBtn = document.getElementById('clearFiltersBtn');
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
@@ -440,7 +438,7 @@
         const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
         const loadingModal = document.getElementById('loadingModal');
 
-        // Count display elements (NEW)
+        // Count display elements
         const displayedCountSpan = document.getElementById('displayedCount');
         const selectedCountSpan = document.getElementById('selectedCount');
         const totalDisplayedCountSpan = document.getElementById('totalDisplayedCount');
@@ -645,7 +643,6 @@
                     const siblingPerson = allFamilyMembers.find(p => p.id === filterBySiblingIdValue);
                     if (siblingPerson) {
                         const commonFather = person.fatherId && siblingPerson.fatherId && person.fatherId === siblingPerson.fatherId;
-                        // FIX: Corrected typo from siblingPerson.mother.Id to siblingPerson.motherId
                         const commonMother = person.motherId && siblingPerson.motherId && person.motherId === siblingPerson.motherId;
                         matchesFilterBySibling = (commonFather || commonMother) && (person.id !== siblingPerson.id);
                     } else {
@@ -759,11 +756,6 @@
         hasChildrenFilter.addEventListener('change', displayFamilyMembers);
         hasSpouseFilter.addEventListener('change', displayFamilyMembers);
 
-        // New filter event listeners for relationship search inputs
-        filterByFatherInput.addEventListener('input', displayFamilyMembers);
-        filterByMotherInput.addEventListener('input', displayFamilyMembers);
-        filterBySiblingInput.addEventListener('input', displayFamilyMembers);
-
 
         clearFiltersBtn.addEventListener('click', () => {
             searchInput.value = '';
@@ -857,10 +849,29 @@
             // Set default filter for life status to "Alive"
             lifeStatusFilter.value = 'Alive';
 
+            // Assign DOM elements for relationship filters inside DOMContentLoaded
+            filterByFatherInput = document.getElementById('filterByFatherInput');
+            filterByFatherSuggestions = document.getElementById('filterByFatherSuggestions');
+            filterByFatherId = document.getElementById('filterByFatherId');
+
+            filterByMotherInput = document.getElementById('filterByMotherInput');
+            filterByMotherSuggestions = document.getElementById('filterByMotherSuggestions');
+            filterByMotherId = document.getElementById('filterByMotherId');
+
+            filterBySiblingInput = document.getElementById('filterBySiblingInput');
+            filterBySiblingSuggestions = document.getElementById('filterBySiblingSuggestions');
+            filterBySiblingId = document.getElementById('filterBySiblingId');
+
             // Apply related person filter input handlers
             handleRelatedPersonFilterInput(filterByFatherInput, filterByFatherSuggestions, filterByFatherId);
             handleRelatedPersonFilterInput(filterByMotherInput, filterByMotherSuggestions, filterByMotherId);
             handleRelatedPersonFilterInput(filterBySiblingInput, filterBySiblingSuggestions, filterBySiblingId);
+
+            // Add event listeners for relationship search inputs here too
+            filterByFatherInput.addEventListener('input', displayFamilyMembers);
+            filterByMotherInput.addEventListener('input', displayFamilyMembers);
+            filterBySiblingInput.addEventListener('input', displayFamilyMembers);
+
 
             // Initial authentication attempt
             (async () => {
