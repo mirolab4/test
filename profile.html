@@ -329,14 +329,45 @@
 
                         document.getElementById('ageCategory').textContent = isAbove16(currentPersonData.birthDate) ? 'فوق 16 سنة' : 'أقل من 16 سنة';
 
-                        // Handle Father, Grandfather, Mother names (clickable links)
-                        await displayRelation('fatherId', 'fatherName');
-                        await displayRelation('grandFatherId', 'grandFatherName');
-                        await displayRelation('motherId', 'motherName');
+                        // --- START MODIFIED LOGIC FOR RELATED NAMES ---
+                        // Helper to set text or link for related names
+                        const setRelationDisplay = async (nameElementId, idKey, nameKey) => {
+                            const element = document.getElementById(nameElementId);
+                            if (!element) {
+                                console.error(`Element with ID '${nameElementId}' not found.`);
+                                return;
+                            }
+
+                            if (currentPersonData[idKey]) {
+                                // If ID exists, try to fetch and create a link
+                                const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
+                                if (relatedDoc.exists()) {
+                                    const relatedData = relatedDoc.data();
+                                    const link = document.createElement('a');
+                                    link.href = `profile.html?id=${currentPersonData[idKey]}`;
+                                    link.classList.add('relation-link');
+                                    link.textContent = relatedData.fullName || 'غير محدد';
+                                    element.innerHTML = ''; // Clear previous content
+                                    element.appendChild(link);
+                                } else {
+                                    // If ID exists but doc not found, fallback to name if available
+                                    element.textContent = currentPersonData[nameKey] || 'غير متوفر';
+                                }
+                            } else {
+                                // If no ID, display the name directly
+                                element.textContent = currentPersonData[nameKey] || 'غير متوفر';
+                            }
+                        };
+
+                        await setRelationDisplay('fatherName', 'fatherId', 'fatherName');
+                        await setRelationDisplay('grandFatherName', 'grandFatherId', 'grandFatherName');
+                        await setRelationDisplay('motherName', 'motherId', 'motherName');
+                        // --- END MODIFIED LOGIC FOR RELATED NAMES ---
+
 
                         // Handle Spouse name (clickable link)
                         const spouseNameElement = document.getElementById('spouseName');
-                        if (spouseNameElement) { // Added null check
+                        if (spouseNameElement) {
                             if (currentPersonData.maritalStatus === 'Married' && currentPersonData.spouseId) {
                                 const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData.spouseId));
                                 if (spouseDoc.exists()) {
@@ -348,10 +379,12 @@
                                     spouseNameElement.innerHTML = ''; // Clear previous content
                                     spouseNameElement.appendChild(spouseLink);
                                 } else {
-                                    spouseNameElement.textContent = 'غير متوفر';
+                                    // Fallback to spouseName if ID exists but doc not found
+                                    spouseNameElement.textContent = currentPersonData.spouseName || 'غير متوفر';
                                 }
                             } else {
-                                spouseNameElement.textContent = 'غير متوفر';
+                                // If not married or no spouseId, display spouseName if available, else 'غير متوفر'
+                                spouseNameElement.textContent = currentPersonData.spouseName || 'غير متوفر';
                             }
                         }
 
@@ -359,7 +392,7 @@
                         // Handle Children list
                         const childrenListDiv = document.getElementById('childrenList');
                         const noChildrenMessage = document.getElementById('noChildrenMessage');
-                        if (childrenListDiv && noChildrenMessage) { // Added null check
+                        if (childrenListDiv && noChildrenMessage) {
                             childrenListDiv.innerHTML = ''; // Clear previous children
                             noChildrenMessage.classList.add('hidden'); // Hide default message
 
@@ -382,6 +415,12 @@
 
                                         childDiv.appendChild(childLink);
                                         childDiv.appendChild(ageSpan);
+                                        childrenListDiv.appendChild(childDiv);
+                                    } else {
+                                        // If child ID exists but doc not found, display a placeholder
+                                        const childDiv = document.createElement('div');
+                                        childDiv.classList.add('detail-item');
+                                        childDiv.innerHTML = `<span class="relation-link text-gray-500">ابن/ابنة (غير متوفر)</span><span class="detail-value"></span>`;
                                         childrenListDiv.appendChild(childDiv);
                                     }
                                 }
@@ -415,14 +454,18 @@
             }
         }
 
-        // Helper function to display related person's name as a clickable link
+        // Helper function to display related person's name as a clickable link (kept for consistency but logic moved)
+        // This function is now less critical as the main logic is in fetchAndDisplayPerson
         async function displayRelation(idKey, nameElementId) {
             const element = document.getElementById(nameElementId);
-            if (!element) { // Added null check
+            if (!element) {
                 console.error(`Element with ID '${nameElementId}' not found.`);
                 return;
             }
 
+            // This function is now mainly a fallback or for specific cases
+            // The primary logic for displaying related names is now within fetchAndDisplayPerson
+            element.textContent = currentPersonData[nameElementId.replace('Name', '')] || 'غير متوفر'; // Display direct name
             if (currentPersonData[idKey]) {
                 const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
                 if (relatedDoc.exists()) {
@@ -433,11 +476,7 @@
                     link.textContent = relatedData.fullName || 'غير محدد';
                     element.innerHTML = ''; // Clear previous content
                     element.appendChild(link);
-                } else {
-                    element.textContent = 'غير متوفر';
                 }
-            } else {
-                element.textContent = 'غير متوفر';
             }
         }
 
