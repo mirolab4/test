@@ -409,58 +409,58 @@
             // Get app ID from environment or use a default
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-            // DOM Elements
-            const pageTitle = document.getElementById('pageTitle');
-            const personForm = document.getElementById('personForm');
-            const firstNameInput = document.getElementById('firstNameInput');
-            const firstNameError = document.getElementById('firstNameError');
-            const fatherNameInput = document.getElementById('fatherNameInput');
-            const fatherSuggestions = document.getElementById('fatherSuggestions');
-            const fatherIdInput = document.getElementById('fatherIdInput');
-            const grandFatherNameInput = document.getElementById('grandFatherNameInput');
-            const familyNameInput = document.getElementById('familyNameInput');
-            const familyNameError = document.getElementById('familyNameError');
-            const motherNameInput = document.getElementById('motherNameInput');
-            const motherSuggestions = document.getElementById('motherSuggestions');
-            const motherIdInput = document.getElementById('motherIdInput');
-            const idNumberInput = document.getElementById('idNumberInput');
-            const idNumberError = document.getElementById('idNumberError'); // New: for duplicate ID error
-            const phoneNumberInput = document.getElementById('phoneNumberInput');
-            const birthDateInput = document.getElementById('birthDateInput');
-            const birthDateError = document.getElementById('birthDateError');
-            const genderMale = document.getElementById('genderMale');
-            const genderFemale = document.getElementById('genderFemale');
-            const genderError = document.getElementById('genderError');
-            const isAliveInput = document.getElementById('isAliveInput');
-            const deathDateContainer = document.getElementById('deathDateContainer');
-            const deathDateInput = document.getElementById('deathDateInput');
-            const deathDateError = document.getElementById('deathDateError');
-            const maritalStatusInput = document.getElementById('maritalStatusInput');
-            const maritalStatusError = document.getElementById('maritalStatusError');
+            // Declare DOM elements globally but assign them inside DOMContentLoaded
+            let pageTitle;
+            let personForm;
+            let firstNameInput;
+            let firstNameError;
+            let fatherNameInput;
+            let fatherSuggestions;
+            let fatherIdInput;
+            let grandFatherNameInput;
+            let familyNameInput;
+            let familyNameError;
+            let motherNameInput;
+            let motherSuggestions;
+            let motherIdInput;
+            let idNumberInput;
+            let idNumberError;
+            let phoneNumberInput;
+            let birthDateInput;
+            let birthDateError;
+            let genderMale;
+            let genderFemale;
+            let genderError;
+            let isAliveInput;
+            let deathDateContainer;
+            let deathDateInput;
+            let deathDateError;
+            let maritalStatusInput;
+            let maritalStatusError;
 
-            const spousesSection = document.getElementById('spousesSection');
-            const spousesListDiv = document.getElementById('spousesList');
-            const noSpousesMessage = document.getElementById('noSpousesMessage');
-            const addSpouseInput = document.getElementById('addSpouseInput');
-            const addSpouseSuggestions = document.getElementById('addSpouseSuggestions');
-            const addSpouseIdInput = document.getElementById('addSpouseIdInput');
-            const addSpouseBtn = document.getElementById('addSpouseBtn');
-            const spouseError = document.getElementById('spouseError');
-            const spouseGenderError = document.getElementById('spouseGenderError'); // New: for spouse gender mismatch
+            let spousesSection;
+            let spousesListDiv;
+            let noSpousesMessage;
+            let addSpouseInput;
+            let addSpouseSuggestions;
+            let addSpouseIdInput;
+            let addSpouseBtn;
+            let spouseError;
+            let spouseGenderError;
 
-            const childrenListDiv = document.getElementById('childrenList');
-            const noChildrenMessage = document.getElementById('noChildrenMessage');
-            const addChildInput = document.getElementById('addChildInput');
-            const childrenSuggestions = document.getElementById('childrenSuggestions');
-            const addChildIdInput = document.getElementById('addChildIdInput');
-            const addChildBtn = document.getElementById('addChildBtn');
-            const savePersonBtn = document.getElementById('savePersonBtn');
-            const saveAndAddAnotherBtn = document.getElementById('saveAndAddAnotherBtn'); // New button
-            const cancelBtn = document.getElementById('cancelBtn');
-            const facebookLinkInput = document.getElementById('facebookLinkInput');
-            const linkedinLinkInput = document.getElementById('linkedinLinkInput');
-            const websiteLinkInput = document.getElementById('websiteLinkInput');
-            const notesInput = document.getElementById('notesInput');
+            let childrenListDiv;
+            let noChildrenMessage;
+            let addChildInput;
+            let childrenSuggestions;
+            let addChildIdInput;
+            let addChildBtn;
+            let savePersonBtn;
+            let saveAndAddAnotherBtn;
+            let cancelBtn;
+            let facebookLinkInput;
+            let linkedinLinkInput;
+            let websiteLinkInput;
+            let notesInput;
 
 
             // Use Maps to manage children/spouses IDs and their names for uniqueness and easy lookup
@@ -507,9 +507,14 @@
 
             // Function to handle input for related person fields (father, mother, spouse, children)
             function handleRelatedPersonInput(inputElement, suggestionsElement, hiddenIdElement, relationType) {
-                inputElement.addEventListener('input', async () => {
+                // Add a check to ensure inputElement is not null before adding event listener
+                if (!inputElement) {
+                    console.error(`Input element is null for handleRelatedPersonInput (relationType: ${relationType}). Cannot add event listener.`);
+                    return;
+                }
+
+                inputElement.addEventListener('input', () => {
                     hasUnsavedChanges = true; // Mark form as changed
-                    const searchText = inputElement.value.toLowerCase();
                     if (suggestionsElement) { // Check if suggestionsElement exists
                         suggestionsElement.innerHTML = '';
                         suggestionsElement.classList.add('hidden');
@@ -518,6 +523,7 @@
                         hiddenIdElement.value = ''; // Clear hidden ID on input change
                     }
 
+                    const searchText = inputElement.value.toLowerCase();
                     if (searchText.length < 2) return;
 
                     let currentFilteredSuggestions = allFamilyMembers.filter(person =>
@@ -525,13 +531,12 @@
                         person.id !== editingPersonId // Exclude current person from suggestions
                     );
 
-                    // Filter by gender for mother/spouse if applicable
+                    // Filter by gender for mother/spouse/father if applicable
                     if (relationType === 'mother') {
                         currentFilteredSuggestions = currentFilteredSuggestions.filter(person => person.gender === 'Female');
                     } else if (relationType === 'father') {
                         currentFilteredSuggestions = currentFilteredSuggestions.filter(person => person.gender === 'Male');
                     } else if (relationType === 'spouse') {
-                        // For spouse, if current person's gender is known, filter for opposite gender
                         const currentPersonGender = document.querySelector('input[name="gender"]:checked')?.value;
                         if (currentPersonGender === 'Male') {
                             currentFilteredSuggestions = currentFilteredSuggestions.filter(person => person.gender === 'Female');
@@ -545,27 +550,48 @@
                         currentFilteredSuggestions.forEach(person => {
                             const div = document.createElement('div');
                             div.classList.add('suggestions-list-item');
-                            div.textContent = person.fullName;
+                            div.textContent = person.fullName; // Display full name in suggestion list
+
                             div.addEventListener('click', async () => {
                                 console.log(`Selected ${relationType}:`, person);
-                                // Fill fatherNameInput with firstName only
+
+                                // Set the input field value based on relationType
                                 if (relationType === 'father') {
-                                    inputElement.value = person.firstName; // Use first name for father input
+                                    inputElement.value = person.firstName; // Father's first name for fatherNameInput
                                 } else {
-                                    inputElement.value = person.fullName;
+                                    inputElement.value = person.fullName; // Full name for mother, spouse, child inputs
                                 }
+
+                                // Set the hidden ID
                                 if (hiddenIdElement) {
                                     hiddenIdElement.value = person.id;
                                 }
                                 suggestionsElement.classList.add('hidden');
 
+                                // Auto-fill family name based on selected father or mother
+                                if (relationType === 'father' || relationType === 'mother') {
+                                    if (person.familyName) {
+                                        familyNameInput.value = person.familyName;
+                                        console.log(`Auto-filled familyName from ${relationType}:`, familyNameInput.value);
+                                    } else {
+                                        // If selected parent doesn't have familyName, try to extract from fullName
+                                        const parts = person.fullName.split(' ');
+                                        if (parts.length >= 4) { // Assuming full name is at least 4 parts for family name
+                                            familyNameInput.value = parts[3]; // Take the last part as family name
+                                            console.log(`Auto-filled familyName from ${relationType} (extracted):`, familyNameInput.value);
+                                        } else {
+                                            familyNameInput.value = ''; // Clear if not found
+                                            console.log(`No familyName for ${relationType}, cleared familyNameInput.`);
+                                        }
+                                    }
+                                }
+
+                                // Specific logic for father selection to auto-fill grandfather and mother
                                 if (relationType === 'father') {
-                                    // Auto-fill grandfather and mother based on selected father
-                                    grandFatherNameInput.value = person.grandFatherName || ''; // Father's father
+                                    grandFatherNameInput.value = person.grandFatherName || '';
                                     console.log("Father selected. Auto-filling grandFatherName:", grandFatherNameInput.value);
 
-                                    if (person.spouseIds && person.spouseIds.length > 0) { // Check for multiple spouses
-                                        // Try to find a female spouse to be the mother
+                                    if (person.spouseIds && person.spouseIds.length > 0) {
                                         const potentialMotherId = person.spouseIds.find(sId => {
                                             const sPerson = allFamilyMembers.find(member => member.id === sId);
                                             return sPerson && sPerson.gender === 'Female';
@@ -600,11 +626,13 @@
                 });
 
                 // Hide suggestions when clicking outside
-                document.addEventListener('click', (event) => {
-                    if (suggestionsElement && !inputElement.parentNode.contains(event.target)) {
-                        suggestionsElement.classList.add('hidden');
-                    }
-                });
+                if (document && inputElement) {
+                    document.addEventListener('click', (event) => {
+                        if (suggestionsElement && !inputElement.parentNode.contains(event.target)) {
+                            suggestionsElement.classList.add('hidden');
+                        }
+                    });
+                }
             }
 
             // Function to render children list
@@ -681,71 +709,6 @@
                     spousesListDiv.appendChild(spouseDiv);
                 }
             }
-
-            // Function to add a child
-            addChildBtn.addEventListener('click', () => {
-                const childId = addChildIdInput.value;
-                const childName = addChildInput.value.trim();
-
-                if (childId && childName) {
-                    if (!currentChildren.has(childId)) {
-                        currentChildren.set(childId, { id: childId, name: childName });
-                        console.log("Child added:", childId, childName, currentChildren);
-                        addChildInput.value = '';
-                        addChildIdInput.value = '';
-                        childrenSuggestions.classList.add('hidden');
-                        renderChildrenList();
-                        hasUnsavedChanges = true; // Mark form as changed
-                    } else {
-                        showModal("هذا الابن/الابنة مضاف بالفعل.");
-                    }
-                } else {
-                    showModal("يرجى اختيار ابن/ابنة من الاقتراحات أو التأكد من وجود الاسم والمعرف.");
-                }
-            });
-
-            // Function to add a spouse (NEW)
-            addSpouseBtn.addEventListener('click', () => {
-                const spouseId = addSpouseIdInput.value; // Will be empty if typed manually
-                const spouseName = addSpouseInput.value.trim();
-
-                if (!spouseName) {
-                    showModal("يرجى إدخال اسم الزوج/الزوجة.");
-                    return;
-                }
-
-                // Check gender consistency ONLY if a linked spouse is being added
-                if (spouseId) { // Only if a real ID is present
-                    const currentPersonGender = document.querySelector('input[name="gender"]:checked')?.value;
-                    const spousePerson = allFamilyMembers.find(member => member.id === spouseId);
-
-                    if (currentPersonGender && spousePerson && currentPersonGender === spousePerson.gender) {
-                        spouseGenderError.classList.remove('hidden');
-                        showModal("لا يمكن إضافة زوج/زوجة من نفس الجنس.");
-                        return;
-                    } else {
-                        spouseGenderError.classList.add('hidden');
-                    }
-                }
-
-                // Determine if it's a manual entry or linked
-                const isManual = !spouseId;
-                // Generate a unique ID for manual entries to use in the Map,
-                // but these won't be actual Firestore document IDs for other people.
-                const entryId = isManual ? `manual-${crypto.randomUUID()}` : spouseId;
-
-                if (!currentSpouses.has(entryId)) {
-                    currentSpouses.set(entryId, { id: entryId, name: spouseName, isManual: isManual });
-                    console.log("Spouse added:", entryId, spouseName, currentSpouses);
-                    addSpouseInput.value = '';
-                    addSpouseIdInput.value = ''; // Ensure hidden ID is cleared for next entry
-                    addSpouseSuggestions.classList.add('hidden');
-                    renderSpousesList();
-                    hasUnsavedChanges = true; // Mark form as changed
-                } else {
-                    showModal("هذا الزوج/الزوجة مضاف بالفعل.");
-                }
-            });
 
 
             // Function to load person data for editing
@@ -1126,43 +1089,6 @@
                 }
             }
 
-            // Event Listeners for conditional display and form changes
-            isAliveInput.addEventListener('change', () => {
-                deathDateContainer.classList.toggle('hidden', isAliveInput.checked);
-                if (isAliveInput.checked) {
-                    deathDateInput.value = ''; // Clear death date if person is alive
-                }
-                hasUnsavedChanges = true;
-            });
-
-            maritalStatusInput.addEventListener('change', () => {
-                spousesSection.classList.toggle('hidden', maritalStatusInput.value !== 'Married');
-                if (maritalStatusInput.value !== 'Married') {
-                    currentSpouses.clear(); // Clear spouses if not married
-                    renderSpousesList(); // Re-render to show empty list
-                    addSpouseInput.value = '';
-                    addSpouseIdInput.value = '';
-                }
-                hasUnsavedChanges = true;
-            });
-
-            // Mark form as changed on any input
-            personForm.addEventListener('input', () => {
-                hasUnsavedChanges = true;
-            });
-
-            // Handle form submission for "Save" button
-            savePersonBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                await savePerson(true); // Redirect to profile after saving
-            });
-
-            // Handle form submission for "Save and Add Another" button
-            saveAndAddAnotherBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                await savePerson(false); // Reset form after saving
-            });
-
             // Confirmation before leaving page
             window.onbeforeunload = (event) => {
                 if (hasUnsavedChanges) {
@@ -1172,31 +1098,62 @@
                 }
             };
 
-            // Cancel button functionality with confirmation
-            cancelBtn.addEventListener('click', () => {
-                if (hasUnsavedChanges) {
-                    showModal("لديك تغييرات غير محفوظة. هل أنت متأكد أنك تريد إلغاء التغييرات والمغادرة؟");
-                    document.getElementById('confirmMessageModalBtn').onclick = () => {
-                        closeModal('messageModal');
-                        hasUnsavedChanges = false; // Allow navigation
-                        if (editingPersonId) {
-                            window.location.href = `profile.html?id=${editingPersonId}`;
-                        } else {
-                            window.location.href = `index.html`;
-                        }
-                    };
-                } else {
-                    if (editingPersonId) {
-                        window.location.href = `profile.html?id=${editingPersonId}`;
-                    } else {
-                        window.location.href = `index.html`;
-                    }
-                }
-            });
-
-
             // Main DOMContentLoaded listener
             document.addEventListener('DOMContentLoaded', async () => {
+                // Assign DOM elements inside DOMContentLoaded
+                pageTitle = document.getElementById('pageTitle');
+                personForm = document.getElementById('personForm');
+                firstNameInput = document.getElementById('firstNameInput');
+                firstNameError = document.getElementById('firstNameError');
+                fatherNameInput = document.getElementById('fatherNameInput');
+                fatherSuggestions = document.getElementById('fatherSuggestions');
+                fatherIdInput = document.getElementById('fatherIdInput');
+                grandFatherNameInput = document.getElementById('grandFatherNameInput');
+                familyNameInput = document.getElementById('familyNameInput');
+                familyNameError = document.getElementById('familyNameError');
+                motherNameInput = document.getElementById('motherNameInput');
+                motherSuggestions = document.getElementById('motherSuggestions');
+                motherIdInput = document.getElementById('motherIdInput');
+                idNumberInput = document.getElementById('idNumberInput');
+                idNumberError = document.getElementById('idNumberError');
+                phoneNumberInput = document.getElementById('phoneNumberInput');
+                birthDateInput = document.getElementById('birthDateInput');
+                birthDateError = document.getElementById('birthDateError');
+                genderMale = document.getElementById('genderMale');
+                genderFemale = document.getElementById('genderFemale');
+                genderError = document.getElementById('genderError');
+                isAliveInput = document.getElementById('isAliveInput');
+                deathDateContainer = document.getElementById('deathDateContainer');
+                deathDateInput = document.getElementById('deathDateInput');
+                deathDateError = document.getElementById('deathDateError');
+                maritalStatusInput = document.getElementById('maritalStatusInput');
+                maritalStatusError = document.getElementById('maritalStatusError');
+
+                spousesSection = document.getElementById('spousesSection');
+                spousesListDiv = document.getElementById('spousesList');
+                noSpousesMessage = document.getElementById('noSpousesMessage');
+                addSpouseInput = document.getElementById('addSpouseInput');
+                addSpouseSuggestions = document.getElementById('addSpouseSuggestions');
+                addSpouseIdInput = document.getElementById('addSpouseIdInput');
+                addSpouseBtn = document.getElementById('addSpouseBtn');
+                spouseError = document.getElementById('spouseError');
+                spouseGenderError = document.getElementById('spouseGenderError');
+
+                childrenListDiv = document.getElementById('childrenList');
+                noChildrenMessage = document.getElementById('noChildrenMessage');
+                addChildInput = document.getElementById('addChildInput');
+                childrenSuggestions = document.getElementById('childrenSuggestions');
+                addChildIdInput = document.getElementById('addChildIdInput');
+                addChildBtn = document.getElementById('addChildBtn');
+                savePersonBtn = document.getElementById('savePersonBtn');
+                saveAndAddAnotherBtn = document.getElementById('saveAndAddAnotherBtn');
+                cancelBtn = document.getElementById('cancelBtn');
+                facebookLinkInput = document.getElementById('facebookLinkInput');
+                linkedinLinkInput = document.getElementById('linkedinLinkInput');
+                websiteLinkInput = document.getElementById('websiteLinkInput');
+                notesInput = document.getElementById('notesInput');
+
+
                 // Modal close buttons
                 document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
                 document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal')); // Default action
@@ -1261,17 +1218,157 @@
                     } else {
                         userId = null;
                         console.log("User signed out or no user.");
-                        showModal("يرجى تسجيل الدخول لإدارة بيانات العائلة.", 'messageModal');
+                        showModal("يرجى تسجيل الدخول لإدارة بيانات العائلة.");
                     }
                 });
 
                 // Apply suggestion logic to relevant inputs
                 // For firstNameInput, there's no suggestionsElement or hiddenIdElement, so pass null for them
                 handleRelatedPersonInput(firstNameInput, null, null, 'self');
-                handleRelatedPersonInput(fatherNameInput, fatherSuggestions, fatherIdInput, 'father');
-                handleRelatedPersonInput(motherNameInput, motherSuggestions, motherIdInput, 'mother');
-                handleRelatedPersonInput(addSpouseInput, addSpouseSuggestions, addSpouseIdInput, 'spouse');
-                handleRelatedPersonInput(addChildInput, childrenSuggestions, addChildIdInput, 'child');
+                if (fatherNameInput && fatherSuggestions && fatherIdInput) {
+                    handleRelatedPersonInput(fatherNameInput, fatherSuggestions, fatherIdInput, 'father');
+                } else {
+                    console.error("One or more elements for fatherNameInput are null:", { fatherNameInput, fatherSuggestions, fatherIdInput });
+                }
+                if (motherNameInput && motherSuggestions && motherIdInput) {
+                    handleRelatedPersonInput(motherNameInput, motherSuggestions, motherIdInput, 'mother');
+                } else {
+                    console.error("One or more elements for motherNameInput are null:", { motherNameInput, motherSuggestions, motherIdInput });
+                }
+                if (addSpouseInput && addSpouseSuggestions && addSpouseIdInput) {
+                    handleRelatedPersonInput(addSpouseInput, addSpouseSuggestions, addSpouseIdInput, 'spouse');
+                } else {
+                    console.error("One or more elements for addSpouseInput are null:", { addSpouseInput, addSpouseSuggestions, addSpouseIdInput });
+                }
+                if (addChildInput && childrenSuggestions && addChildIdInput) {
+                    handleRelatedPersonInput(addChildInput, childrenSuggestions, addChildIdInput, 'child');
+                } else {
+                    console.error("One or more elements for addChildInput are null:", { addChildInput, childrenSuggestions, addChildIdInput });
+                }
+
+                // Event Listeners for conditional display and form changes (MOVED HERE)
+                isAliveInput.addEventListener('change', () => {
+                    deathDateContainer.classList.toggle('hidden', isAliveInput.checked);
+                    if (isAliveInput.checked) {
+                        deathDateInput.value = ''; // Clear death date if person is alive
+                    }
+                    hasUnsavedChanges = true;
+                });
+
+                maritalStatusInput.addEventListener('change', () => {
+                    spousesSection.classList.toggle('hidden', maritalStatusInput.value !== 'Married');
+                    if (maritalStatusInput.value !== 'Married') {
+                        currentSpouses.clear(); // Clear spouses if not married
+                        renderSpousesList(); // Re-render to show empty list
+                        addSpouseInput.value = '';
+                        addSpouseIdInput.value = '';
+                    }
+                    hasUnsavedChanges = true;
+                });
+
+                // Mark form as changed on any input
+                personForm.addEventListener('input', () => {
+                    hasUnsavedChanges = true;
+                });
+
+                // Handle form submission for "Save" button
+                savePersonBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    await savePerson(true); // Redirect to profile after saving
+                });
+
+                // Handle form submission for "Save and Add Another" button
+                saveAndAddAnotherBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    await savePerson(false); // Reset form after saving
+                });
+
+                // Cancel button functionality with confirmation
+                cancelBtn.addEventListener('click', () => {
+                    if (hasUnsavedChanges) {
+                        showModal("لديك تغييرات غير محفوظة. هل أنت متأكد أنك تريد إلغاء التغييرات والمغادرة؟");
+                        document.getElementById('confirmMessageModalBtn').onclick = () => {
+                            closeModal('messageModal');
+                            hasUnsavedChanges = false; // Allow navigation
+                            if (editingPersonId) {
+                                window.location.href = `profile.html?id=${editingPersonId}`;
+                            } else {
+                                window.location.href = `index.html`;
+                            }
+                        };
+                    } else {
+                        if (editingPersonId) {
+                            window.location.href = `profile.html?id=${editingPersonId}`;
+                        } else {
+                            window.location.href = `index.html`;
+                        }
+                    }
+                });
+
+                // Function to add a child (MOVED HERE)
+                addChildBtn.addEventListener('click', () => {
+                    const childId = addChildIdInput.value;
+                    const childName = addChildInput.value.trim();
+
+                    if (childId && childName) {
+                        if (!currentChildren.has(childId)) {
+                            currentChildren.set(childId, { id: childId, name: childName });
+                            console.log("Child added:", childId, childName, currentChildren);
+                            addChildInput.value = '';
+                            addChildIdInput.value = '';
+                            childrenSuggestions.classList.add('hidden');
+                            renderChildrenList();
+                            hasUnsavedChanges = true; // Mark form as changed
+                        } else {
+                            showModal("هذا الابن/الابنة مضاف بالفعل.");
+                        }
+                    } else {
+                        showModal("يرجى اختيار ابن/ابنة من الاقتراحات أو التأكد من وجود الاسم والمعرف.");
+                    }
+                });
+
+                // Function to add a spouse (MOVED HERE)
+                addSpouseBtn.addEventListener('click', () => {
+                    const spouseId = addSpouseIdInput.value; // Will be empty if typed manually
+                    const spouseName = addSpouseInput.value.trim();
+
+                    if (!spouseName) {
+                        showModal("يرجى إدخال اسم الزوج/الزوجة.");
+                        return;
+                    }
+
+                    // Check gender consistency ONLY if a linked spouse is being added
+                    if (spouseId) { // Only if a real ID is present
+                        const currentPersonGender = document.querySelector('input[name="gender"]:checked')?.value;
+                        const spousePerson = allFamilyMembers.find(member => member.id === spouseId);
+
+                        if (currentPersonGender && spousePerson && currentPersonGender === spousePerson.gender) {
+                            spouseGenderError.classList.remove('hidden');
+                            showModal("لا يمكن إضافة زوج/زوجة من نفس الجنس.");
+                            return;
+                        } else {
+                            spouseGenderError.classList.add('hidden');
+                        }
+                    }
+
+                    // Determine if it's a manual entry or linked
+                    const isManual = !spouseId;
+                    // Generate a unique ID for manual entries to use in the Map,
+                    // but these won't be actual Firestore document IDs for other people.
+                    const entryId = isManual ? `manual-${crypto.randomUUID()}` : spouseId;
+
+                    if (!currentSpouses.has(entryId)) {
+                        currentSpouses.set(entryId, { id: entryId, name: spouseName, isManual: isManual });
+                        console.log("Spouse added:", entryId, spouseName, currentSpouses);
+                        addSpouseInput.value = '';
+                        addSpouseIdInput.value = ''; // Ensure hidden ID is cleared for next entry
+                        addSpouseSuggestions.classList.add('hidden');
+                        renderSpousesList();
+                        hasUnsavedChanges = true; // Mark form as changed
+                    } else {
+                        showModal("هذا الزوج/الزوجة مضاف بالفعل.");
+                    }
+                });
             });
         })(); // End of IIFE
     </script>
