@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تصدير بيانات العائلة</title>
+    <title>تصدير البيانات</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Inter Font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <!-- Auth Guard Script - MUST BE LOADED FIRST -->
+    <script type="module" src="auth_guard.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -111,6 +115,27 @@
             color: black;
             text-decoration: none;
         }
+        /* Loading Modal Specific Styles */
+        #loadingModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-4">
@@ -124,15 +149,28 @@
         </div>
     </div>
 
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="modal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p class="text-lg font-semibold text-gray-800">جارٍ تحميل البيانات...</p>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header and Navigation -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">تصدير بيانات العائلة</h1>
-            <nav class="flex flex-wrap gap-3">
-                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
-                <a href="events.html" class="btn-secondary">الأحداث</a>
-                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
-                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+            <nav class="flex flex-wrap gap-3" id="mainNav">
+                <a href="dashboard.html" class="btn-secondary nav-link" data-page="dashboard.html" style="display:none;">لوحة التحكم</a>
+                <a href="index.html" class="btn-secondary nav-link" data-page="index.html" style="display:none;">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary nav-link" data-page="events.html" style="display:none;">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary nav-link" data-page="family_tree.html" style="display:none;">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-secondary nav-link" data-page="add_edit_person.html" style="display:none;">إضافة شخص جديد</a>
+                <a href="export_data.html" class="btn-primary">تصدير البيانات</a>
+                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="display:none;">الإحصائيات</a>
+                <a href="admin_panel.html" class="btn-secondary nav-link" data-page="admin_panel.html" style="display:none;">لوحة المدير</a>
+                <button id="logoutBtn" class="btn-secondary"><i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج</button>
             </nav>
         </div>
 
@@ -293,45 +331,29 @@
 
             <div class="flex justify-end gap-4 mt-6">
                 <button id="resetFiltersBtn" class="btn-secondary">إعادة تعيين الفلاتر</button>
-                <button id="exportDataBtn" class="btn-primary">تصدير البيانات (CSV)</button>
+                <button id="exportDataBtn" class="btn-primary nav-action-btn" data-action-role="editor,admin" style="display:none;">تصدير البيانات (CSV)</button>
             </div>
         </div>
     </div>
 
     <!-- Firebase SDKs -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
-            authDomain: "family-9b0b8.firebaseapp.com",
-            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
-            projectId: "family-9b0b8",
-            storageBucket: "family-9b0b8.firebasestorage.app",
-            messagingSenderId: "409089079475",
-            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
-            measurementId: "G-X5LDQB1WC9"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // Import auth, db, appId, and redirectTo from auth_guard.js
+        import { auth, db, appId, redirectTo } from './auth_guard.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { collection, getDocs, Timestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let userId = null;
         let allFamilyMembers = []; // Cache all family members
-
-        // Get app ID from environment or use a default
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let userRole = null; // Store user's role
+        let allowedPages = []; // Store pages allowed for the user
 
         // DOM Elements
         const messageModal = document.getElementById('messageModal');
         const modalMessage = document.getElementById('modalMessage');
         const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
         const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
+        const loadingModal = document.getElementById('loadingModal');
 
         const familyFilterSelect = document.getElementById('familyFilter');
         const genderCheckboxes = document.querySelectorAll('input[name="gender"]');
@@ -365,6 +387,9 @@
         const columnSelectionCheckboxesDiv = document.getElementById('columnSelectionCheckboxes');
         const exportDataBtn = document.getElementById('exportDataBtn');
         const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+        const mainNav = document.getElementById('mainNav');
+        const logoutBtn = document.getElementById('logoutBtn');
+
 
         // Define all possible columns for export (Updated)
         const exportColumns = [
@@ -382,17 +407,24 @@
             { id: 'isAlive', label: 'على قيد الحياة' },
             { id: 'deathDate', label: 'تاريخ الوفاة' },
             { id: 'maritalStatus', label: 'الحالة الاجتماعية' },
-            { id: 'spouseName', label: 'اسم الزوج/الزوجة' },
+            { id: 'spouseName', label: 'اسم الزوج/الزوجة' }, // This will need to be derived from spouseIds/manualSpouseNames
             { id: 'marriageDate', label: 'تاريخ الزواج' },
             { id: 'engagementDate', label: 'تاريخ الخطوبة' },
             { id: 'fatherId', label: 'معرف الأب' },
             { id: 'motherId', label: 'معرف الأم' },
-            { id: 'spouseId', label: 'معرف الزوج/الزوجة' },
-            { id: 'childrenIds', label: 'معرفات الأبناء' },
+            { id: 'spouseIds', label: 'معرفات الأزواج/الزوجات' }, // Raw IDs
+            { id: 'manualSpouseNames', label: 'أسماء الأزواج/الزوجات (يدوي)' }, // Raw manual names
+            { id: 'childrenIds', label: 'معرفات الأبناء' }, // Raw IDs
             { id: 'educationLevel', label: 'مستوى التعليم' }, // New
             { id: 'occupation', label: 'المهنة' }, // New
             { id: 'birthPlace', label: 'مكان الميلاد' }, // New
-            { id: 'currentResidence', label: 'مكان الإقامة الحالي' } // New
+            { id: 'currentResidence', label: 'مكان الإقامة الحالي' }, // New
+            { id: 'notes', label: 'ملاحظات' },
+            { id: 'facebookLink', label: 'رابط فيسبوك' },
+            { id: 'linkedinLink', label: 'رابط لينكدإن' },
+            { id: 'websiteLink', label: 'رابط موقع شخصي' },
+            { id: 'creationDate', label: 'تاريخ الإنشاء' },
+            { id: 'lastModified', label: 'آخر تعديل' }
         ];
 
         // Function to show custom modal messages
@@ -404,6 +436,16 @@
         // Function to close custom modal messages
         function closeModal() {
             messageModal.style.display = 'none';
+        }
+
+        // Function to show loading modal
+        function showLoadingModal() {
+            loadingModal.style.display = 'flex';
+        }
+
+        // Function to hide loading modal
+        function hideLoadingModal() {
+            loadingModal.style.display = 'none';
         }
 
         // Function to calculate age in years (returns number)
@@ -435,6 +477,7 @@
                 console.log("User ID not available, cannot fetch family members.");
                 return;
             }
+            showLoadingModal();
             try {
                 const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
                 const querySnapshot = await getDocs(q);
@@ -445,6 +488,8 @@
             } catch (error) {
                 console.error("Error fetching all family members:", error);
                 showModal("حدث خطأ أثناء جلب بيانات العائلة: " + error.message);
+            } finally {
+                hideLoadingModal();
             }
         }
 
@@ -470,10 +515,23 @@
                 checkbox.type = 'checkbox';
                 checkbox.name = 'exportColumn';
                 checkbox.value = col.id;
-                checkbox.checked = true; // All checked by default
+                // Check these by default for common use cases, others can be unchecked
+                if (['fullName', 'firstName', 'familyName', 'gender', 'birthDate', 'isAlive', 'idNumber', 'phoneNumber'].includes(col.id)) {
+                    checkbox.checked = true;
+                } else {
+                    checkbox.checked = false;
+                }
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(col.label));
                 columnSelectionCheckboxesDiv.appendChild(label);
+            });
+
+            // Add event listener to dynamically created checkboxes for selectAllColumns
+            document.querySelectorAll('input[name="exportColumn"]').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const allChecked = Array.from(document.querySelectorAll('input[name="exportColumn"]')).every(cb => cb.checked);
+                    selectAllColumnsCheckbox.checked = allChecked;
+                });
             });
         }
 
@@ -491,6 +549,8 @@
             const selectedGenders = Array.from(genderCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
             if (selectedGenders.length > 0 && selectedGenders.length < 2) { // Apply only if not both selected
                 filtered = filtered.filter(p => selectedGenders.includes(p.gender));
+            } else if (selectedGenders.length === 0) { // If neither is checked, filter out all
+                filtered = [];
             }
 
             // 3. Life Status Filter
@@ -501,6 +561,8 @@
                 } else if (selectedLifeStatuses.includes('Deceased')) {
                     filtered = filtered.filter(p => p.isAlive === false);
                 }
+            } else if (selectedLifeStatuses.length === 0) { // If neither is checked, filter out all
+                filtered = [];
             }
 
             // 4. Age Category Filter (only for alive members)
@@ -511,18 +573,24 @@
                 } else if (selectedAgeCategories.includes('Over16')) {
                     filtered = filtered.filter(p => p.isAlive !== false && isAbove16(p.birthDate));
                 }
+            } else if (selectedAgeCategories.length === 0) { // If neither is checked, filter out all
+                filtered = [];
             }
 
             // 5. Marital Status Filter (only for alive members)
             const selectedMaritalStatuses = Array.from(maritalStatusCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
             if (selectedMaritalStatuses.length > 0 && selectedMaritalStatuses.length < 5) { // Apply only if not all selected
                 filtered = filtered.filter(p => p.isAlive !== false && selectedMaritalStatuses.includes(p.maritalStatus));
+            } else if (selectedMaritalStatuses.length === 0) { // If none is checked, filter out all
+                filtered = [];
             }
 
             // 6. Education Level Filter
             const selectedEducationLevels = Array.from(educationLevelCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
             if (selectedEducationLevels.length > 0 && selectedEducationLevels.length < 7) { // Apply only if not all selected
                 filtered = filtered.filter(p => selectedEducationLevels.includes(p.educationLevel || 'Unknown'));
+            } else if (selectedEducationLevels.length === 0) { // If none is checked, filter out all
+                filtered = [];
             }
 
             // 7. Occupation Filter
@@ -557,6 +625,8 @@
                 } else if (selectedChildrenStatuses.includes('NoChildren')) {
                     filtered = filtered.filter(p => !p.childrenIds || p.childrenIds.length === 0);
                 }
+            } else if (selectedChildrenStatuses.length === 0) {
+                filtered = [];
             }
 
 
@@ -570,9 +640,10 @@
                     filtered = filtered.filter(p => p.motherId);
                 }
                 if (selectedRelationshipStatuses.includes('HasSpouse')) {
-                    filtered = filtered.filter(p => p.spouseId);
+                    filtered = filtered.filter(p => p.spouseIds && p.spouseIds.length > 0);
                 }
-                // Note: The previous childrenStatusCheckboxes already handle "HasChildren" / "NoChildren"
+            } else if (selectedRelationshipStatuses.length === 0) {
+                filtered = [];
             }
 
 
@@ -633,7 +704,7 @@
         }
 
         // Function to format data for CSV
-        function formatValueForCsv(value, columnId) {
+        function formatValueForCsv(value, columnId, person) {
             if (value === null || value === undefined) {
                 return '';
             }
@@ -641,7 +712,27 @@
                 return value.toDate().toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' });
             }
             if (Array.isArray(value)) {
-                return value.join(';'); // Join array elements with semicolon
+                // For IDs, we might want to get names
+                if (columnId === 'spouseIds') {
+                    const spouseNames = [];
+                    for (const sId of value) {
+                        const spouse = allFamilyMembers.find(m => m.id === sId);
+                        if (spouse) spouseNames.push(spouse.fullName);
+                    }
+                    if (person.manualSpouseNames && person.manualSpouseNames.length > 0) {
+                        spouseNames.push(...person.manualSpouseNames);
+                    }
+                    return spouseNames.join('؛ '); // Use a different separator for names
+                }
+                if (columnId === 'childrenIds') {
+                    const childrenNames = [];
+                    for (const cId of value) {
+                        const child = allFamilyMembers.find(m => m.id === cId);
+                        if (child) childrenNames.push(child.fullName);
+                    }
+                    return childrenNames.join('؛ ');
+                }
+                return value.join('؛ '); // Default for other arrays
             }
             if (typeof value === 'boolean') {
                 return value ? 'نعم' : 'لا';
@@ -656,6 +747,11 @@
 
         // Function to export data to CSV
         function exportDataToCsv() {
+            if (!(userRole === 'admin' || userRole === 'editor')) {
+                showModal("ليس لديك الصلاحية لتصدير البيانات.");
+                return;
+            }
+
             const filteredMembers = getFilteredMembers();
             const selectedColumns = getSelectedColumns();
 
@@ -670,7 +766,7 @@
 
             const headers = selectedColumns.map(col => col.label).join(',');
             const rows = filteredMembers.map(person => {
-                return selectedColumns.map(col => formatValueForCsv(person[col.id], col.id)).join(',');
+                return selectedColumns.map(col => formatValueForCsv(person[col.id], col.id, person)).join(',');
             });
 
             const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers, ...rows].join('\n');
@@ -721,6 +817,29 @@
             showModal("تمت إعادة تعيين جميع الفلاتر.");
         }
 
+        // Function to update navigation and action button visibility based on user's allowed pages and role
+        function updateNavigationAndActionButtons() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                const pageName = link.dataset.page;
+                if (allowedPages.includes(pageName)) {
+                    link.style.display = ''; // Show the link
+                } else {
+                    link.style.display = 'none'; // Hide the link
+                }
+            });
+
+            const actionButtons = document.querySelectorAll('.nav-action-btn');
+            actionButtons.forEach(button => {
+                const requiredRoles = button.dataset.actionRole ? button.dataset.actionRole.split(',') : [];
+                if (requiredRoles.includes(userRole)) {
+                    button.style.display = ''; // Show the button
+                } else {
+                    button.style.display = 'none'; // Hide the button
+                }
+            });
+        }
+
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
@@ -741,46 +860,63 @@
             // Reset Filters button
             resetFiltersBtn.addEventListener('click', resetFilters);
 
-            // Initial authentication attempt
-            (async () => {
+            // Logout button
+            logoutBtn.addEventListener('click', async () => {
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
+                    await signOut(auth);
+                    redirectTo('login.html'); // Redirect to login page after logout
                 } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                    console.error("Error logging out:", error);
+                    showModal("حدث خطأ أثناء تسجيل الخروج: " + error.message);
                 }
-            })();
+            });
 
             // Listen for auth state changes to get userId and fetch data
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
                     console.log("Authentication state changed. User ID:", userId);
-                    await fetchAllFamilyMembers(); // Fetch all members and populate filters/columns
+
+                    // Fetch user settings to get role and allowed pages
+                    try {
+                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userId);
+                        const userSettingsSnap = await getDoc(userSettingsRef);
+
+                        if (userSettingsSnap.exists()) {
+                            const settings = userSettingsSnap.data();
+                            userRole = settings.role || 'viewer';
+                            allowedPages = settings.allowedPages || [];
+                            updateNavigationAndActionButtons(); // Update navigation and action buttons based on fetched permissions
+                        } else {
+                            console.warn("User settings not found for current user. Defaulting to viewer role.");
+                            userRole = 'viewer';
+                            allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html', 'export_data.html'];
+                            updateNavigationAndActionButtons();
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user settings:", error);
+                        showModal("حدث خطأ أثناء جلب إعدادات المستخدم: " + error.message);
+                        userRole = 'viewer'; // Fallback
+                        allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html', 'export_data.html']; // Fallback
+                        updateNavigationAndActionButtons();
+                    }
+
+                    // Only proceed if user has permission
+                    if (!(userRole === 'admin' || userRole === 'editor')) {
+                        showModal("ليس لديك الصلاحية للوصول إلى هذه الصفحة.", 'messageModal');
+                        setTimeout(() => redirectTo('dashboard.html'), 2000); // Redirect if no permission
+                        return;
+                    }
+
+                    await fetchAllFamilyMembers(); // Fetch and display data after authentication
                 } else {
                     userId = null;
                     console.log("User signed out or no user.");
-                    showModal("يرجى تسجيل الدخول لتصدير البيانات.", 'messageModal');
-                    // Clear data/filters if user logs out
-                    allFamilyMembers = [];
-                    familyFilterSelect.innerHTML = '<option value="All">الكل</option>';
-                    columnSelectionCheckboxesDiv.innerHTML = '';
+                    hideLoadingModal(); // Ensure loading modal is hidden
+                    showModal("يرجى تسجيل الدخول لعرض وتصدير البيانات.", 'messageModal');
+                    // Hide all navigation and action buttons
+                    document.querySelectorAll('.nav-link').forEach(link => link.style.display = 'none');
+                    document.querySelectorAll('.nav-action-btn').forEach(button => button.style.display = 'none');
                 }
             });
         });
