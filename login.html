@@ -119,21 +119,19 @@
     <div class="login-container">
         <h2 class="text-3xl font-bold text-gray-800 mb-6">تسجيل الدخول</h2>
         <form id="loginForm">
-            <input type="email" id="emailInput" class="input-field" placeholder="البريد الإلكتروني" required>
+            <input type="text" id="emailOrIdInput" class="input-field" placeholder="البريد الإلكتروني أو رقم الهوية" required>
             <input type="password" id="passwordInput" class="input-field" placeholder="كلمة المرور" required>
-            <p id="loginError" class="error-message hidden">خطأ في تسجيل الدخول. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.</p>
+            <p id="loginError" class="error-message hidden">خطأ في تسجيل الدخول. يرجى التحقق من بياناتك.</p>
             <button type="submit" class="btn-primary">تسجيل الدخول</button>
         </form>
-        <p class="mt-4 text-gray-600">
-            ليس لديك حساب؟ <a href="register.html" class="link-text">سجل الآن</a>
-        </p>
+        <!-- Removed registration link -->
     </div>
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase configuration (replace with your actual config)
         const firebaseConfig = {
@@ -157,7 +155,7 @@
 
         // DOM Elements
         const loginForm = document.getElementById('loginForm');
-        const emailInput = document.getElementById('emailInput');
+        const emailOrIdInput = document.getElementById('emailOrIdInput');
         const passwordInput = document.getElementById('passwordInput');
         const loginError = document.getElementById('loginError');
 
@@ -172,21 +170,50 @@
             document.getElementById('messageModal').style.display = 'none';
         }
 
+        // Helper to validate if input is an email
+        function isValidEmail(email) {
+            const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return re.test(String(email).toLowerCase());
+        }
+
         // Handle Login Form Submission
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = emailInput.value;
+            const inputIdentifier = emailOrIdInput.value.trim();
             const password = passwordInput.value;
             loginError.classList.add('hidden'); // Hide previous errors
 
+            let emailToSignIn = '';
+
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                if (isValidEmail(inputIdentifier)) {
+                    // If it looks like an email, try to sign in directly
+                    emailToSignIn = inputIdentifier;
+                } else {
+                    // If it's not an email, assume it's an ID number and query Firestore
+                    const userSettingsRef = collection(db, `artifacts/${appId}/userSettings`);
+                    const q = query(userSettingsRef, where("idNumber", "==", inputIdentifier));
+                    const querySnapshot = await getDocs(q);
+
+                    if (querySnapshot.empty) {
+                        throw new Error("auth/user-not-found-by-id");
+                    }
+
+                    // Assuming idNumber is unique and linked to one user
+                    const userData = querySnapshot.docs[0].data();
+                    if (!userData.email) {
+                        throw new Error("auth/email-not-linked-to-id");
+                    }
+                    emailToSignIn = userData.email;
+                    console.log(`Found email ${emailToSignIn} for ID number ${inputIdentifier}`);
+                }
+
+                // Attempt to sign in with the determined email and provided password
+                const userCredential = await signInWithEmailAndPassword(auth, emailToSignIn, password);
                 const user = userCredential.user;
                 console.log("User logged in:", user.uid);
 
                 // Store device ID in Firestore upon successful login
-                // This is a client-side approach and not foolproof.
-                // A more robust solution requires server-side logic and device fingerprinting.
                 const deviceId = localStorage.getItem('deviceId');
                 if (deviceId) {
                     const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, user.uid);
@@ -204,8 +231,19 @@
 
             } catch (error) {
                 console.error("Login error:", error.code, error.message);
+                let errorMessage = "خطأ في تسجيل الدخول. يرجى التحقق من بياناتك.";
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = "البريد الإلكتروني/رقم الهوية أو كلمة المرور غير صحيحة.";
+                } else if (error.code === 'auth/user-not-found-by-id') {
+                    errorMessage = "رقم الهوية غير موجود.";
+                } else if (error.code === 'auth/email-not-linked-to-id') {
+                    errorMessage = "لا يوجد بريد إلكتروني مرتبط برقم الهوية هذا.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "صيغة البريد الإلكتروني غير صحيحة.";
+                }
+                loginError.textContent = errorMessage;
                 loginError.classList.remove('hidden');
-                showModal("فشل تسجيل الدخول: " + (error.message || "خطأ غير معروف"));
+                showModal("فشل تسجيل الدخول: " + errorMessage);
             }
         });
 
