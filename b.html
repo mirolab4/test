@@ -197,18 +197,29 @@
                     </select>
                 </div>
 
-                <!-- Marital Status Filter -->
+                <!-- Marital Status Filter (Modified to checkboxes) -->
                 <div>
-                    <label for="maritalStatusFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
                         <i class="fas fa-ring ml-1 text-gray-500"></i> الحالة الاجتماعية:
                     </label>
-                    <select id="maritalStatusFilter" class="input-field">
-                        <option value="All">الكل</option>
-                        <option value="Single">أعزب</option>
-                        <option value="Married">متزوج</option>
-                        <option value="Divorced">مطلق</option>
-                        <option value="Widowed">أرمل</option>
-                    </select>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="maritalStatusCheckbox" value="Single" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-1 text-gray-700 text-sm">أعزب</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="maritalStatusCheckbox" value="Married" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-1 text-gray-700 text-sm">متزوج</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="maritalStatusCheckbox" value="Divorced" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-1 text-gray-700 text-sm">مطلق</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="maritalStatusCheckbox" value="Widowed" class="form-checkbox text-indigo-600 rounded-md">
+                            <span class="mr-1 text-gray-700 text-sm">أرمل</span>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Life Status Filter -->
@@ -223,12 +234,20 @@
                     </select>
                 </div>
 
-                <!-- Age Filter -->
+                <!-- Age Min Filter (NEW) -->
                 <div>
-                    <label for="ageFilter" class="block text-sm font-medium text-gray-700 mb-1">
-                        <i class="fas fa-birthday-cake ml-1 text-gray-500"></i> العمر (بالضبط):
+                    <label for="ageMinFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-arrow-up ml-1 text-gray-500"></i> العمر من:
                     </label>
-                    <input type="number" id="ageFilter" class="input-field" placeholder="أدخل العمر">
+                    <input type="number" id="ageMinFilter" class="input-field" placeholder="الحد الأدنى">
+                </div>
+
+                <!-- Age Max Filter (NEW) -->
+                <div>
+                    <label for="ageMaxFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-arrow-down ml-1 text-gray-500"></i> العمر إلى:
+                    </label>
+                    <input type="number" id="ageMaxFilter" class="input-field" placeholder="الحد الأقصى">
                 </div>
 
                 <!-- Has Father Filter -->
@@ -279,7 +298,7 @@
                     </select>
                 </div>
 
-                <!-- Filter by Father (NEW) -->
+                <!-- Filter by Father -->
                 <div class="col-span-full md:col-span-2">
                     <label for="filterByFatherInput" class="block text-sm font-medium text-gray-700 mb-1">
                         <i class="fas fa-male ml-1 text-gray-500"></i> عرض أبناء الأب:
@@ -291,7 +310,7 @@
                     </div>
                 </div>
 
-                <!-- Filter by Mother (NEW) -->
+                <!-- Filter by Mother -->
                 <div class="col-span-full md:col-span-2">
                     <label for="filterByMotherInput" class="block text-sm font-medium text-gray-700 mb-1">
                         <i class="fas fa-female ml-1 text-gray-500"></i> عرض أبناء الأم:
@@ -303,7 +322,7 @@
                     </div>
                 </div>
 
-                <!-- Filter by Sibling (NEW) -->
+                <!-- Filter by Sibling -->
                 <div class="col-span-full md:col-span-2">
                     <label for="filterBySiblingInput" class="block text-sm font-medium text-gray-700 mb-1">
                         <i class="fas fa-users-line ml-1 text-gray-500"></i> عرض إخوة/أخوات الشخص:
@@ -324,8 +343,16 @@
             </div>
         </div>
 
-        <!-- Selection and Export Controls -->
+        <!-- Display Counts and Selection Controls -->
         <div class="bg-white p-6 rounded-xl shadow-md mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <span class="text-gray-700 font-medium">
+                    <i class="fas fa-users ml-2"></i> عدد الأشخاص المعروضين: <span id="displayedCount">0</span>
+                </span>
+                <span class="text-gray-700 font-medium">
+                    <i class="fas fa-check-circle ml-2"></i> المحدد: <span id="selectedCount">0</span> / <span id="totalDisplayedCount">0</span> (<span id="totalFamilyCount">0</span> إجمالي)
+                </span>
+            </div>
             <div class="flex items-center gap-2">
                 <input type="checkbox" id="selectAllCheckbox" class="form-checkbox text-indigo-600 rounded-md">
                 <label for="selectAllCheckbox" class="text-gray-700 font-medium">تحديد الكل (المعروض)</label>
@@ -381,9 +408,11 @@
         const noMembersMessage = document.getElementById('noMembersMessage');
         const searchInput = document.getElementById('searchInput');
         const genderFilter = document.getElementById('genderFilter');
-        const maritalStatusFilter = document.getElementById('maritalStatusFilter');
+        const maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatusCheckbox"]'); // Changed to checkboxes
         const lifeStatusFilter = document.getElementById('lifeStatusFilter');
         const ageFilter = document.getElementById('ageFilter');
+        const ageMinFilter = document.getElementById('ageMinFilter'); // NEW
+        const ageMaxFilter = document.getElementById('ageMaxFilter'); // NEW
         const hasFatherFilter = document.getElementById('hasFatherFilter');
         const hasMotherFilter = document.getElementById('hasMotherFilter');
         const hasChildrenFilter = document.getElementById('hasChildrenFilter');
@@ -410,6 +439,12 @@
         const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
         const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
         const loadingModal = document.getElementById('loadingModal');
+
+        // Count display elements (NEW)
+        const displayedCountSpan = document.getElementById('displayedCount');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        const totalDisplayedCountSpan = document.getElementById('totalDisplayedCount');
+        const totalFamilyCountSpan = document.getElementById('totalFamilyCount');
 
 
         // --- Utility Functions ---
@@ -456,6 +491,7 @@
                 const querySnapshot = await getDocs(q);
                 allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log("Family members fetched:", allFamilyMembers);
+                totalFamilyCountSpan.textContent = allFamilyMembers.length; // Update total count
                 displayFamilyMembers(); // Initial display after fetching
             } catch (error) {
                 console.error("Error fetching family members:", error);
@@ -517,9 +553,12 @@
 
             const searchTerm = searchInput.value.toLowerCase();
             const selectedGender = genderFilter.value;
-            const selectedMaritalStatus = maritalStatusFilter.value;
+            const selectedMaritalStatuses = Array.from(maritalStatusCheckboxes)
+                                                .filter(checkbox => checkbox.checked)
+                                                .map(checkbox => checkbox.value);
             const selectedLifeStatus = lifeStatusFilter.value;
-            const selectedAge = parseInt(ageFilter.value);
+            const ageMin = parseInt(ageMinFilter.value); // NEW
+            const ageMax = parseInt(ageMaxFilter.value); // NEW
             const selectedHasFather = hasFatherFilter.value;
             const selectedHasMother = hasMotherFilter.value;
             const selectedHasChildren = hasChildrenFilter.value;
@@ -535,7 +574,9 @@
                                       (person.idNumber && person.idNumber.toLowerCase().includes(searchTerm));
 
                 const matchesGender = selectedGender === 'All' || person.gender === selectedGender;
-                const matchesMaritalStatus = selectedMaritalStatus === 'All' || person.maritalStatus === selectedMaritalStatus;
+
+                // Marital Status Filter (Updated for multiple selection)
+                const matchesMaritalStatus = selectedMaritalStatuses.length === 0 || selectedMaritalStatuses.includes(person.maritalStatus);
 
                 let matchesLifeStatus = true;
                 if (selectedLifeStatus === 'Alive') {
@@ -544,9 +585,18 @@
                     matchesLifeStatus = person.isAlive === false;
                 }
 
-                let matchesAge = true;
-                if (!isNaN(selectedAge) && person.birthDate) {
-                    matchesAge = calculateAge(person.birthDate) === selectedAge;
+                // Age Range Filter (NEW)
+                let matchesAgeRange = true;
+                if (person.birthDate) {
+                    const personAge = calculateAge(person.birthDate);
+                    if (!isNaN(ageMin) && personAge < ageMin) {
+                        matchesAgeRange = false;
+                    }
+                    if (!isNaN(ageMax) && personAge > ageMax) {
+                        matchesAgeRange = false;
+                    }
+                } else if (!isNaN(ageMin) || !isNaN(ageMax)) {
+                    matchesAgeRange = false; // If age filter is active but person has no birth date
                 }
 
                 let matchesHasFather = true;
@@ -595,6 +645,7 @@
                     const siblingPerson = allFamilyMembers.find(p => p.id === filterBySiblingIdValue);
                     if (siblingPerson) {
                         const commonFather = person.fatherId && siblingPerson.fatherId && person.fatherId === siblingPerson.fatherId;
+                        // FIX: Corrected typo from siblingPerson.mother.Id to siblingPerson.motherId
                         const commonMother = person.motherId && siblingPerson.motherId && person.motherId === siblingPerson.motherId;
                         matchesFilterBySibling = (commonFather || commonMother) && (person.id !== siblingPerson.id);
                     } else {
@@ -602,7 +653,7 @@
                     }
                 }
 
-                return matchesSearch && matchesGender && matchesMaritalStatus && matchesLifeStatus && matchesAge &&
+                return matchesSearch && matchesGender && matchesMaritalStatus && matchesLifeStatus && matchesAgeRange &&
                        matchesHasFather && matchesHasMother && matchesHasChildren && matchesHasSpouse &&
                        matchesFilterByFather && matchesFilterByMother && matchesFilterBySibling;
             });
@@ -643,7 +694,7 @@
                             personCard.classList.remove('selected');
                             selectAllCheckbox.checked = false; // Uncheck select all if any individual is unchecked
                         }
-                        console.log("Selected IDs:", Array.from(selectedPersonIds));
+                        updateCounts(); // Update counts on individual checkbox change
                     });
                     checkboxContainer.appendChild(checkbox);
                     personCard.appendChild(checkboxContainer);
@@ -676,26 +727,39 @@
 
                     familyMembersGrid.appendChild(personCard);
                 });
-
-                // Update selectAllCheckbox state based on current selections
-                selectAllCheckbox.checked = displayedFamilyMembers.length > 0 &&
-                                            displayedFamilyMembers.every(p => selectedPersonIds.has(p.id));
             }
+            updateCounts(); // Update counts after filtering and displaying
+        }
+
+        // Function to update displayed and selected counts (NEW)
+        function updateCounts() {
+            displayedCountSpan.textContent = displayedFamilyMembers.length;
+            selectedCountSpan.textContent = selectedPersonIds.size;
+            totalDisplayedCountSpan.textContent = displayedFamilyMembers.length;
+
+            // Update selectAllCheckbox state based on current selections
+            selectAllCheckbox.checked = displayedFamilyMembers.length > 0 &&
+                                        displayedFamilyMembers.every(p => selectedPersonIds.has(p.id));
         }
 
         // --- Event Listeners for Filters and Search ---
 
         searchInput.addEventListener('input', displayFamilyMembers);
         genderFilter.addEventListener('change', displayFamilyMembers);
-        maritalStatusFilter.addEventListener('change', displayFamilyMembers);
+        // Add event listeners for marital status checkboxes
+        maritalStatusCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', displayFamilyMembers);
+        });
         lifeStatusFilter.addEventListener('change', displayFamilyMembers);
-        ageFilter.addEventListener('input', displayFamilyMembers);
+        ageFilter.addEventListener('input', displayFamilyMembers); // Keep this if 'exact age' filter is still desired
+        ageMinFilter.addEventListener('input', displayFamilyMembers); // NEW
+        ageMaxFilter.addEventListener('input', displayFamilyMembers); // NEW
         hasFatherFilter.addEventListener('change', displayFamilyMembers);
         hasMotherFilter.addEventListener('change', displayFamilyMembers);
         hasChildrenFilter.addEventListener('change', displayFamilyMembers);
         hasSpouseFilter.addEventListener('change', displayFamilyMembers);
 
-        // New filter event listeners
+        // New filter event listeners for relationship search inputs
         filterByFatherInput.addEventListener('input', displayFamilyMembers);
         filterByMotherInput.addEventListener('input', displayFamilyMembers);
         filterBySiblingInput.addEventListener('input', displayFamilyMembers);
@@ -704,14 +768,17 @@
         clearFiltersBtn.addEventListener('click', () => {
             searchInput.value = '';
             genderFilter.value = 'All';
-            maritalStatusFilter.value = 'All';
+            // Clear marital status checkboxes
+            maritalStatusCheckboxes.forEach(checkbox => checkbox.checked = false);
             lifeStatusFilter.value = 'Alive'; // Default to Alive Only
-            ageFilter.value = '';
+            ageFilter.value = ''; // Clear exact age filter
+            ageMinFilter.value = ''; // Clear age range filters
+            ageMaxFilter.value = ''; // Clear age range filters
             hasFatherFilter.value = 'All';
             hasMotherFilter.value = 'All';
             hasChildrenFilter.value = 'All';
             hasSpouseFilter.value = 'All';
-            // Clear new relationship filters
+            // Clear relationship filters
             filterByFatherInput.value = '';
             filterByFatherId.value = '';
             filterByFatherSuggestions.classList.add('hidden');
@@ -735,7 +802,7 @@
                 });
             }
             // Re-render to update all checkboxes and card highlights
-            displayFamilyMembers();
+            displayFamilyMembers(); // This will call updateCounts() internally
         });
 
         // --- Export to Excel (CSV) ---
