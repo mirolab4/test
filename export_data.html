@@ -189,28 +189,93 @@
                     </div>
                 </div>
 
-                <!-- Date Filters -->
+                <!-- New: Education Level Filter -->
                 <div class="filter-section">
-                    <h3>تصفية حسب التاريخ</h3>
+                    <h3>مستوى التعليم</h3>
+                    <div class="flex flex-col gap-2 checkbox-group">
+                        <label><input type="checkbox" name="educationLevel" value="Primary" checked> ابتدائي</label>
+                        <label><input type="checkbox" name="educationLevel" value="Middle" checked> إعدادي</label>
+                        <label><input type="checkbox" name="educationLevel" value="Secondary" checked> ثانوي</label>
+                        <label><input type="checkbox" name="educationLevel" value="University" checked> جامعي</label>
+                        <label><input type="checkbox" name="educationLevel" value="Postgraduate" checked> دراسات عليا</label>
+                        <label><input type="checkbox" name="educationLevel" value="Other" checked> أخرى</label>
+                        <label><input type="checkbox" name="educationLevel" value="Unknown" checked> غير محدد</label>
+                    </div>
+                </div>
+
+                <!-- New: Occupation Filter -->
+                <div class="filter-section">
+                    <h3>المهنة</h3>
+                    <input type="text" id="occupationInput" class="input-field" placeholder="ابحث عن مهنة...">
+                </div>
+
+                <!-- New: Place Filters -->
+                <div class="filter-section">
+                    <h3>المكان</h3>
                     <div class="mb-2">
-                        <label for="birthYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الميلاد:</label>
-                        <input type="number" id="birthYearInput" class="input-field" placeholder="مثال: 1990">
+                        <label for="birthPlaceInput" class="block text-sm font-medium text-gray-700 mb-1">مكان الميلاد:</label>
+                        <input type="text" id="birthPlaceInput" class="input-field" placeholder="مثال: نابلس">
+                    </div>
+                    <div>
+                        <label for="currentResidenceInput" class="block text-sm font-medium text-gray-700 mb-1">مكان الإقامة الحالي:</label>
+                        <input type="text" id="currentResidenceInput" class="input-field" placeholder="مثال: رام الله">
+                    </div>
+                </div>
+
+                <!-- New: Number of Children Filter -->
+                <div class="filter-section">
+                    <h3>عدد الأبناء</h3>
+                    <div class="flex gap-2 mb-2">
+                        <input type="number" id="minChildrenInput" class="input-field w-1/2" placeholder="الحد الأدنى">
+                        <input type="number" id="maxChildrenInput" class="input-field w-1/2" placeholder="الحد الأقصى">
+                    </div>
+                    <div class="flex flex-col gap-2 checkbox-group">
+                        <label><input type="checkbox" name="childrenStatus" value="HasChildren" checked> لديه أبناء</label>
+                        <label><input type="checkbox" name="childrenStatus" value="NoChildren" checked> ليس لديه أبناء</label>
+                    </div>
+                </div>
+
+                <!-- New: Relationship Status Filters -->
+                <div class="filter-section">
+                    <h3>حالة العلاقات</h3>
+                    <div class="flex flex-col gap-2 checkbox-group">
+                        <label><input type="checkbox" name="relationshipStatus" value="HasFather" checked> لديه أب مسجل</label>
+                        <label><input type="checkbox" name="relationshipStatus" value="HasMother" checked> لديه أم مسجلة</label>
+                        <label><input type="checkbox" name="relationshipStatus" value="HasSpouse" checked> لديه زوج/زوجة مسجل</label>
+                    </div>
+                </div>
+
+
+                <!-- Date Filters (Modified for ranges) -->
+                <div class="filter-section">
+                    <h3>تصفية حسب التاريخ (نطاق السنوات)</h3>
+                    <div class="mb-2">
+                        <label for="minBirthYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الميلاد (من):</label>
+                        <input type="number" id="minBirthYearInput" class="input-field" placeholder="مثال: 1980">
+                        <label for="maxBirthYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الميلاد (إلى):</label>
+                        <input type="number" id="maxBirthYearInput" class="input-field" placeholder="مثال: 1999">
                     </div>
                     <div class="mb-2">
                         <label for="birthMonthInput" class="block text-sm font-medium text-gray-700 mb-1">شهر الميلاد:</label>
                         <input type="number" id="birthMonthInput" class="input-field" min="1" max="12" placeholder="مثال: 7">
                     </div>
                     <div class="mb-2">
-                        <label for="deathYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الوفاة:</label>
-                        <input type="number" id="deathYearInput" class="input-field" placeholder="مثال: 2020">
+                        <label for="minDeathYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الوفاة (من):</label>
+                        <input type="number" id="minDeathYearInput" class="input-field" placeholder="مثال: 2000">
+                        <label for="maxDeathYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الوفاة (إلى):</label>
+                        <input type="number" id="maxDeathYearInput" class="input-field" placeholder="مثال: 2020">
                     </div>
                     <div class="mb-2">
-                        <label for="marriageYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الزواج:</label>
-                        <input type="number" id="marriageYearInput" class="input-field" placeholder="مثال: 2015">
+                        <label for="minMarriageYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الزواج (من):</label>
+                        <input type="number" id="minMarriageYearInput" class="input-field" placeholder="مثال: 2010">
+                        <label for="maxMarriageYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الزواج (إلى):</label>
+                        <input type="number" id="maxMarriageYearInput" class="input-field" placeholder="مثال: 2019">
                     </div>
                     <div>
-                        <label for="engagementYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الخطوبة:</label>
-                        <input type="number" id="engagementYearInput" class="input-field" placeholder="مثال: 2014">
+                        <label for="minEngagementYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الخطوبة (من):</label>
+                        <input type="number" id="minEngagementYearInput" class="input-field" placeholder="مثال: 2009">
+                        <label for="maxEngagementYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الخطوبة (إلى):</label>
+                        <input type="number" id="maxEngagementYearInput" class="input-field" placeholder="مثال: 2013">
                     </div>
                 </div>
             </div>
@@ -226,7 +291,8 @@
                 </div>
             </div>
 
-            <div class="flex justify-end mt-6">
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="resetFiltersBtn" class="btn-secondary">إعادة تعيين الفلاتر</button>
                 <button id="exportDataBtn" class="btn-primary">تصدير البيانات (CSV)</button>
             </div>
         </div>
@@ -272,17 +338,35 @@
         const lifeStatusCheckboxes = document.querySelectorAll('input[name="lifeStatus"]');
         const ageCategoryCheckboxes = document.querySelectorAll('input[name="ageCategory"]');
         const maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatus"]');
-        const birthYearInput = document.getElementById('birthYearInput');
+
+        // New Date Range Inputs
+        const minBirthYearInput = document.getElementById('minBirthYearInput');
+        const maxBirthYearInput = document.getElementById('maxBirthYearInput');
         const birthMonthInput = document.getElementById('birthMonthInput');
-        const deathYearInput = document.getElementById('deathYearInput');
-        const marriageYearInput = document.getElementById('marriageYearInput');
-        const engagementYearInput = document.getElementById('engagementYearInput');
+        const minDeathYearInput = document.getElementById('minDeathYearInput');
+        const maxDeathYearInput = document.getElementById('maxDeathYearInput');
+        const minMarriageYearInput = document.getElementById('minMarriageYearInput');
+        const maxMarriageYearInput = document.getElementById('maxMarriageYearInput');
+        const minEngagementYearInput = document.getElementById('minEngagementYearInput');
+        const maxEngagementYearInput = document.getElementById('maxEngagementYearInput');
+
+        // New Filters
+        const educationLevelCheckboxes = document.querySelectorAll('input[name="educationLevel"]');
+        const occupationInput = document.getElementById('occupationInput');
+        const birthPlaceInput = document.getElementById('birthPlaceInput');
+        const currentResidenceInput = document.getElementById('currentResidenceInput');
+        const minChildrenInput = document.getElementById('minChildrenInput');
+        const maxChildrenInput = document.getElementById('maxChildrenInput');
+        const childrenStatusCheckboxes = document.querySelectorAll('input[name="childrenStatus"]');
+        const relationshipStatusCheckboxes = document.querySelectorAll('input[name="relationshipStatus"]');
+
 
         const selectAllColumnsCheckbox = document.getElementById('selectAllColumns');
         const columnSelectionCheckboxesDiv = document.getElementById('columnSelectionCheckboxes');
         const exportDataBtn = document.getElementById('exportDataBtn');
+        const resetFiltersBtn = document.getElementById('resetFiltersBtn');
 
-        // Define all possible columns for export
+        // Define all possible columns for export (Updated)
         const exportColumns = [
             { id: 'id', label: 'معرف الشخص' },
             { id: 'fullName', label: 'الاسم الكامل' },
@@ -304,7 +388,11 @@
             { id: 'fatherId', label: 'معرف الأب' },
             { id: 'motherId', label: 'معرف الأم' },
             { id: 'spouseId', label: 'معرف الزوج/الزوجة' },
-            { id: 'childrenIds', label: 'معرفات الأبناء' }
+            { id: 'childrenIds', label: 'معرفات الأبناء' },
+            { id: 'educationLevel', label: 'مستوى التعليم' }, // New
+            { id: 'occupation', label: 'المهنة' }, // New
+            { id: 'birthPlace', label: 'مكان الميلاد' }, // New
+            { id: 'currentResidence', label: 'مكان الإقامة الحالي' } // New
         ];
 
         // Function to show custom modal messages
@@ -431,27 +519,107 @@
                 filtered = filtered.filter(p => p.isAlive !== false && selectedMaritalStatuses.includes(p.maritalStatus));
             }
 
-            // 6. Date Filters
-            const birthYear = birthYearInput.value ? parseInt(birthYearInput.value) : null;
-            const birthMonth = birthMonthInput.value ? parseInt(birthMonthInput.value) : null;
-            const deathYear = deathYearInput.value ? parseInt(deathYearInput.value) : null;
-            const marriageYear = marriageYearInput.value ? parseInt(marriageYearInput.value) : null;
-            const engagementYear = engagementYearInput.value ? parseInt(engagementYearInput.value) : null;
+            // 6. Education Level Filter
+            const selectedEducationLevels = Array.from(educationLevelCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedEducationLevels.length > 0 && selectedEducationLevels.length < 7) { // Apply only if not all selected
+                filtered = filtered.filter(p => selectedEducationLevels.includes(p.educationLevel || 'Unknown'));
+            }
 
-            if (birthYear) {
-                filtered = filtered.filter(p => p.birthDate && p.birthDate.toDate().getFullYear() === birthYear);
+            // 7. Occupation Filter
+            const occupationSearch = occupationInput.value.trim().toLowerCase();
+            if (occupationSearch) {
+                filtered = filtered.filter(p => p.occupation && p.occupation.toLowerCase().includes(occupationSearch));
+            }
+
+            // 8. Place Filters
+            const birthPlaceSearch = birthPlaceInput.value.trim().toLowerCase();
+            if (birthPlaceSearch) {
+                filtered = filtered.filter(p => p.birthPlace && p.birthPlace.toLowerCase().includes(birthPlaceSearch));
+            }
+            const currentResidenceSearch = currentResidenceInput.value.trim().toLowerCase();
+            if (currentResidenceSearch) {
+                filtered = filtered.filter(p => p.currentResidence && p.currentResidence.toLowerCase().includes(currentResidenceSearch));
+            }
+
+            // 9. Number of Children Filter
+            const minChildren = minChildrenInput.value ? parseInt(minChildrenInput.value) : null;
+            const maxChildren = maxChildrenInput.value ? parseInt(maxChildrenInput.value) : null;
+            if (minChildren !== null) {
+                filtered = filtered.filter(p => p.childrenIds && p.childrenIds.length >= minChildren);
+            }
+            if (maxChildren !== null) {
+                filtered = filtered.filter(p => p.childrenIds && p.childrenIds.length <= maxChildren);
+            }
+            const selectedChildrenStatuses = Array.from(childrenStatusCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedChildrenStatuses.length > 0 && selectedChildrenStatuses.length < 2) {
+                if (selectedChildrenStatuses.includes('HasChildren')) {
+                    filtered = filtered.filter(p => p.childrenIds && p.childrenIds.length > 0);
+                } else if (selectedChildrenStatuses.includes('NoChildren')) {
+                    filtered = filtered.filter(p => !p.childrenIds || p.childrenIds.length === 0);
+                }
+            }
+
+
+            // 10. Relationship Status Filters
+            const selectedRelationshipStatuses = Array.from(relationshipStatusCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedRelationshipStatuses.length > 0 && selectedRelationshipStatuses.length < 3) {
+                if (selectedRelationshipStatuses.includes('HasFather')) {
+                    filtered = filtered.filter(p => p.fatherId);
+                }
+                if (selectedRelationshipStatuses.includes('HasMother')) {
+                    filtered = filtered.filter(p => p.motherId);
+                }
+                if (selectedRelationshipStatuses.includes('HasSpouse')) {
+                    filtered = filtered.filter(p => p.spouseId);
+                }
+                // Note: The previous childrenStatusCheckboxes already handle "HasChildren" / "NoChildren"
+            }
+
+
+            // 11. Date Range Filters (Updated)
+            const minBirthYear = minBirthYearInput.value ? parseInt(minBirthYearInput.value) : null;
+            const maxBirthYear = maxBirthYearInput.value ? parseInt(maxBirthYearInput.value) : null;
+            const birthMonth = birthMonthInput.value ? parseInt(birthMonthInput.value) : null;
+
+            const minDeathYear = minDeathYearInput.value ? parseInt(minDeathYearInput.value) : null;
+            const maxDeathYear = maxDeathYearInput.value ? parseInt(maxDeathYearInput.value) : null;
+
+            const minMarriageYear = minMarriageYearInput.value ? parseInt(minMarriageYearInput.value) : null;
+            const maxMarriageYear = maxMarriageYearInput.value ? parseInt(maxMarriageYearInput.value) : null;
+
+            const minEngagementYear = minEngagementYearInput.value ? parseInt(minEngagementYearInput.value) : null;
+            const maxEngagementYear = maxEngagementYearInput.value ? parseInt(maxEngagementYearInput.value) : null;
+
+
+            if (minBirthYear) {
+                filtered = filtered.filter(p => p.birthDate && p.birthDate.toDate().getFullYear() >= minBirthYear);
+            }
+            if (maxBirthYear) {
+                filtered = filtered.filter(p => p.birthDate && p.birthDate.toDate().getFullYear() <= maxBirthYear);
             }
             if (birthMonth) {
                 filtered = filtered.filter(p => p.birthDate && (p.birthDate.toDate().getMonth() + 1) === birthMonth);
             }
-            if (deathYear) {
-                filtered = filtered.filter(p => p.deathDate && p.deathDate.toDate().getFullYear() === deathYear);
+
+            if (minDeathYear) {
+                filtered = filtered.filter(p => p.deathDate && p.deathDate.toDate().getFullYear() >= minDeathYear);
             }
-            if (marriageYear) {
-                filtered = filtered.filter(p => p.marriageDate && p.marriageDate.toDate().getFullYear() === marriageYear);
+            if (maxDeathYear) {
+                filtered = filtered.filter(p => p.deathDate && p.deathDate.toDate().getFullYear() <= maxDeathYear);
             }
-            if (engagementYear) {
-                filtered = filtered.filter(p => p.engagementDate && p.engagementDate.toDate().getFullYear() === engagementYear);
+
+            if (minMarriageYear) {
+                filtered = filtered.filter(p => p.marriageDate && p.marriageDate.toDate().getFullYear() >= minMarriageYear);
+            }
+            if (maxMarriageYear) {
+                filtered = filtered.filter(p => p.marriageDate && p.marriageDate.toDate().getFullYear() <= maxMarriageYear);
+            }
+
+            if (minEngagementYear) {
+                filtered = filtered.filter(p => p.engagementDate && p.engagementDate.toDate().getFullYear() >= minEngagementYear);
+            }
+            if (maxEngagementYear) {
+                filtered = filtered.filter(p => p.engagementDate && p.engagementDate.toDate().getFullYear() <= maxEngagementYear);
             }
 
             return filtered;
@@ -516,6 +684,44 @@
             showModal("تم تصدير البيانات بنجاح كملف CSV.");
         }
 
+        // Function to reset all filters to their default state
+        function resetFilters() {
+            familyFilterSelect.value = 'All';
+
+            genderCheckboxes.forEach(cb => cb.checked = true);
+            lifeStatusCheckboxes.forEach(cb => cb.checked = true);
+            ageCategoryCheckboxes.forEach(cb => cb.checked = true);
+            maritalStatusCheckboxes.forEach(cb => cb.checked = true);
+            educationLevelCheckboxes.forEach(cb => cb.checked = true);
+            childrenStatusCheckboxes.forEach(cb => cb.checked = true);
+            relationshipStatusCheckboxes.forEach(cb => cb.checked = true);
+
+
+            minBirthYearInput.value = '';
+            maxBirthYearInput.value = '';
+            birthMonthInput.value = '';
+            minDeathYearInput.value = '';
+            maxDeathYearInput.value = '';
+            minMarriageYearInput.value = '';
+            maxMarriageYearInput.value = '';
+            minEngagementYearInput.value = '';
+            maxEngagementYearInput.value = '';
+
+            occupationInput.value = '';
+            birthPlaceInput.value = '';
+            currentResidenceInput.value = '';
+            minChildrenInput.value = '';
+            maxChildrenInput.value = '';
+
+            selectAllColumnsCheckbox.checked = true;
+            document.querySelectorAll('input[name="exportColumn"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+
+            showModal("تمت إعادة تعيين جميع الفلاتر.");
+        }
+
+
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             // Modal close buttons
@@ -531,6 +737,9 @@
 
             // Export button
             exportDataBtn.addEventListener('click', exportDataToCsv);
+
+            // Reset Filters button
+            resetFiltersBtn.addEventListener('click', resetFilters);
 
             // Initial authentication attempt
             (async () => {
