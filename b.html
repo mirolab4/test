@@ -484,9 +484,15 @@
                     currentFilteredSuggestions.forEach(person => {
                         const div = document.createElement('div');
                         div.classList.add('suggestions-list-item');
-                        div.textContent = person.fullName;
+                        div.textContent = person.fullName; // Display full name in suggestion list
+
                         div.addEventListener('click', () => {
-                            inputElement.value = person.fullName;
+                            // Determine which input is being handled to set the value appropriately
+                            if (inputElement.id === 'filterByFatherInput' || inputElement.id === 'filterByMotherInput') {
+                                inputElement.value = person.firstName; // Set first name for parent filters
+                            } else {
+                                inputElement.value = person.fullName; // Set full name for sibling filter
+                            }
                             hiddenIdElement.value = person.id;
                             suggestionsElement.classList.add('hidden');
                             displayFamilyMembers(); // Re-display members after selection
