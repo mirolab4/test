@@ -187,8 +187,28 @@
                     <div class="label">إناث متزوجات أحياء</div>
                 </div>
                 <div class="stat-box">
+                    <div id="livingSingleMales" class="value">0</div>
+                    <div class="label">ذكور عازبون أحياء</div>
+                </div>
+                <div class="stat-box">
+                    <div id="livingDivorcedMales" class="value">0</div>
+                    <div class="label">ذكور مطلقون أحياء</div>
+                </div>
+                <div class="stat-box">
+                    <div id="livingWidowedMales" class="value">0</div>
+                    <div class="label">ذكور أرامل أحياء</div>
+                </div>
+                <div class="stat-box">
                     <div id="livingSingleFemales" class="value">0</div>
                     <div class="label">إناث عازبات أحياء</div>
+                </div>
+                <div class="stat-box">
+                    <div id="livingDivorcedFemales" class="value">0</div>
+                    <div class="label">إناث مطلقات أحياء</div>
+                </div>
+                <div class="stat-box">
+                    <div id="livingWidowedFemales" class="value">0</div>
+                    <div class="label">إناث أرامل أحياء</div>
                 </div>
                 <div class="stat-box">
                     <div id="malesOver16" class="value">0</div>
@@ -205,6 +225,14 @@
                 <div class="stat-box">
                     <div id="femalesUnder16" class="value">0</div>
                     <div class="label">إناث أقل من 16 سنة (أحياء)</div>
+                </div>
+                <div class="stat-box">
+                    <div id="avgChildrenPerParent" class="value">0</div>
+                    <div class="label">متوسط الأبناء لكل والد</div>
+                </div>
+                <div class="stat-box">
+                    <div id="membersWithoutChildren" class="value">0</div>
+                    <div class="label">أفراد بدون أبناء</div>
                 </div>
             </div>
         </div>
@@ -295,6 +323,12 @@
                     <p class="text-gray-600">جاري التحميل...</p>
                 </div>
             </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أعلى 5 عائلات فرعية من حيث العدد</h2>
+                <div id="topSubFamiliesList" class="p-4">
+                    <p class="text-gray-600">جاري التحميل...</p>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -337,9 +371,9 @@
         let familyNameChartInstance;
         let maleMaritalStatusChartInstance;
         let femaleMaritalStatusChartInstance;
-        let birthsPerYearChartInstance; // New chart instance
-        let deathsPerYearChartInstance; // New chart instance
-        let marriagesEngagementsPerYearChartInstance; // New chart instance
+        let birthsPerYearChartInstance;
+        let deathsPerYearChartInstance;
+        let marriagesEngagementsPerYearChartInstance;
 
         // Function to show custom modal messages
         function showModal(message) {
@@ -407,9 +441,9 @@
             if (familyNameChartInstance) familyNameChartInstance.destroy();
             if (maleMaritalStatusChartInstance) maleMaritalStatusChartInstance.destroy();
             if (femaleMaritalStatusChartInstance) femaleMaritalStatusChartInstance.destroy();
-            if (birthsPerYearChartInstance) birthsPerYearChartInstance.destroy(); // Destroy new chart instance
-            if (deathsPerYearChartInstance) deathsPerYearChartInstance.destroy(); // Destroy new chart instance
-            if (marriagesEngagementsPerYearChartInstance) marriagesEngagementsPerYearChartInstance.destroy(); // Destroy new chart instance
+            if (birthsPerYearChartInstance) birthsPerYearChartInstance.destroy();
+            if (deathsPerYearChartInstance) deathsPerYearChartInstance.destroy();
+            if (marriagesEngagementsPerYearChartInstance) marriagesEngagementsPerYearChartInstance.destroy();
 
             // 1. General Statistics
             const totalMembers = allFamilyMembers.length;
@@ -433,12 +467,23 @@
             const livingEngaged = aliveMembersArray.filter(p => p.maritalStatus === 'Engaged').length; // Assuming 'Engaged' is a status
             const livingMarriedMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Married').length;
             const livingMarriedFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Married').length;
+            const livingSingleMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Single').length;
+            const livingDivorcedMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Divorced').length;
+            const livingWidowedMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Widowed').length;
             const livingSingleFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Single').length;
+            const livingDivorcedFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Divorced').length;
+            const livingWidowedFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Widowed').length;
+
 
             const malesOver16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAge(p.birthDate) >= 16).length;
             const femalesOver16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAge(p.birthDate) >= 16).length;
             const malesUnder16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAge(p.birthDate) < 16 && calculateAge(p.birthDate) !== null).length;
             const femalesUnder16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAge(p.birthDate) < 16 && calculateAge(p.birthDate) !== null).length;
+
+            const parentsWithChildren = allFamilyMembers.filter(p => p.childrenIds && p.childrenIds.length > 0);
+            const totalChildrenCount = parentsWithChildren.reduce((sum, p) => sum + p.childrenIds.length, 0);
+            const avgChildrenPerParent = parentsWithChildren.length > 0 ? (totalChildrenCount / parentsWithChildren.length).toFixed(2) : 0;
+            const membersWithoutChildren = allFamilyMembers.filter(p => !p.childrenIds || p.childrenIds.length === 0).length;
 
 
             document.getElementById('totalMembers').textContent = totalMembers;
@@ -453,11 +498,18 @@
             document.getElementById('livingEngaged').textContent = livingEngaged;
             document.getElementById('livingMarriedMales').textContent = livingMarriedMales;
             document.getElementById('livingMarriedFemales').textContent = livingMarriedFemales;
+            document.getElementById('livingSingleMales').textContent = livingSingleMales;
+            document.getElementById('livingDivorcedMales').textContent = livingDivorcedMales;
+            document.getElementById('livingWidowedMales').textContent = livingWidowedMales;
             document.getElementById('livingSingleFemales').textContent = livingSingleFemales;
+            document.getElementById('livingDivorcedFemales').textContent = livingDivorcedFemales;
+            document.getElementById('livingWidowedFemales').textContent = livingWidowedFemales;
             document.getElementById('malesOver16').textContent = malesOver16;
             document.getElementById('femalesOver16').textContent = femalesOver16;
             document.getElementById('malesUnder16').textContent = malesUnder16;
             document.getElementById('femalesUnder16').textContent = femalesUnder16;
+            document.getElementById('avgChildrenPerParent').textContent = avgChildrenPerParent;
+            document.getElementById('membersWithoutChildren').textContent = membersWithoutChildren;
 
 
             // Chart Colors Palette (extended for more variety)
@@ -863,6 +915,33 @@
                 });
                 youngestMembersListDiv.appendChild(ul);
             }
+
+            // NEW: Top Sub-Families List
+            const familyNameCounts = allFamilyMembers.reduce((acc, person) => {
+                const familyName = person.familyName || 'غير محدد';
+                acc[familyName] = (acc[familyName] || 0) + 1;
+                return acc;
+            }, {});
+
+            const sortedFamilyNames = Object.entries(familyNameCounts)
+                .sort(([, countA], [, countB]) => countB - countA)
+                .slice(0, 5); // Get top 5
+
+            const topSubFamiliesListDiv = document.getElementById('topSubFamiliesList');
+            topSubFamiliesListDiv.innerHTML = '';
+
+            if (sortedFamilyNames.length === 0) {
+                topSubFamiliesListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء العائلات.</p>';
+            } else {
+                const ul = document.createElement('ul');
+                ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
+                sortedFamilyNames.forEach(([name, count]) => {
+                    const li = document.createElement('li');
+                    li.textContent = `${name}: ${count} أفراد`;
+                    ul.appendChild(li);
+                });
+                topSubFamiliesListDiv.appendChild(ul);
+            }
         }
 
         // Main DOMContentLoaded listener
@@ -920,15 +999,25 @@
                     document.getElementById('livingEngaged').textContent = '0';
                     document.getElementById('livingMarriedMales').textContent = '0';
                     document.getElementById('livingMarriedFemales').textContent = '0';
+                    document.getElementById('livingSingleMales').textContent = '0';
+                    document.getElementById('livingDivorcedMales').textContent = '0';
+                    document.getElementById('livingWidowedMales').textContent = '0';
                     document.getElementById('livingSingleFemales').textContent = '0';
+                    document.getElementById('livingDivorcedFemales').textContent = '0';
+                    document.getElementById('livingWidowedFemales').textContent = '0';
                     document.getElementById('malesOver16').textContent = '0';
                     document.getElementById('femalesOver16').textContent = '0';
                     document.getElementById('malesUnder16').textContent = '0';
                     document.getElementById('femalesUnder16').textContent = '0';
+                    document.getElementById('avgChildrenPerParent').textContent = '0';
+                    document.getElementById('membersWithoutChildren').textContent = '0';
+
 
                     document.getElementById('mostChildrenList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
                     document.getElementById('oldestMembersList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
                     document.getElementById('youngestMembersList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+                    document.getElementById('topSubFamiliesList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+
                     if (genderChartInstance) genderChartInstance.destroy();
                     if (maritalStatusChartInstance) maritalStatusChartInstance.destroy();
                     if (maritalStatusAliveChartInstance) maritalStatusAliveChartInstance.destroy();
