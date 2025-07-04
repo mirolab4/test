@@ -195,12 +195,20 @@
             <span id="closeAddUserModalBtn" class="close-button">&times;</span>
             <h3 class="text-2xl font-semibold text-gray-700 mb-4">إضافة مستخدم جديد</h3>
             <p class="text-gray-600 mb-4">
-                أدخل البريد الإلكتروني للمستخدم والدور الافتراضي. سيحتاج المستخدم إلى التسجيل باستخدام نفس البريد الإلكتروني لتفعيل حسابه.
+                أدخل البريد الإلكتروني للمستخدم (اختياري) ورقم الهوية (اختياري) والدور الافتراضي.
+                <br>
+                **ملاحظة:** إذا تم إدخال رقم هوية، فسيتم ربط هذا المستخدم بملف تعريف العائلة الذي يحمل نفس رقم الهوية.
+                إذا لم يكن رقم الهوية موجوداً، فسيتم إنشاء مستخدم جديد في إعدادات المستخدمين فقط.
             </p>
             <div class="mb-4">
-                <label for="newUserEmailInput" class="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني:</label>
-                <input type="email" id="newUserEmailInput" class="input-field" placeholder="example@domain.com" required>
-                <p id="newUserEmailError" class="error-message hidden">البريد الإلكتروني مطلوب أو غير صالح.</p>
+                <label for="newUserEmailInput" class="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني (اختياري):</label>
+                <input type="email" id="newUserEmailInput" class="input-field" placeholder="example@domain.com">
+                <p id="newUserEmailError" class="error-message hidden">البريد الإلكتروني غير صالح.</p>
+            </div>
+            <div class="mb-4">
+                <label for="newUserFamilyIdNumberInput" class="block text-sm font-medium text-gray-700 mb-1">رقم الهوية (اختياري):</label>
+                <input type="text" id="newUserFamilyIdNumberInput" class="input-field" placeholder="رقم الهوية لربط ملف العائلة">
+                <p id="newUserFamilyIdNumberError" class="error-message hidden">رقم الهوية موجود بالفعل في إعدادات مستخدم آخر.</p>
             </div>
             <div class="mb-4">
                 <label for="newUserRoleSelect" class="block text-sm font-medium text-gray-700 mb-1">الدور الافتراضي:</label>
@@ -209,6 +217,12 @@
                     <option value="editor">Editor</option>
                     <option value="admin">Admin</option>
                 </select>
+            </div>
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="newUserCanLogin" class="form-checkbox text-indigo-600 rounded-md">
+                    <span class="mr-2 text-gray-700">السماح بتسجيل الدخول برقم الهوية</span>
+                </label>
             </div>
             <button id="addNewUserBtn" class="btn-primary">إضافة مستخدم</button>
         </div>
@@ -266,7 +280,7 @@
         <div class="card">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">إدارة المستخدمين الحاليين</h2>
             <p class="text-gray-600 mb-4">
-                يمكنك هنا عرض المستخدمين المسجلين وتعديل أدوارهم وصلاحياتهم.
+                يمكنك هنا عرض المستخدمين المسجلين وتعديل أدوارهم وصلاحياتهم، بما في ذلك السماح لهم بتسجيل الدخول برقم الهوية.
             </p>
             <div class="overflow-x-auto">
                 <table id="usersTable" class="data-table">
@@ -274,14 +288,16 @@
                         <tr>
                             <th>معرف المستخدم (UID)</th>
                             <th>البريد الإلكتروني</th>
+                            <th>رقم الهوية المرتبط</th>
                             <th>الدور</th>
+                            <th>السماح بالدخول</th>
                             <th>الصلاحيات</th>
                             <th>إجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
                         <!-- User data will be loaded here -->
-                        <tr><td colspan="5" class="text-center text-gray-500">جاري تحميل المستخدمين...</td></tr>
+                        <tr><td colspan="7" class="text-center text-gray-500">جاري تحميل المستخدمين...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -318,7 +334,7 @@
         // Import auth, db, appId, and redirectTo from auth_guard.js
         import { auth, db, appId, redirectTo } from './auth_guard.js';
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { collection, doc, getDoc, setDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, doc, getDoc, setDoc, getDocs, updateDoc, Timestamp, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let userId = null;
         let userRole = null; // Store current user's role
@@ -340,7 +356,10 @@
         const closeAddUserModalBtn = document.getElementById('closeAddUserModalBtn');
         const newUserEmailInput = document.getElementById('newUserEmailInput');
         const newUserEmailError = document.getElementById('newUserEmailError');
+        const newUserFamilyIdNumberInput = document.getElementById('newUserFamilyIdNumberInput'); // NEW
+        const newUserFamilyIdNumberError = document.getElementById('newUserFamilyIdNumberError'); // NEW
         const newUserRoleSelect = document.getElementById('newUserRoleSelect');
+        const newUserCanLogin = document.getElementById('newUserCanLogin'); // NEW
         const addNewUserBtn = document.getElementById('addNewUserBtn');
         const openAddUserModalBtn = document.getElementById('openAddUserModalBtn');
 
@@ -433,7 +452,7 @@
         function renderUsersTable() {
             usersTableBody.innerHTML = '';
             if (allUsersSettings.length === 0) {
-                usersTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500">لا يوجد مستخدمون مسجلون.</td></tr>';
+                usersTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500">لا يوجد مستخدمون مسجلون.</td></tr>';
                 return;
             }
 
@@ -442,12 +461,19 @@
                 tr.innerHTML = `
                     <td class="text-sm">${user.id}</td>
                     <td class="text-sm">${user.email || 'N/A'}</td>
+                    <td class="text-sm">${user.linkedFamilyMemberId || 'N/A'}</td> <!-- NEW Column -->
                     <td>
                         <select class="role-select" data-user-id="${user.id}">
                             <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                             <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
                             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
+                    </td>
+                    <td>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" class="form-checkbox text-indigo-600 rounded-md can-login-checkbox" data-user-id="${user.id}" ${user.canLogin ? 'checked' : ''} ${user.id === userId ? 'disabled' : ''}>
+                            <span class="mr-2 text-gray-700"></span>
+                        </label>
                     </td>
                     <td>
                         <button type="button" class="btn-secondary px-3 py-1 text-sm view-permissions-btn" data-user-id="${user.id}">
@@ -458,15 +484,15 @@
                         </button>
                     </td>
                     <td>
-                        <button type="button" class="btn-primary px-3 py-1 text-sm save-user-role-btn" data-user-id="${user.id}">
-                            حفظ الدور
+                        <button type="button" class="btn-primary px-3 py-1 text-sm save-user-settings-btn" data-user-id="${user.id}">
+                            حفظ
                         </button>
                     </td>
                 `;
                 usersTableBody.appendChild(tr);
             });
 
-            // Add event listeners for role selects and save buttons
+            // Add event listeners for role selects, canLogin checkboxes, and save buttons
             usersTableBody.querySelectorAll('.role-select').forEach(select => {
                 select.addEventListener('change', (e) => {
                     const userIdToUpdate = e.target.dataset.userId;
@@ -478,12 +504,24 @@
                 });
             });
 
-            usersTableBody.querySelectorAll('.save-user-role-btn').forEach(button => {
+            usersTableBody.querySelectorAll('.can-login-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const userIdToUpdate = e.target.dataset.userId;
+                    const newCanLoginStatus = e.target.checked;
+                    const userToUpdate = allUsersSettings.find(u => u.id === userIdToUpdate);
+                    if (userToUpdate) {
+                        userToUpdate.canLogin = newCanLoginStatus; // Update cached data
+                    }
+                });
+            });
+
+            usersTableBody.querySelectorAll('.save-user-settings-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const userIdToUpdate = e.target.dataset.userId;
-                    const selectElement = usersTableBody.querySelector(`select[data-user-id="${userIdToUpdate}"]`);
-                    const newRole = selectElement.value;
-                    await saveUserRole(userIdToUpdate, newRole);
+                    const userToSave = allUsersSettings.find(u => u.id === userIdToUpdate);
+                    if (userToSave) {
+                        await saveUserSettings(userToSave.id, userToSave.role, userToSave.canLogin);
+                    }
                 });
             });
 
@@ -496,7 +534,9 @@
                         const effectiveAllowedPages = userSettings.allowedPages || allRolesPermissions[userSettings.role] || [];
                         showModal(`
                             <h4 class="text-xl font-semibold mb-2">صلاحيات المستخدم: ${userSettings.email || userSettings.id}</h4>
+                            <p class="mb-2">معرف الهوية المرتبط: ${userSettings.linkedFamilyMemberId || 'غير مرتبط'}</p>
                             <p class="mb-2">الدور: ${userSettings.role || 'viewer'}</p>
+                            <p class="mb-2">السماح بتسجيل الدخول برقم الهوية: ${userSettings.canLogin ? 'نعم' : 'لا'}</p>
                             <p class="mb-2">الصفحات المسموح بها:</p>
                             <ul class="list-disc pr-6 text-right inline-block">
                                 ${effectiveAllowedPages.length > 0
@@ -520,21 +560,21 @@
             });
         }
 
-        // Save individual user role
-        async function saveUserRole(id, role) {
+        // Save individual user settings (role and canLogin)
+        async function saveUserSettings(id, role, canLogin) {
             showLoadingModal();
             try {
                 const userRef = doc(db, `artifacts/${appId}/userSettings`, id);
-                await setDoc(userRef, { role: role }, { merge: true });
-                showModal("تم تحديث دور المستخدم بنجاح.");
+                await setDoc(userRef, { role: role, canLogin: canLogin }, { merge: true });
+                showModal("تم تحديث إعدادات المستخدم بنجاح.");
                 await fetchAllUserSettings(); // Re-fetch to update table
-                // If the current user's role was changed, trigger a navigation update
+                // If the current user's settings were changed, trigger a navigation update
                 if (id === userId) {
                     await updateCurrentUserPermissions();
                 }
             } catch (error) {
-                console.error("Error saving user role:", error);
-                showModal("حدث خطأ أثناء حفظ دور المستخدم: " + error.message);
+                console.error("Error saving user settings:", error);
+                showModal("حدث خطأ أثناء حفظ إعدادات المستخدم: " + error.message);
             } finally {
                 hideLoadingModal();
             }
@@ -595,42 +635,103 @@
         async function addNewUser() {
             newUserEmailError.classList.add('hidden');
             newUserEmailInput.classList.remove('error');
+            newUserFamilyIdNumberError.classList.add('hidden'); // NEW
+            newUserFamilyIdNumberInput.classList.remove('error'); // NEW
 
             const email = newUserEmailInput.value.trim();
+            const familyIdNumber = newUserFamilyIdNumberInput.value.trim(); // NEW
             const role = newUserRoleSelect.value;
+            const canLogin = newUserCanLogin.checked; // NEW
 
-            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                newUserEmailError.textContent = "البريد الإلكتروني مطلوب أو غير صالح.";
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                newUserEmailError.textContent = "البريد الإلكتروني غير صالح.";
                 newUserEmailError.classList.remove('hidden');
                 newUserEmailInput.classList.add('error');
                 return;
             }
 
-            // Check if userSettings for this email already exists
-            const existingUser = allUsersSettings.find(u => u.email === email);
-            if (existingUser) {
+            // Check if a userSettings document already exists with this email or linkedFamilyMemberId
+            let existingUserByEmail = null;
+            if (email) {
+                existingUserByEmail = allUsersSettings.find(u => u.email === email);
+            }
+            let existingUserByLinkedId = null;
+            if (familyIdNumber) {
+                existingUserByLinkedId = allUsersSettings.find(u => u.linkedFamilyMemberId === familyIdNumber);
+            }
+            
+            if (existingUserByEmail) {
                 newUserEmailError.textContent = "هذا البريد الإلكتروني مسجل بالفعل في إعدادات المستخدمين.";
                 newUserEmailError.classList.remove('hidden');
                 newUserEmailInput.classList.add('error');
                 return;
             }
+            if (existingUserByLinkedId) {
+                newUserFamilyIdNumberError.textContent = "رقم الهوية هذا مرتبط بالفعل بمستخدم آخر.";
+                newUserFamilyIdNumberError.classList.remove('hidden');
+                newUserFamilyIdNumberInput.classList.add('error');
+                return;
+            }
 
             showLoadingModal();
             try {
-                // Generate a pseudo-UID for the user settings document if Firebase Auth UID is not available yet
-                // This is a placeholder. The actual UID will be set if the user registers.
-                // For now, we use the email as the document ID for simplicity, assuming emails are unique.
-                // In a real app, you'd integrate with Firebase Auth user creation and use their actual UID.
-                const userSettingsDocRef = doc(db, `artifacts/${appId}/userSettings`, email); // Using email as doc ID for simplicity
-                await setDoc(userSettingsDocRef, {
-                    email: email,
+                // Determine the document ID for the userSettings.
+                // If a family ID number is provided, we'll try to use the family member's actual ID as the userSettings ID.
+                // Otherwise, we'll generate a new ID or use the email as a placeholder.
+                let userSettingsDocId = null;
+                let linkedFamilyMemberId = null;
+
+                if (familyIdNumber) {
+                    // Find the family member by ID number
+                    const familyMembersRef = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`); // Use current admin's familyMembers collection
+                    const q = query(familyMembersRef, where("idNumber", "==", familyIdNumber));
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        linkedFamilyMemberId = querySnapshot.docs[0].id;
+                        userSettingsDocId = linkedFamilyMemberId; // Use family member's ID as userSettings ID
+                        console.log(`Found family member ${linkedFamilyMemberId} for ID number ${familyIdNumber}.`);
+                    } else {
+                        // If family ID number is provided but no matching family member, we still create a userSettings
+                        // but it won't be linked to an existing family member. We'll generate a new UID.
+                        userSettingsDocId = doc(collection(db, `artifacts/${appId}/userSettings`)).id; // Generate new UID
+                        console.warn(`No family member found for ID number ${familyIdNumber}. Creating userSettings with generated ID.`);
+                    }
+                } else if (email) {
+                    // If no family ID, but email is provided, use a hash of email or generated ID
+                    userSettingsDocId = doc(collection(db, `artifacts/${appId}/userSettings`)).id; // Generate new UID
+                } else {
+                    // If neither email nor family ID, just generate a new UID
+                    userSettingsDocId = doc(collection(db, `artifacts/${appId}/userSettings`)).id; // Generate new UID
+                }
+
+                // If userSettingsDocId is still null (e.g., no familyIdNumber and no email), generate one.
+                if (!userSettingsDocId) {
+                    userSettingsDocId = doc(collection(db, `artifacts/${appId}/userSettings`)).id;
+                }
+
+
+                const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userSettingsDocId);
+                
+                // Fetch default role permissions for the selected role
+                const selectedRolePermissionsRef = doc(db, `artifacts/${appId}/rolePermissions`, role);
+                const selectedRolePermissionsSnap = await getDoc(selectedRolePermissionsRef);
+                const defaultAllowedPages = selectedRolePermissionsSnap.exists() ? selectedRolePermissionsSnap.data().allowedPages : ['dashboard.html']; // Fallback
+
+                await setDoc(userSettingsRef, {
+                    email: email || null,
                     role: role,
-                    allowedPages: allRolesPermissions[role] || [] // Set default role permissions
+                    canLogin: canLogin, // NEW: Set canLogin status
+                    allowedPages: defaultAllowedPages, // Set default role permissions
+                    creationDate: Timestamp.now(),
+                    linkedFamilyMemberId: linkedFamilyMemberId // NEW: Store linked family member ID
                 });
 
-                showModal("تمت إضافة إعدادات المستخدم بنجاح. سيحتاج المستخدم إلى التسجيل باستخدام هذا البريد الإلكتروني لتفعيل حسابه.", 'addUserModal');
+                showModal("تمت إضافة إعدادات المستخدم بنجاح.", 'addUserModal');
                 newUserEmailInput.value = ''; // Clear form
+                newUserFamilyIdNumberInput.value = ''; // Clear form
                 newUserRoleSelect.value = 'viewer';
+                newUserCanLogin.checked = false;
                 closeModal('addUserModal');
                 await fetchAllUserSettings(); // Re-fetch users to update table
             } catch (error) {
@@ -761,7 +862,11 @@
                 newUserEmailInput.value = ''; // Clear previous input
                 newUserEmailError.classList.add('hidden'); // Hide error
                 newUserEmailInput.classList.remove('error'); // Remove error style
+                newUserFamilyIdNumberInput.value = ''; // Clear ID number input
+                newUserFamilyIdNumberError.classList.add('hidden'); // Hide ID number error
+                newUserFamilyIdNumberInput.classList.remove('error'); // Remove ID number error style
                 newUserRoleSelect.value = 'viewer'; // Default role
+                newUserCanLogin.checked = false; // Default canLogin
                 showModal('', 'addUserModal'); // Show modal
             });
 
@@ -775,7 +880,10 @@
             logoutBtn.addEventListener('click', async () => {
                 try {
                     await signOut(auth);
-                    redirectTo('login.html'); // Redirect to login page after logout
+                    // Clear custom session storage on logout
+                    sessionStorage.removeItem('customUserId');
+                    sessionStorage.removeItem('isCustomAuth');
+                    redirectTo('id_login.html'); // Redirect to ID-based login page after logout
                 } catch (error) {
                     console.error("Error logging out:", error);
                     showModal("حدث خطأ أثناء تسجيل الخروج: " + error.message);
