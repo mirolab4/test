@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قائمة العائلة</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        .input-field {
+            border: 1px solid #d1d5db; /* Light gray border */
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%; /* Ensure cards in grid have equal height */
+        }
+        .person-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
+            position: relative; /* For checkbox positioning */
+        }
+        .person-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+        }
+        .person-card.selected {
+            border: 2px solid #4f46e5; /* Highlight selected cards */
+        }
+        .gender-male {
+            background-color: #e0e7ff; /* Light indigo for males */
+        }
+        .gender-female {
+            background-color: #ffe4e6; /* Light rose for females */
+        }
+        .checkbox-container {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem; /* Position to the left for RTL */
+            z-index: 5;
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+        /* Loading Modal Specific Styles */
+        #loadingModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <!-- Custom Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="modal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p class="text-lg font-semibold text-gray-800">جارٍ تحميل البيانات...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">قائمة العائلة</h1>
+            <nav class="flex flex-wrap gap-3">
+                <a href="add_edit_person.html" class="btn-primary">
+                    <i class="fas fa-plus ml-2"></i> إضافة شخص جديد
+                </a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
+            </nav>
+        </div>
+
+        <!-- Search and Filter Controls -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <!-- Search Input -->
+                <div class="col-span-full md:col-span-2 lg:col-span-2">
+                    <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-search ml-1 text-gray-500"></i> بحث بالاسم أو رقم الهوية:
+                    </label>
+                    <input type="text" id="searchInput" class="input-field" placeholder="ابحث عن اسم أو رقم هوية...">
+                </div>
+
+                <!-- Gender Filter -->
+                <div>
+                    <label for="genderFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-venus-mars ml-1 text-gray-500"></i> الجنس:
+                    </label>
+                    <select id="genderFilter" class="input-field">
+                        <option value="All">الكل</option>
+                        <option value="Male">ذكر</option>
+                        <option value="Female">أنثى</option>
+                    </select>
+                </div>
+
+                <!-- Marital Status Filter -->
+                <div>
+                    <label for="maritalStatusFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-ring ml-1 text-gray-500"></i> الحالة الاجتماعية:
+                    </label>
+                    <select id="maritalStatusFilter" class="input-field">
+                        <option value="All">الكل</option>
+                        <option value="Single">أعزب</option>
+                        <option value="Married">متزوج</option>
+                        <option value="Divorced">مطلق</option>
+                        <option value="Widowed">أرمل</option>
+                    </select>
+                </div>
+
+                <!-- Life Status Filter -->
+                <div>
+                    <label for="lifeStatusFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-heartbeat ml-1 text-gray-500"></i> الحالة الحياتية:
+                    </label>
+                    <select id="lifeStatusFilter" class="input-field">
+                        <option value="Alive">أحياء فقط</option>
+                        <option value="Deceased">أموات فقط</option>
+                        <option value="All">الكل (أحياء وأموات)</option>
+                    </select>
+                </div>
+
+                <!-- Age Filter -->
+                <div>
+                    <label for="ageFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-birthday-cake ml-1 text-gray-500"></i> العمر (بالضبط):
+                    </label>
+                    <input type="number" id="ageFilter" class="input-field" placeholder="أدخل العمر">
+                </div>
+
+                <!-- Has Father Filter -->
+                <div>
+                    <label for="hasFatherFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-male ml-1 text-gray-500"></i> لديه أب؟:
+                    </label>
+                    <select id="hasFatherFilter" class="input-field">
+                        <option value="All">الكل</option>
+                        <option value="Yes">نعم</option>
+                        <option value="No">لا</option>
+                    </select>
+                </div>
+
+                <!-- Has Mother Filter -->
+                <div>
+                    <label for="hasMotherFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-female ml-1 text-gray-500"></i> لديه أم؟:
+                    </label>
+                    <select id="hasMotherFilter" class="input-field">
+                        <option value="All">الكل</option>
+                        <option value="Yes">نعم</option>
+                        <option value="No">لا</option>
+                    </select>
+                </div>
+
+                <!-- Has Children Filter -->
+                <div>
+                    <label for="hasChildrenFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-child ml-1 text-gray-500"></i> لديه أبناء؟:
+                    </label>
+                    <select id="hasChildrenFilter" class="input-field">
+                        <option value="All">الكل</option>
+                        <option value="Yes">نعم</option>
+                        <option value="No">لا</option>
+                    </select>
+                </div>
+
+                <!-- Has Spouse Filter -->
+                <div>
+                    <label for="hasSpouseFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-heart ml-1 text-gray-500"></i> لديه زوج/زوجة؟:
+                    </label>
+                    <select id="hasSpouseFilter" class="input-field">
+                        <option value="All">الكل</option>
+                        <option value="Yes">نعم</option>
+                        <option value="No">لا</option>
+                    </select>
+                </div>
+
+                <!-- Filter by Father (NEW) -->
+                <div class="col-span-full md:col-span-2">
+                    <label for="filterByFatherInput" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-male ml-1 text-gray-500"></i> عرض أبناء الأب:
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="filterByFatherInput" class="input-field" placeholder="ابحث عن اسم الأب...">
+                        <div id="filterByFatherSuggestions" class="suggestions-list hidden"></div>
+                        <input type="hidden" id="filterByFatherId">
+                    </div>
+                </div>
+
+                <!-- Filter by Mother (NEW) -->
+                <div class="col-span-full md:col-span-2">
+                    <label for="filterByMotherInput" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-female ml-1 text-gray-500"></i> عرض أبناء الأم:
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="filterByMotherInput" class="input-field" placeholder="ابحث عن اسم الأم...">
+                        <div id="filterByMotherSuggestions" class="suggestions-list hidden"></div>
+                        <input type="hidden" id="filterByMotherId">
+                    </div>
+                </div>
+
+                <!-- Filter by Sibling (NEW) -->
+                <div class="col-span-full md:col-span-2">
+                    <label for="filterBySiblingInput" class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-users-line ml-1 text-gray-500"></i> عرض إخوة/أخوات الشخص:
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="filterBySiblingInput" class="input-field" placeholder="ابحث عن اسم الأخ/الأخت...">
+                        <div id="filterBySiblingSuggestions" class="suggestions-list hidden"></div>
+                        <input type="hidden" id="filterBySiblingId">
+                    </div>
+                </div>
+
+                <!-- Clear Filters Button -->
+                <div class="col-span-full md:col-span-1 lg:col-span-1 flex justify-end">
+                    <button id="clearFiltersBtn" class="btn-secondary w-full md:w-auto">
+                        <i class="fas fa-times-circle ml-2"></i> مسح الفلاتر
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selection and Export Controls -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="selectAllCheckbox" class="form-checkbox text-indigo-600 rounded-md">
+                <label for="selectAllCheckbox" class="text-gray-700 font-medium">تحديد الكل (المعروض)</label>
+            </div>
+            <button id="exportExcelBtn" class="btn-primary w-full md:w-auto">
+                <i class="fas fa-file-excel ml-2"></i> تصدير المحدد إلى Excel
+            </button>
+        </div>
+
+        <!-- Family Members List -->
+        <div id="familyMembersGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Family member cards will be loaded here -->
+        </div>
+
+        <div id="noMembersMessage" class="text-center text-gray-600 text-lg mt-8 hidden">
+            <i class="fas fa-info-circle ml-2"></i> لا يوجد أفراد عائلة مطابقون للمعايير المحددة.
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration (replace with your actual config if different)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let allFamilyMembers = []; // Stores all members fetched from Firestore
+        let displayedFamilyMembers = []; // Stores members currently displayed after filtering/searching
+        let selectedPersonIds = new Set(); // Stores IDs of selected members
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // DOM Elements
+        const familyMembersGrid = document.getElementById('familyMembersGrid');
+        const noMembersMessage = document.getElementById('noMembersMessage');
+        const searchInput = document.getElementById('searchInput');
+        const genderFilter = document.getElementById('genderFilter');
+        const maritalStatusFilter = document.getElementById('maritalStatusFilter');
+        const lifeStatusFilter = document.getElementById('lifeStatusFilter');
+        const ageFilter = document.getElementById('ageFilter');
+        const hasFatherFilter = document.getElementById('hasFatherFilter');
+        const hasMotherFilter = document.getElementById('hasMotherFilter');
+        const hasChildrenFilter = document.getElementById('hasChildrenFilter');
+        const hasSpouseFilter = document.getElementById('hasSpouseFilter');
+
+        // New filter elements for relationships
+        const filterByFatherInput = document.getElementById('filterByFatherInput');
+        const filterByFatherSuggestions = document.getElementById('filterByFatherSuggestions');
+        const filterByFatherId = document.getElementById('filterByFatherId');
+
+        const filterByMotherInput = document.getElementById('filterByMotherInput');
+        const filterByMotherSuggestions = document.getElementById('filterByMotherSuggestions');
+        const filterByMotherId = document.getElementById('filterByMotherId');
+
+        const filterBySiblingInput = document.getElementById('filterBySiblingInput');
+        const filterBySiblingSuggestions = document.getElementById('filterBySiblingSuggestions');
+        const filterBySiblingId = document.getElementById('filterBySiblingId');
+
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
+        const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
+        const loadingModal = document.getElementById('loadingModal');
+
+
+        // --- Utility Functions ---
+
+        function showModal(message) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            messageModal.style.display = 'none';
+        }
+
+        function showLoadingModal() {
+            loadingModal.style.display = 'flex';
+        }
+
+        function hideLoadingModal() {
+            loadingModal.style.display = 'none';
+        }
+
+        function calculateAge(birthDateTimestamp) {
+            if (!birthDateTimestamp) return 'غير محدد';
+            const birthDate = birthDateTimestamp.toDate();
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        // --- Data Fetching ---
+
+        async function fetchFamilyMembers() {
+            if (!userId) {
+                console.log("User ID not available, cannot fetch family members.");
+                return;
+            }
+            showLoadingModal();
+            try {
+                const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+                const querySnapshot = await getDocs(q);
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Family members fetched:", allFamilyMembers);
+                displayFamilyMembers(); // Initial display after fetching
+            } catch (error) {
+                console.error("Error fetching family members:", error);
+                showModal("حدث خطأ أثناء جلب بيانات العائلة: " + error.message);
+            } finally {
+                hideLoadingModal();
+            }
+        }
+
+        // --- Handle Related Person Filter Input (Generic for Father, Mother, Sibling filters) ---
+        function handleRelatedPersonFilterInput(inputElement, suggestionsElement, hiddenIdElement) {
+            inputElement.addEventListener('input', () => {
+                const searchText = inputElement.value.toLowerCase();
+                suggestionsElement.innerHTML = '';
+                suggestionsElement.classList.add('hidden');
+                hiddenIdElement.value = ''; // Clear hidden ID on input change
+
+                if (searchText.length < 2) return;
+
+                const currentFilteredSuggestions = allFamilyMembers.filter(person =>
+                    person.fullName && person.fullName.toLowerCase().includes(searchText)
+                );
+
+                if (currentFilteredSuggestions.length > 0) {
+                    suggestionsElement.classList.remove('hidden');
+                    currentFilteredSuggestions.forEach(person => {
+                        const div = document.createElement('div');
+                        div.classList.add('suggestions-list-item');
+                        div.textContent = person.fullName;
+                        div.addEventListener('click', () => {
+                            inputElement.value = person.fullName;
+                            hiddenIdElement.value = person.id;
+                            suggestionsElement.classList.add('hidden');
+                            displayFamilyMembers(); // Re-display members after selection
+                        });
+                        suggestionsElement.appendChild(div);
+                    });
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (event) => {
+                if (!inputElement.parentNode.contains(event.target)) {
+                    suggestionsElement.classList.add('hidden');
+                }
+            });
+        }
+
+
+        // --- Filtering and Display ---
+
+        function displayFamilyMembers() {
+            familyMembersGrid.innerHTML = '';
+            displayedFamilyMembers = []; // Reset displayed members
+            selectedPersonIds.clear(); // Clear selections on new filter application
+            selectAllCheckbox.checked = false; // Uncheck select all
+
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedGender = genderFilter.value;
+            const selectedMaritalStatus = maritalStatusFilter.value;
+            const selectedLifeStatus = lifeStatusFilter.value;
+            const selectedAge = parseInt(ageFilter.value);
+            const selectedHasFather = hasFatherFilter.value;
+            const selectedHasMother = hasMotherFilter.value;
+            const selectedHasChildren = hasChildrenFilter.value;
+            const selectedHasSpouse = hasSpouseFilter.value;
+
+            const filterByFatherIdValue = filterByFatherId.value; // NEW
+            const filterByMotherIdValue = filterByMotherId.value; // NEW
+            const filterBySiblingIdValue = filterBySiblingId.value; // NEW
+
+            const filteredMembers = allFamilyMembers.filter(person => {
+                const matchesSearch = searchTerm === '' ||
+                                      (person.fullName && person.fullName.toLowerCase().includes(searchTerm)) ||
+                                      (person.idNumber && person.idNumber.toLowerCase().includes(searchTerm));
+
+                const matchesGender = selectedGender === 'All' || person.gender === selectedGender;
+                const matchesMaritalStatus = selectedMaritalStatus === 'All' || person.maritalStatus === selectedMaritalStatus;
+
+                let matchesLifeStatus = true;
+                if (selectedLifeStatus === 'Alive') {
+                    matchesLifeStatus = person.isAlive !== false; // isAlive is true or undefined
+                } else if (selectedLifeStatus === 'Deceased') {
+                    matchesLifeStatus = person.isAlive === false;
+                }
+
+                let matchesAge = true;
+                if (!isNaN(selectedAge) && person.birthDate) {
+                    matchesAge = calculateAge(person.birthDate) === selectedAge;
+                }
+
+                let matchesHasFather = true;
+                if (selectedHasFather === 'Yes') {
+                    matchesHasFather = !!person.fatherId;
+                } else if (selectedHasFather === 'No') {
+                    matchesHasFather = !person.fatherId;
+                }
+
+                let matchesHasMother = true;
+                if (selectedHasMother === 'Yes') {
+                    matchesHasMother = !!person.motherId;
+                } else if (selectedHasMother === 'No') {
+                    matchesHasMother = !person.motherId;
+                }
+
+                let matchesHasChildren = true;
+                if (selectedHasChildren === 'Yes') {
+                    matchesHasChildren = (person.childrenIds && person.childrenIds.length > 0);
+                } else if (selectedHasChildren === 'No') {
+                    matchesHasChildren = !(person.childrenIds && person.childrenIds.length > 0);
+                }
+
+                let matchesHasSpouse = true;
+                if (selectedHasSpouse === 'Yes') {
+                    matchesHasSpouse = (person.spouseIds && person.spouseIds.length > 0) || (person.manualSpouseNames && person.manualSpouseNames.length > 0);
+                } else if (selectedHasSpouse === 'No') {
+                    matchesHasSpouse = !(person.spouseIds && person.spouseIds.length > 0) && !(person.manualSpouseNames && person.manualSpouseNames.length > 0);
+                }
+
+                // NEW: Filter by Father
+                let matchesFilterByFather = true;
+                if (filterByFatherIdValue) {
+                    matchesFilterByFather = person.fatherId === filterByFatherIdValue;
+                }
+
+                // NEW: Filter by Mother
+                let matchesFilterByMother = true;
+                if (filterByMotherIdValue) {
+                    matchesFilterByMother = person.motherId === filterByMotherIdValue;
+                }
+
+                // NEW: Filter by Sibling
+                let matchesFilterBySibling = true;
+                if (filterBySiblingIdValue) {
+                    const siblingPerson = allFamilyMembers.find(p => p.id === filterBySiblingIdValue);
+                    if (siblingPerson) {
+                        // A person is a sibling if they share at least one parent with the selected sibling
+                        // and are not the selected sibling themselves.
+                        const commonFather = person.fatherId && siblingPerson.fatherId && person.fatherId === siblingPerson.fatherId;
+                        const commonMother = person.motherId && siblingPerson.motherId && person.motherId === siblingPerson.motherId;
+                        matchesFilterBySibling = (commonFather || commonMother) && (person.id !== siblingPerson.id);
+                    } else {
+                        matchesFilterBySibling = false; // Sibling not found
+                    }
+                }
+
+                return matchesSearch && matchesGender && matchesMaritalStatus && matchesLifeStatus && matchesAge &&
+                       matchesHasFather && matchesHasMother && matchesHasChildren && matchesHasSpouse &&
+                       matchesFilterByFather && matchesFilterByMother && matchesFilterBySibling;
+            });
+
+            // Sort by full name for consistent display
+            filteredMembers.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+
+            if (filteredMembers.length === 0) {
+                noMembersMessage.classList.remove('hidden');
+            } else {
+                noMembersMessage.classList.add('hidden');
+                filteredMembers.forEach(person => {
+                    displayedFamilyMembers.push(person); // Add to currently displayed list
+                    const personCard = document.createElement('div');
+                    personCard.classList.add('person-card', 'card', 'p-4', 'rounded-xl', 'shadow-md', 'flex', 'flex-col', 'justify-between', 'relative');
+
+                    // Apply gender-based background color
+                    if (person.gender === 'Male') {
+                        personCard.classList.add('gender-male');
+                    } else if (person.gender === 'Female') {
+                        personCard.classList.add('gender-female');
+                    }
+
+                    // Checkbox for selection
+                    const checkboxContainer = document.createElement('div');
+                    checkboxContainer.classList.add('checkbox-container');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.classList.add('form-checkbox', 'text-indigo-600', 'rounded-md');
+                    checkbox.id = `person-${person.id}`;
+                    checkbox.checked = selectedPersonIds.has(person.id);
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            selectedPersonIds.add(person.id);
+                            personCard.classList.add('selected');
+                        } else {
+                            selectedPersonIds.delete(person.id);
+                            personCard.classList.remove('selected');
+                            selectAllCheckbox.checked = false; // Uncheck select all if any individual is unchecked
+                        }
+                        console.log("Selected IDs:", Array.from(selectedPersonIds));
+                    });
+                    checkboxContainer.appendChild(checkbox);
+                    personCard.appendChild(checkboxContainer);
+
+                    // Card content
+                    const contentDiv = document.createElement('div');
+                    contentDiv.innerHTML = `
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">${person.fullName || 'غير محدد'}</h2>
+                        <p class="text-gray-600 text-sm mb-1">
+                            <i class="fas fa-birthday-cake ml-1"></i> العمر: ${calculateAge(person.birthDate)} سنة
+                        </p>
+                        <p class="text-gray-600 text-sm mb-1">
+                            <i class="fas fa-venus-mars ml-1"></i> الجنس: ${person.gender === 'Male' ? 'ذكر' : (person.gender === 'Female' ? 'أنثى' : 'غير محدد')}
+                        </p>
+                        <p class="text-gray-600 text-sm mb-1">
+                            <i class="fas fa-ring ml-1"></i> الحالة الاجتماعية: ${person.maritalStatus || 'غير محدد'}
+                        </p>
+                        <p class="text-gray-600 text-sm">
+                            <i class="${person.isAlive !== false ? 'fas fa-heartbeat text-green-500' : 'fas fa-skull-crossbones text-red-500'} ml-1"></i> الحالة: ${person.isAlive !== false ? 'على قيد الحياة' : 'متوفى'}
+                        </p>
+                    `;
+                    personCard.appendChild(contentDiv);
+
+                    // View Profile Button
+                    const viewProfileBtn = document.createElement('a');
+                    viewProfileBtn.href = `profile.html?id=${person.id}`;
+                    viewProfileBtn.classList.add('btn-secondary', 'mt-4', 'block', 'text-center');
+                    viewProfileBtn.textContent = 'عرض الملف الشخصي';
+                    personCard.appendChild(viewProfileBtn);
+
+                    familyMembersGrid.appendChild(personCard);
+                });
+
+                // Update selectAllCheckbox state based on current selections
+                selectAllCheckbox.checked = displayedFamilyMembers.length > 0 &&
+                                            displayedFamilyMembers.every(p => selectedPersonIds.has(p.id));
+            }
+        }
+
+        // --- Event Listeners for Filters and Search ---
+
+        searchInput.addEventListener('input', displayFamilyMembers);
+        genderFilter.addEventListener('change', displayFamilyMembers);
+        maritalStatusFilter.addEventListener('change', displayFamilyMembers);
+        lifeStatusFilter.addEventListener('change', displayFamilyMembers);
+        ageFilter.addEventListener('input', displayFamilyMembers);
+        hasFatherFilter.addEventListener('change', displayFamilyMembers);
+        hasMotherFilter.addEventListener('change', displayFamilyMembers);
+        hasChildrenFilter.addEventListener('change', displayFamilyMembers);
+        hasSpouseFilter.addEventListener('change', displayFamilyMembers);
+
+        // New filter event listeners
+        filterByFatherInput.addEventListener('input', displayFamilyMembers);
+        filterByMotherInput.addEventListener('input', displayFamilyMembers);
+        filterBySiblingInput.addEventListener('input', displayFamilyMembers);
+
+
+        clearFiltersBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            genderFilter.value = 'All';
+            maritalStatusFilter.value = 'All';
+            lifeStatusFilter.value = 'Alive'; // Default to Alive Only
+            ageFilter.value = '';
+            hasFatherFilter.value = 'All';
+            hasMotherFilter.value = 'All';
+            hasChildrenFilter.value = 'All';
+            hasSpouseFilter.value = 'All';
+            // Clear new relationship filters
+            filterByFatherInput.value = '';
+            filterByFatherId.value = '';
+            filterByFatherSuggestions.classList.add('hidden');
+            filterByMotherInput.value = '';
+            filterByMotherId.value = '';
+            filterByMotherSuggestions.classList.add('hidden');
+            filterBySiblingInput.value = '';
+            filterBySiblingId.value = '';
+            filterBySiblingSuggestions.classList.add('hidden');
+
+            displayFamilyMembers();
+        });
+
+        // --- Selection Logic ---
+
+        selectAllCheckbox.addEventListener('change', () => {
+            selectedPersonIds.clear(); // Clear existing selections
+            if (selectAllCheckbox.checked) {
+                displayedFamilyMembers.forEach(person => {
+                    selectedPersonIds.add(person.id);
+                });
+            }
+            // Re-render to update all checkboxes and card highlights
+            displayFamilyMembers();
+        });
+
+        // --- Export to Excel (CSV) ---
+
+        exportExcelBtn.addEventListener('click', () => {
+            if (selectedPersonIds.size === 0) {
+                showModal("الرجاء تحديد شخص واحد على الأقل للتصدير.");
+                return;
+            }
+
+            const selectedData = allFamilyMembers.filter(person => selectedPersonIds.has(person.id));
+
+            if (selectedData.length === 0) {
+                showModal("لا توجد بيانات للأشخاص المحددين للتصدير.");
+                return;
+            }
+
+            let csvContent = "الاسم,رقم الهاتف,رقم الهوية\n"; // CSV Header
+
+            selectedData.forEach(person => {
+                const name = person.fullName || '';
+                const phoneNumber = person.phoneNumber || '';
+                const idNumber = person.idNumber || '';
+                // Escape commas in fields if necessary (simple approach for now)
+                csvContent += `"${name.replace(/"/g, '""')}","${phoneNumber.replace(/"/g, '""')}","${idNumber.replace(/"/g, '""')}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) { // Feature detection
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'family_members_data.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showModal("تم تصدير البيانات بنجاح إلى ملف Excel (CSV).");
+            } else {
+                showModal("متصفحك لا يدعم التصدير المباشر لملفات CSV.");
+            }
+        });
+
+
+        // --- Initial Load and Authentication ---
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Modal close buttons
+            closeMessageModalBtn.addEventListener('click', closeModal);
+            confirmMessageModalBtn.addEventListener('click', closeModal);
+
+            // Set default filter for life status to "Alive"
+            lifeStatusFilter.value = 'Alive';
+
+            // Apply related person filter input handlers
+            handleRelatedPersonFilterInput(filterByFatherInput, filterByFatherSuggestions, filterByFatherId);
+            handleRelatedPersonFilterInput(filterByMotherInput, filterByMotherSuggestions, filterByMotherId);
+            handleRelatedPersonFilterInput(filterBySiblingInput, filterBySiblingSuggestions, filterBySiblingId);
+
+            // Initial authentication attempt
+            (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                }
+            })();
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+                    await fetchFamilyMembers(); // Fetch and display members after authentication
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    showModal("يرجى تسجيل الدخول لعرض وإدارة بيانات العائلة.");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
