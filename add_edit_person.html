@@ -288,7 +288,6 @@
         let userId = null;
         let editingPersonId = null; // Stores ID if in edit mode
         let allFamilyMembers = []; // Cache all family members for suggestions
-        let currentChildrenIds = new Set(); // Use a Set to manage children IDs for uniqueness
 
         // Get app ID from environment or use a default
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -327,6 +326,9 @@
         const savePersonBtn = document.getElementById('savePersonBtn');
         const cancelBtn = document.getElementById('cancelBtn');
 
+        // Use a Map to manage children IDs and their names for uniqueness and easy lookup
+        let currentChildren = new Map();
+
         // Function to show custom modal messages
         function showModal(message) {
             document.getElementById('modalMessage').textContent = message;
@@ -341,7 +343,7 @@
         // Function to fetch all family members for suggestions
         async function fetchAllFamilyMembers() {
             if (!userId) {
-                console.log("User ID not available, cannot fetch all family members.");
+                console.log("User ID not available, cannot fetch all family members for suggestions.");
                 return;
             }
             try {
@@ -365,28 +367,34 @@
 
                 if (searchText.length < 2) return;
 
-                const filteredSuggestions = allFamilyMembers.filter(person =>
+                let currentFilteredSuggestions = allFamilyMembers.filter(person => // Changed variable name
                     person.fullName && person.fullName.toLowerCase().includes(searchText) &&
                     person.id !== editingPersonId // Exclude current person from suggestions
                 );
 
-                // Filter by gender for mother/spouse
+                // Filter by gender for mother/spouse if applicable
                 if (relationType === 'mother') {
-                    filteredSuggestions = filteredSuggestions.filter(person => person.gender === 'Female');
-                } else if (relationType === 'spouse') {
-                    // Spouse can be male or female, depending on the current person's gender (if known)
-                    // For simplicity, we'll suggest all, but a more complex app might filter by opposite gender
+                    currentFilteredSuggestions = currentFilteredSuggestions.filter(person => person.gender === 'Female'); // Changed variable name
                 } else if (relationType === 'father') {
-                    filteredSuggestions = filteredSuggestions.filter(person => person.gender === 'Male');
+                    currentFilteredSuggestions = currentFilteredSuggestions.filter(person => person.gender === 'Male'); // Changed variable name
+                } else if (relationType === 'spouse') {
+                    // For spouse, if current person's gender is known, filter for opposite gender
+                    const currentPersonGender = document.querySelector('input[name="gender"]:checked')?.value;
+                    if (currentPersonGender === 'Male') {
+                        currentFilteredSuggestions = currentFilteredSuggestions.filter(person => person.gender === 'Female'); // Changed variable name
+                    } else if (currentPersonGender === 'Female') {
+                        currentFilteredSuggestions = currentFilteredSuggestions.filter(person => person.gender === 'Male'); // Changed variable name
+                    }
                 }
 
-                if (filteredSuggestions.length > 0) {
+                if (currentFilteredSuggestions.length > 0) { // Changed variable name
                     suggestionsElement.classList.remove('hidden');
-                    filteredSuggestions.forEach(person => {
+                    currentFilteredSuggestions.forEach(person => { // Changed variable name
                         const div = document.createElement('div');
                         div.classList.add('suggestions-list-item');
                         div.textContent = person.fullName;
                         div.addEventListener('click', async () => {
+                            console.log(`Selected ${relationType}:`, person);
                             inputElement.value = person.fullName;
                             hiddenIdElement.value = person.id;
                             suggestionsElement.classList.add('hidden');
@@ -394,18 +402,31 @@
                             if (relationType === 'father') {
                                 // Auto-fill grandfather and mother based on selected father
                                 grandFatherNameInput.value = person.grandFatherName || ''; // Father's father
+                                console.log("Father selected. Auto-filling grandFatherName:", grandFatherNameInput.value);
+
                                 if (person.spouseId) {
                                     const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, person.spouseId));
-                                    if (spouseDoc.exists() && spouseDoc.data().gender === 'Female') { // Ensure it's the mother
-                                        motherNameInput.value = spouseDoc.data().fullName;
-                                        motherIdInput.value = spouseDoc.id;
+                                    if (spouseDoc.exists()) {
+                                        const spouseData = spouseDoc.data();
+                                        // Ensure the spouse is female to be considered the mother
+                                        if (spouseData.gender === 'Female') {
+                                            motherNameInput.value = spouseData.fullName;
+                                            motherIdInput.value = spouseDoc.id;
+                                            console.log("Father's spouse found. Auto-filling motherName:", motherNameInput.value);
+                                        } else {
+                                            motherNameInput.value = '';
+                                            motherIdInput.value = '';
+                                            console.log("Father's spouse is not female. Mother not auto-filled.");
+                                        }
                                     } else {
                                         motherNameInput.value = '';
                                         motherIdInput.value = '';
+                                        console.log("Father's spouse document not found. Mother not auto-filled.");
                                     }
                                 } else {
                                     motherNameInput.value = '';
                                     motherIdInput.value = '';
+                                    console.log("Father has no spouseId. Mother not auto-filled.");
                                 }
                             }
                         });
@@ -425,46 +446,38 @@
         // Function to render children list
         async function renderChildrenList() {
             childrenListDiv.innerHTML = '';
-            if (currentChildrenIds.size === 0) {
+            if (currentChildren.size === 0) {
                 noChildrenMessage.classList.remove('hidden');
                 return;
             } else {
                 noChildrenMessage.classList.add('hidden');
             }
 
-            for (const childId of currentChildrenIds) {
-                try {
-                    const childDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, childId));
-                    if (childDoc.exists()) {
-                        const childData = childDoc.data();
-                        const childDiv = document.createElement('div');
-                        childDiv.classList.add('child-item');
+            // Convert Map values to array for sorting
+            const childrenArray = Array.from(currentChildren.values());
 
-                        const childName = document.createElement('span');
-                        childName.textContent = childData.fullName || 'غير محدد';
-                        childDiv.appendChild(childName);
+            // Sort children by first name for consistent display
+            childrenArray.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-                        const removeBtn = document.createElement('button');
-                        removeBtn.type = 'button';
-                        removeBtn.classList.add('btn-danger', 'px-3', 'py-1', 'text-sm');
-                        removeBtn.textContent = 'إزالة';
-                        removeBtn.addEventListener('click', () => {
-                            currentChildrenIds.delete(childId);
-                            renderChildrenList(); // Re-render the list
-                        });
-                        childDiv.appendChild(removeBtn);
-                        childrenListDiv.appendChild(childDiv);
-                    } else {
-                        console.warn(`Child with ID ${childId} not found in Firestore.`);
-                        currentChildrenIds.delete(childId); // Remove invalid ID
-                        renderChildrenList(); // Re-render
-                    }
-                } catch (error) {
-                    console.error(`Error fetching child ${childId}:`, error);
-                    currentChildrenIds.delete(childId); // Remove problematic ID
-                    renderChildrenList(); // Re-render
-                    showModal("حدث خطأ أثناء جلب بيانات الأبناء: " + error.message);
-                }
+            for (const child of childrenArray) {
+                const childDiv = document.createElement('div');
+                childDiv.classList.add('child-item');
+
+                const childName = document.createElement('span');
+                childName.textContent = child.name;
+                childDiv.appendChild(childName);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.classList.add('btn-danger', 'px-3', 'py-1', 'text-sm');
+                removeBtn.textContent = 'إزالة';
+                removeBtn.addEventListener('click', () => {
+                    currentChildren.delete(child.id);
+                    console.log("Child removed:", child.id, currentChildren);
+                    renderChildrenList(); // Re-render the list
+                });
+                childDiv.appendChild(removeBtn);
+                childrenListDiv.appendChild(childDiv);
             }
         }
 
@@ -474,8 +487,9 @@
             const childName = addChildInput.value;
 
             if (childId && childName) {
-                if (!currentChildrenIds.has(childId)) {
-                    currentChildrenIds.add(childId);
+                if (!currentChildren.has(childId)) {
+                    currentChildren.set(childId, { id: childId, name: childName });
+                    console.log("Child added:", childId, childName, currentChildren);
                     addChildInput.value = '';
                     addChildIdInput.value = '';
                     childrenSuggestions.classList.add('hidden');
@@ -491,7 +505,7 @@
         // Function to load person data for editing
         async function loadPersonData(personId) {
             if (!userId) {
-                console.log("User ID not available, cannot load person data.");
+                console.log("User ID not available, cannot load person data for edit.");
                 return;
             }
             try {
@@ -500,6 +514,7 @@
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
+                    console.log("Loading person data for edit:", data);
                     firstNameInput.value = data.firstName || '';
                     fatherNameInput.value = data.fatherName || '';
                     fatherIdInput.value = data.fatherId || '';
@@ -526,12 +541,24 @@
                     spouseIdInput.value = data.spouseId || '';
                     spouseContainer.classList.toggle('hidden', maritalStatusInput.value !== 'Married');
 
-                    currentChildrenIds = new Set(data.childrenIds || []);
+                    // Populate currentChildren Map for editing
+                    currentChildren.clear();
+                    if (data.childrenIds && data.childrenIds.length > 0) {
+                        for (const childId of data.childrenIds) {
+                            const childDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, childId));
+                            if (childDoc.exists()) {
+                                currentChildren.set(childId, { id: childId, name: childDoc.data().fullName });
+                            } else {
+                                console.warn(`Child with ID ${childId} not found during load, skipping.`);
+                            }
+                        }
+                    }
                     renderChildrenList();
                 } else {
                     showModal("لم يتم العثور على بيانات لهذا الشخص.");
                     editingPersonId = null; // Reset to add mode
                     pageTitle.textContent = 'إضافة شخص جديد';
+                    console.log("No person data found for ID:", personId);
                 }
             } catch (error) {
                 console.error("Error loading person data:", error);
@@ -542,9 +569,11 @@
         // Function to save/update person data
         personForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("Form submitted.");
 
             if (!userId) {
                 showModal("يرجى تسجيل الدخول لحفظ البيانات.");
+                console.error("User ID is null, cannot save data.");
                 return;
             }
 
@@ -566,15 +595,17 @@
                 maritalStatus: maritalStatusInput.value,
                 spouseName: spouseNameInput.value.trim(),
                 spouseId: spouseIdInput.value.trim() || null,
-                childrenIds: Array.from(currentChildrenIds)
+                childrenIds: Array.from(currentChildren.keys()) // Save only IDs
             };
 
             // Generate full name
             personData.fullName = `${personData.firstName} ${personData.fatherName} ${personData.grandFatherName} ${personData.familyName}`.trim().replace(/\s+/g, ' ');
+            console.log("Prepared personData:", personData);
 
             // Basic validation
             if (!personData.firstName || !personData.familyName || !personData.birthDate || !personData.gender) {
                 showModal("الرجاء ملء الحقول الإلزامية (الاسم الأول، اسم العائلة، تاريخ الميلاد، الجنس).");
+                console.error("Missing required fields.");
                 return;
             }
 
@@ -584,6 +615,7 @@
                     const docRef = doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, editingPersonId);
                     await setDoc(docRef, personData, { merge: true }); // Use merge to avoid overwriting unrelated fields
                     showModal("تم تحديث بيانات الشخص بنجاح!");
+                    console.log("Person updated successfully with ID:", editingPersonId);
                 } else {
                     // Add new person
                     const docRef = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
@@ -591,6 +623,7 @@
                     editingPersonId = newDoc.id; // Set to edit mode for the newly added person
                     pageTitle.textContent = 'تعديل شخص';
                     showModal("تم إضافة شخص جديد بنجاح!");
+                    console.log("New person added with ID:", editingPersonId);
                 }
                 // Optionally redirect or clear form
                 setTimeout(() => {
@@ -631,9 +664,11 @@
             if (editingPersonId) {
                 pageTitle.textContent = 'تعديل شخص';
                 savePersonBtn.textContent = 'تحديث البيانات';
+                console.log("Page in EDIT mode for ID:", editingPersonId);
             } else {
                 pageTitle.textContent = 'إضافة شخص جديد';
                 savePersonBtn.textContent = 'حفظ البيانات';
+                console.log("Page in ADD NEW mode.");
             }
 
             // Initial authentication attempt
