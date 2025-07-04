@@ -588,8 +588,20 @@
 
                                 // Specific logic for father selection to auto-fill grandfather and mother
                                 if (relationType === 'father') {
-                                    grandFatherNameInput.value = person.grandFatherName || '';
-                                    console.log("Father selected. Auto-filling grandFatherName:", grandFatherNameInput.value);
+                                    const paternalGrandfatherId = person.fatherId; // Get the father's father ID
+                                    if (paternalGrandfatherId) {
+                                        const paternalGrandfather = allFamilyMembers.find(member => member.id === paternalGrandfatherId);
+                                        if (paternalGrandfather) {
+                                            grandFatherNameInput.value = paternalGrandfather.firstName || ''; // Use the first name of the paternal grandfather
+                                            console.log("Father selected. Auto-filling grandFatherName with father's father's first name:", grandFatherNameInput.value);
+                                        } else {
+                                            grandFatherNameInput.value = ''; // Clear if paternal grandfather not found in cache
+                                            console.log("Father selected, but paternal grandfather not found in cache. grandFatherName cleared.");
+                                        }
+                                    } else {
+                                        grandFatherNameInput.value = ''; // Clear if selected father has no father
+                                        console.log("Father selected, but selected father has no fatherId. grandFatherName cleared.");
+                                    }
 
                                     if (person.spouseIds && person.spouseIds.length > 0) {
                                         const potentialMotherId = person.spouseIds.find(sId => {
