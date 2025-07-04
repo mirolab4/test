@@ -335,53 +335,61 @@
                         await displayRelation('motherId', 'motherName');
 
                         // Handle Spouse name (clickable link)
-                        if (currentPersonData.maritalStatus === 'Married' && currentPersonData.spouseId) {
-                            const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData.spouseId));
-                            if (spouseDoc.exists()) {
-                                const spouseData = spouseDoc.data();
-                                const spouseLink = document.createElement('a');
-                                spouseLink.href = `profile.html?id=${currentPersonData.spouseId}`;
-                                spouseLink.classList.add('relation-link');
-                                spouseLink.textContent = spouseData.fullName || 'غير محدد';
-                                document.getElementById('spouseName').innerHTML = ''; // Clear previous content
-                                document.getElementById('spouseName').appendChild(spouseLink);
+                        const spouseNameElement = document.getElementById('spouseName');
+                        if (spouseNameElement) { // Added null check
+                            if (currentPersonData.maritalStatus === 'Married' && currentPersonData.spouseId) {
+                                const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData.spouseId));
+                                if (spouseDoc.exists()) {
+                                    const spouseData = spouseDoc.data();
+                                    const spouseLink = document.createElement('a');
+                                    spouseLink.href = `profile.html?id=${currentPersonData.spouseId}`;
+                                    spouseLink.classList.add('relation-link');
+                                    spouseLink.textContent = spouseData.fullName || 'غير محدد';
+                                    spouseNameElement.innerHTML = ''; // Clear previous content
+                                    spouseNameElement.appendChild(spouseLink);
+                                } else {
+                                    spouseNameElement.textContent = 'غير متوفر';
+                                }
                             } else {
-                                document.getElementById('spouseName').textContent = 'غير متوفر';
+                                spouseNameElement.textContent = 'غير متوفر';
                             }
-                        } else {
-                            document.getElementById('spouseName').textContent = 'غير متوفر';
                         }
+
 
                         // Handle Children list
                         const childrenListDiv = document.getElementById('childrenList');
-                        childrenListDiv.innerHTML = ''; // Clear previous children
-                        document.getElementById('noChildrenMessage').classList.add('hidden'); // Hide default message
+                        const noChildrenMessage = document.getElementById('noChildrenMessage');
+                        if (childrenListDiv && noChildrenMessage) { // Added null check
+                            childrenListDiv.innerHTML = ''; // Clear previous children
+                            noChildrenMessage.classList.add('hidden'); // Hide default message
 
-                        if (currentPersonData.childrenIds && currentPersonData.childrenIds.length > 0) {
-                            for (const childId of currentPersonData.childrenIds) {
-                                const childDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, childId));
-                                if (childDoc.exists()) {
-                                    const childData = childDoc.data();
-                                    const childDiv = document.createElement('div');
-                                    childDiv.classList.add('detail-item');
+                            if (currentPersonData.childrenIds && currentPersonData.childrenIds.length > 0) {
+                                for (const childId of currentPersonData.childrenIds) {
+                                    const childDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, childId));
+                                    if (childDoc.exists()) {
+                                        const childData = childDoc.data();
+                                        const childDiv = document.createElement('div');
+                                        childDiv.classList.add('detail-item');
 
-                                    const childLink = document.createElement('a');
-                                    childLink.href = `profile.html?id=${childId}`;
-                                    childLink.classList.add('relation-link');
-                                    childLink.textContent = childData.fullName || 'غير محدد';
+                                        const childLink = document.createElement('a');
+                                        childLink.href = `profile.html?id=${childId}`;
+                                        childLink.classList.add('relation-link');
+                                        childLink.textContent = childData.fullName || 'غير محدد';
 
-                                    const ageSpan = document.createElement('span');
-                                    ageSpan.classList.add('detail-value');
-                                    ageSpan.textContent = calculateAge(childData.birthDate);
+                                        const ageSpan = document.createElement('span');
+                                        ageSpan.classList.add('detail-value');
+                                        ageSpan.textContent = calculateAge(childData.birthDate);
 
-                                    childDiv.appendChild(childLink);
-                                    childDiv.appendChild(ageSpan);
-                                    childrenListDiv.appendChild(childDiv);
+                                        childDiv.appendChild(childLink);
+                                        childDiv.appendChild(ageSpan);
+                                        childrenListDiv.appendChild(childDiv);
+                                    }
                                 }
+                            } else {
+                                noChildrenMessage.classList.remove('hidden');
                             }
-                        } else {
-                            document.getElementById('noChildrenMessage').classList.remove('hidden');
                         }
+
 
                         loadingIndicator.classList.add('hidden');
                         personContent.classList.remove('hidden');
@@ -410,6 +418,11 @@
         // Helper function to display related person's name as a clickable link
         async function displayRelation(idKey, nameElementId) {
             const element = document.getElementById(nameElementId);
+            if (!element) { // Added null check
+                console.error(`Element with ID '${nameElementId}' not found.`);
+                return;
+            }
+
             if (currentPersonData[idKey]) {
                 const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
                 if (relatedDoc.exists()) {
