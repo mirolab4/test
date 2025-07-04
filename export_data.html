@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تصدير بيانات العائلة</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Darker indigo */
+        }
+        .btn-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db; /* Darker light gray */
+        }
+        .input-field {
+            border: 1px solid #d1d5db; /* Light gray border */
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+        .checkbox-group input[type="checkbox"] {
+            transform: scale(1.1); /* Slightly larger checkboxes */
+        }
+        .filter-section {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .filter-section h3 {
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.75rem;
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: left; /* Align to left for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer; /* Add cursor pointer for better UX */
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <!-- Custom Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span id="closeMessageModalBtn" class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header and Navigation -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">تصدير بيانات العائلة</h1>
+            <nav class="flex flex-wrap gap-3">
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+            </nav>
+        </div>
+
+        <!-- Export Filters and Options -->
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">خيارات التصدير</h2>
+
+            <!-- Family Filter -->
+            <div class="filter-section">
+                <h3 class="mb-3">تحديد العائلة</h3>
+                <select id="familyFilter" class="input-field w-auto">
+                    <option value="All">الكل</option>
+                    <!-- Family names will be populated here by JavaScript -->
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Gender Filter -->
+                <div class="filter-section">
+                    <h3>الجنس</h3>
+                    <div class="flex flex-col gap-2 checkbox-group">
+                        <label><input type="checkbox" name="gender" value="Male" checked> ذكور</label>
+                        <label><input type="checkbox" name="gender" value="Female" checked> إناث</label>
+                    </div>
+                </div>
+
+                <!-- Life Status Filter -->
+                <div class="filter-section">
+                    <h3>الحالة</h3>
+                    <div class="flex flex-col gap-2 checkbox-group">
+                        <label><input type="checkbox" name="lifeStatus" value="Alive" checked> أحياء</label>
+                        <label><input type="checkbox" name="lifeStatus" value="Deceased" checked> متوفون</label>
+                    </div>
+                </div>
+
+                <!-- Age Category Filter -->
+                <div class="filter-section">
+                    <h3>الفئة العمرية (للأحياء)</h3>
+                    <div class="flex flex-col gap-2 checkbox-group">
+                        <label><input type="checkbox" name="ageCategory" value="Under16" checked> أقل من 16 سنة</label>
+                        <label><input type="checkbox" name="ageCategory" value="Over16" checked> أكبر من 16 سنة</label>
+                    </div>
+                </div>
+
+                <!-- Marital Status Filter -->
+                <div class="filter-section">
+                    <h3>الحالة الاجتماعية (للأحياء)</h3>
+                    <div class="flex flex-col gap-2 checkbox-group">
+                        <label><input type="checkbox" name="maritalStatus" value="Single" checked> أعزب/عزباء</label>
+                        <label><input type="checkbox" name="maritalStatus" value="Married" checked> متزوج/متزوجة</label>
+                        <label><input type="checkbox" name="maritalStatus" value="Engaged" checked> مخطوب/مخطوبة</label>
+                        <label><input type="checkbox" name="maritalStatus" value="Divorced" checked> مطلق/مطلقة</label>
+                        <label><input type="checkbox" name="maritalStatus" value="Widowed" checked> أرمل/أرملة</label>
+                    </div>
+                </div>
+
+                <!-- Date Filters -->
+                <div class="filter-section">
+                    <h3>تصفية حسب التاريخ</h3>
+                    <div class="mb-2">
+                        <label for="birthYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الميلاد:</label>
+                        <input type="number" id="birthYearInput" class="input-field" placeholder="مثال: 1990">
+                    </div>
+                    <div class="mb-2">
+                        <label for="birthMonthInput" class="block text-sm font-medium text-gray-700 mb-1">شهر الميلاد:</label>
+                        <input type="number" id="birthMonthInput" class="input-field" min="1" max="12" placeholder="مثال: 7">
+                    </div>
+                    <div class="mb-2">
+                        <label for="deathYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الوفاة:</label>
+                        <input type="number" id="deathYearInput" class="input-field" placeholder="مثال: 2020">
+                    </div>
+                    <div class="mb-2">
+                        <label for="marriageYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الزواج:</label>
+                        <input type="number" id="marriageYearInput" class="input-field" placeholder="مثال: 2015">
+                    </div>
+                    <div>
+                        <label for="engagementYearInput" class="block text-sm font-medium text-gray-700 mb-1">سنة الخطوبة:</label>
+                        <input type="number" id="engagementYearInput" class="input-field" placeholder="مثال: 2014">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column Selection -->
+            <div class="filter-section mt-6">
+                <h3 class="mb-3">تحديد الأعمدة للتصدير</h3>
+                <div class="mb-4">
+                    <label class="checkbox-group"><input type="checkbox" id="selectAllColumns" checked> تحديد/إلغاء تحديد الكل</label>
+                </div>
+                <div id="columnSelectionCheckboxes" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 checkbox-group">
+                    <!-- Columns will be populated here by JavaScript -->
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button id="exportDataBtn" class="btn-primary">تصدير البيانات (CSV)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let allFamilyMembers = []; // Cache all family members
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // DOM Elements
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
+        const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
+
+        const familyFilterSelect = document.getElementById('familyFilter');
+        const genderCheckboxes = document.querySelectorAll('input[name="gender"]');
+        const lifeStatusCheckboxes = document.querySelectorAll('input[name="lifeStatus"]');
+        const ageCategoryCheckboxes = document.querySelectorAll('input[name="ageCategory"]');
+        const maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatus"]');
+        const birthYearInput = document.getElementById('birthYearInput');
+        const birthMonthInput = document.getElementById('birthMonthInput');
+        const deathYearInput = document.getElementById('deathYearInput');
+        const marriageYearInput = document.getElementById('marriageYearInput');
+        const engagementYearInput = document.getElementById('engagementYearInput');
+
+        const selectAllColumnsCheckbox = document.getElementById('selectAllColumns');
+        const columnSelectionCheckboxesDiv = document.getElementById('columnSelectionCheckboxes');
+        const exportDataBtn = document.getElementById('exportDataBtn');
+
+        // Define all possible columns for export
+        const exportColumns = [
+            { id: 'id', label: 'معرف الشخص' },
+            { id: 'fullName', label: 'الاسم الكامل' },
+            { id: 'firstName', label: 'الاسم الأول' },
+            { id: 'fatherName', label: 'اسم الأب' },
+            { id: 'grandFatherName', label: 'اسم الجد' },
+            { id: 'familyName', label: 'اسم العائلة' },
+            { id: 'motherName', label: 'اسم الأم' },
+            { id: 'idNumber', label: 'رقم الهوية' },
+            { id: 'phoneNumber', label: 'رقم الجوال' },
+            { id: 'gender', label: 'الجنس' },
+            { id: 'birthDate', label: 'تاريخ الميلاد' },
+            { id: 'isAlive', label: 'على قيد الحياة' },
+            { id: 'deathDate', label: 'تاريخ الوفاة' },
+            { id: 'maritalStatus', label: 'الحالة الاجتماعية' },
+            { id: 'spouseName', label: 'اسم الزوج/الزوجة' },
+            { id: 'marriageDate', label: 'تاريخ الزواج' },
+            { id: 'engagementDate', label: 'تاريخ الخطوبة' },
+            { id: 'fatherId', label: 'معرف الأب' },
+            { id: 'motherId', label: 'معرف الأم' },
+            { id: 'spouseId', label: 'معرف الزوج/الزوجة' },
+            { id: 'childrenIds', label: 'معرفات الأبناء' }
+        ];
+
+        // Function to show custom modal messages
+        function showModal(message) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
+        }
+
+        // Function to close custom modal messages
+        function closeModal() {
+            messageModal.style.display = 'none';
+        }
+
+        // Function to calculate age in years (returns number)
+        function calculateAgeInYears(birthDate) {
+            if (!birthDate || !birthDate.toDate) return null;
+            const today = new Date();
+            const birth = birthDate.toDate();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        // Function to check if age is above/below 16
+        function isAbove16(birthDate) {
+            const age = calculateAgeInYears(birthDate);
+            return age !== null && age >= 16;
+        }
+        function isUnder16(birthDate) {
+            const age = calculateAgeInYears(birthDate);
+            return age !== null && age < 16;
+        }
+
+        // Function to fetch all family members
+        async function fetchAllFamilyMembers() {
+            if (!userId) {
+                console.log("User ID not available, cannot fetch family members.");
+                return;
+            }
+            try {
+                const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+                const querySnapshot = await getDocs(q);
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("All family members fetched:", allFamilyMembers);
+                populateFamilyFilter(); // Populate filter after fetching data
+                populateColumnSelectionCheckboxes(); // Populate columns
+            } catch (error) {
+                console.error("Error fetching all family members:", error);
+                showModal("حدث خطأ أثناء جلب بيانات العائلة: " + error.message);
+            }
+        }
+
+        // Function to populate the family filter dropdown
+        function populateFamilyFilter() {
+            const uniqueFamilyNames = new Set(allFamilyMembers.map(p => p.familyName).filter(name => name && name.trim() !== ''));
+            familyFilterSelect.innerHTML = '<option value="All">الكل</option>';
+            uniqueFamilyNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                familyFilterSelect.appendChild(option);
+            });
+        }
+
+        // Function to populate column selection checkboxes
+        function populateColumnSelectionCheckboxes() {
+            columnSelectionCheckboxesDiv.innerHTML = ''; // Clear existing
+            exportColumns.forEach(col => {
+                const label = document.createElement('label');
+                label.classList.add('flex', 'items-center', 'gap-1');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'exportColumn';
+                checkbox.value = col.id;
+                checkbox.checked = true; // All checked by default
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(col.label));
+                columnSelectionCheckboxesDiv.appendChild(label);
+            });
+        }
+
+        // Function to filter members based on selected criteria
+        function getFilteredMembers() {
+            let filtered = [...allFamilyMembers];
+
+            // 1. Family Name Filter
+            const selectedFamily = familyFilterSelect.value;
+            if (selectedFamily !== 'All') {
+                filtered = filtered.filter(p => p.familyName === selectedFamily);
+            }
+
+            // 2. Gender Filter
+            const selectedGenders = Array.from(genderCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedGenders.length > 0 && selectedGenders.length < 2) { // Apply only if not both selected
+                filtered = filtered.filter(p => selectedGenders.includes(p.gender));
+            }
+
+            // 3. Life Status Filter
+            const selectedLifeStatuses = Array.from(lifeStatusCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedLifeStatuses.length > 0 && selectedLifeStatuses.length < 2) { // Apply only if not both selected
+                if (selectedLifeStatuses.includes('Alive')) {
+                    filtered = filtered.filter(p => p.isAlive !== false);
+                } else if (selectedLifeStatuses.includes('Deceased')) {
+                    filtered = filtered.filter(p => p.isAlive === false);
+                }
+            }
+
+            // 4. Age Category Filter (only for alive members)
+            const selectedAgeCategories = Array.from(ageCategoryCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedAgeCategories.length > 0 && selectedAgeCategories.length < 2) { // Apply only if not both selected
+                if (selectedAgeCategories.includes('Under16')) {
+                    filtered = filtered.filter(p => p.isAlive !== false && isUnder16(p.birthDate));
+                } else if (selectedAgeCategories.includes('Over16')) {
+                    filtered = filtered.filter(p => p.isAlive !== false && isAbove16(p.birthDate));
+                }
+            }
+
+            // 5. Marital Status Filter (only for alive members)
+            const selectedMaritalStatuses = Array.from(maritalStatusCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedMaritalStatuses.length > 0 && selectedMaritalStatuses.length < 5) { // Apply only if not all selected
+                filtered = filtered.filter(p => p.isAlive !== false && selectedMaritalStatuses.includes(p.maritalStatus));
+            }
+
+            // 6. Date Filters
+            const birthYear = birthYearInput.value ? parseInt(birthYearInput.value) : null;
+            const birthMonth = birthMonthInput.value ? parseInt(birthMonthInput.value) : null;
+            const deathYear = deathYearInput.value ? parseInt(deathYearInput.value) : null;
+            const marriageYear = marriageYearInput.value ? parseInt(marriageYearInput.value) : null;
+            const engagementYear = engagementYearInput.value ? parseInt(engagementYearInput.value) : null;
+
+            if (birthYear) {
+                filtered = filtered.filter(p => p.birthDate && p.birthDate.toDate().getFullYear() === birthYear);
+            }
+            if (birthMonth) {
+                filtered = filtered.filter(p => p.birthDate && (p.birthDate.toDate().getMonth() + 1) === birthMonth);
+            }
+            if (deathYear) {
+                filtered = filtered.filter(p => p.deathDate && p.deathDate.toDate().getFullYear() === deathYear);
+            }
+            if (marriageYear) {
+                filtered = filtered.filter(p => p.marriageDate && p.marriageDate.toDate().getFullYear() === marriageYear);
+            }
+            if (engagementYear) {
+                filtered = filtered.filter(p => p.engagementDate && p.engagementDate.toDate().getFullYear() === engagementYear);
+            }
+
+            return filtered;
+        }
+
+        // Function to get selected columns
+        function getSelectedColumns() {
+            const selectedColumnIds = Array.from(document.querySelectorAll('input[name="exportColumn"]:checked'))
+                                         .map(cb => cb.value);
+            return exportColumns.filter(col => selectedColumnIds.includes(col.id));
+        }
+
+        // Function to format data for CSV
+        function formatValueForCsv(value, columnId) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+            if (value instanceof Timestamp) {
+                return value.toDate().toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            }
+            if (Array.isArray(value)) {
+                return value.join(';'); // Join array elements with semicolon
+            }
+            if (typeof value === 'boolean') {
+                return value ? 'نعم' : 'لا';
+            }
+            // Ensure values with commas or newlines are quoted
+            let stringValue = String(value);
+            if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
+                return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+        }
+
+        // Function to export data to CSV
+        function exportDataToCsv() {
+            const filteredMembers = getFilteredMembers();
+            const selectedColumns = getSelectedColumns();
+
+            if (filteredMembers.length === 0) {
+                showModal("لا توجد بيانات مطابقة للفلاتر المحددة لتصديرها.");
+                return;
+            }
+            if (selectedColumns.length === 0) {
+                showModal("الرجاء تحديد عمود واحد على الأقل للتصدير.");
+                return;
+            }
+
+            const headers = selectedColumns.map(col => col.label).join(',');
+            const rows = filteredMembers.map(person => {
+                return selectedColumns.map(col => formatValueForCsv(person[col.id], col.id)).join(',');
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers, ...rows].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "family_export.csv");
+            document.body.appendChild(link); // Required for Firefox
+            link.click();
+            document.body.removeChild(link); // Clean up
+            showModal("تم تصدير البيانات بنجاح كملف CSV.");
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Modal close buttons
+            closeMessageModalBtn.addEventListener('click', closeModal);
+            confirmMessageModalBtn.addEventListener('click', closeModal);
+
+            // Select All Columns checkbox functionality
+            selectAllColumnsCheckbox.addEventListener('change', (e) => {
+                document.querySelectorAll('input[name="exportColumn"]').forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+            });
+
+            // Export button
+            exportDataBtn.addEventListener('click', exportDataToCsv);
+
+            // Initial authentication attempt
+            (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                } catch (error) {
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
+                }
+            })();
+
+            // Listen for auth state changes to get userId and fetch data
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authentication state changed. User ID:", userId);
+                    await fetchAllFamilyMembers(); // Fetch all members and populate filters/columns
+                } else {
+                    userId = null;
+                    console.log("User signed out or no user.");
+                    showModal("يرجى تسجيل الدخول لتصدير البيانات.", 'messageModal');
+                    // Clear data/filters if user logs out
+                    allFamilyMembers = [];
+                    familyFilterSelect.innerHTML = '<option value="All">الكل</option>';
+                    columnSelectionCheckboxesDiv.innerHTML = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
