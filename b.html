@@ -487,12 +487,8 @@
                         div.textContent = person.fullName; // Display full name in suggestion list
 
                         div.addEventListener('click', () => {
-                            // Determine which input is being handled to set the value appropriately
-                            if (inputElement.id === 'filterByFatherInput' || inputElement.id === 'filterByMotherInput') {
-                                inputElement.value = person.firstName; // Set first name for parent filters
-                            } else {
-                                inputElement.value = person.fullName; // Set full name for sibling filter
-                            }
+                            // Always set full name for the input field when a suggestion is selected
+                            inputElement.value = person.fullName;
                             hiddenIdElement.value = person.id;
                             suggestionsElement.classList.add('hidden');
                             displayFamilyMembers(); // Re-display members after selection
@@ -529,9 +525,9 @@
             const selectedHasChildren = hasChildrenFilter.value;
             const selectedHasSpouse = hasSpouseFilter.value;
 
-            const filterByFatherIdValue = filterByFatherId.value; // NEW
-            const filterByMotherIdValue = filterByMotherId.value; // NEW
-            const filterBySiblingIdValue = filterBySiblingId.value; // NEW
+            const filterByFatherIdValue = filterByFatherId.value;
+            const filterByMotherIdValue = filterByMotherId.value;
+            const filterBySiblingIdValue = filterBySiblingId.value;
 
             const filteredMembers = allFamilyMembers.filter(person => {
                 const matchesSearch = searchTerm === '' ||
@@ -581,30 +577,28 @@
                     matchesHasSpouse = !(person.spouseIds && person.spouseIds.length > 0) && !(person.manualSpouseNames && person.manualSpouseNames.length > 0);
                 }
 
-                // NEW: Filter by Father
+                // Filter by Father
                 let matchesFilterByFather = true;
                 if (filterByFatherIdValue) {
                     matchesFilterByFather = person.fatherId === filterByFatherIdValue;
                 }
 
-                // NEW: Filter by Mother
+                // Filter by Mother
                 let matchesFilterByMother = true;
                 if (filterByMotherIdValue) {
                     matchesFilterByMother = person.motherId === filterByMotherIdValue;
                 }
 
-                // NEW: Filter by Sibling
+                // Filter by Sibling
                 let matchesFilterBySibling = true;
                 if (filterBySiblingIdValue) {
                     const siblingPerson = allFamilyMembers.find(p => p.id === filterBySiblingIdValue);
                     if (siblingPerson) {
-                        // A person is a sibling if they share at least one parent with the selected sibling
-                        // and are not the selected sibling themselves.
                         const commonFather = person.fatherId && siblingPerson.fatherId && person.fatherId === siblingPerson.fatherId;
                         const commonMother = person.motherId && siblingPerson.motherId && person.motherId === siblingPerson.motherId;
                         matchesFilterBySibling = (commonFather || commonMother) && (person.id !== siblingPerson.id);
                     } else {
-                        matchesFilterBySibling = false; // Sibling not found
+                        matchesFilterBySibling = false;
                     }
                 }
 
