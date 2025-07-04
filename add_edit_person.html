@@ -308,6 +308,23 @@
                             </select>
                             <p id="maritalStatusError" class="error-message hidden">الحالة الاجتماعية مطلوبة.</p>
                         </div>
+
+                        <!-- NEW: Marriage Date Input -->
+                        <div class="mb-4 hidden" id="marriageDateContainer">
+                            <label for="marriageDateInput" class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-calendar-check text-gray-500 ml-1"></i> تاريخ الزواج:
+                            </label>
+                            <input type="date" id="marriageDateInput" class="input-field">
+                        </div>
+
+                        <!-- NEW: Engagement Date Input (can be shown if 'Engaged' status is added) -->
+                        <div class="mb-4 hidden" id="engagementDateContainer">
+                            <label for="engagementDateInput" class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-calendar-plus text-gray-500 ml-1"></i> تاريخ الخطوبة:
+                            </label>
+                            <input type="date" id="engagementDateInput" class="input-field">
+                        </div>
+
                         <div id="spousesSection" class="mb-4">
                             <h4 class="text-lg font-medium text-gray-700 mb-2">الأزواج/الزوجات:</h4>
                             <div id="spousesList" class="bg-gray-50 p-4 rounded-lg mb-4">
@@ -437,6 +454,12 @@
             let deathDateError;
             let maritalStatusInput;
             let maritalStatusError;
+
+            // NEW: Marriage and Engagement Date Elements
+            let marriageDateContainer;
+            let marriageDateInput;
+            let engagementDateContainer;
+            let engagementDateInput;
 
             let spousesSection;
             let spousesListDiv;
@@ -592,8 +615,9 @@
                                     if (paternalGrandfatherId) {
                                         const paternalGrandfather = allFamilyMembers.find(member => member.id === paternalGrandfatherId);
                                         if (paternalGrandfather) {
-                                            grandFatherNameInput.value = paternalGrandfather.firstName || ''; // Use the first name of the paternal grandfather
-                                            console.log("Father selected. Auto-filling grandFatherName with father's father's first name:", grandFatherNameInput.value);
+                                            // Fill grandFatherNameInput with the FULL name of the paternal grandfather
+                                            grandFatherNameInput.value = paternalGrandfather.fullName || '';
+                                            console.log("Father selected. Auto-filling grandFatherName with father's father's full name:", grandFatherNameInput.value);
                                         } else {
                                             grandFatherNameInput.value = ''; // Clear if paternal grandfather not found in cache
                                             console.log("Father selected, but paternal grandfather not found in cache. grandFatherName cleared.");
@@ -760,6 +784,14 @@
 
                         maritalStatusInput.value = data.maritalStatus || '';
 
+                        // NEW: Load marriage and engagement dates
+                        marriageDateInput.value = data.marriageDate ? data.marriageDate.toDate().toISOString().split('T')[0] : '';
+                        engagementDateInput.value = data.engagementDate ? data.engagementDate.toDate().toISOString().split('T')[0] : '';
+
+                        // Toggle visibility based on loaded marital status
+                        marriageDateContainer.classList.toggle('hidden', maritalStatusInput.value !== 'Married');
+                        engagementDateContainer.classList.toggle('hidden', maritalStatusInput.value !== 'Engaged'); // Assuming 'Engaged' might be added
+
                         // Populate currentSpouses Map for editing
                         currentSpouses.clear();
                         if (data.spouseIds && data.spouseIds.length > 0) {
@@ -890,7 +922,20 @@
                             }
                         }
                     }
+                    // Validate marriage date if married
+                    if (marriageDateInput.value.trim() === '') {
+                        showModal("تاريخ الزواج مطلوب إذا كان الشخص متزوجاً.");
+                        marriageDateInput.classList.add('error');
+                        isValid = false;
+                    }
                 }
+                // Validate engagement date if engaged (assuming 'Engaged' status is added)
+                if (maritalStatusInput.value === 'Engaged' && engagementDateInput.value.trim() === '') {
+                    showModal("تاريخ الخطوبة مطلوب إذا كان الشخص مخطوباً.");
+                    engagementDateInput.classList.add('error');
+                    isValid = false;
+                }
+
 
                 // Validate for duplicate full name or ID number
                 const qFullName = query(collection(db, `artifacts/${appId}/users/${userId}/familyMembers`), where("fullName", "==", personData.fullName));
@@ -931,6 +976,8 @@
                 isAliveInput.checked = true; // Default for new person
                 deathDateContainer.classList.add('hidden');
                 spousesSection.classList.add('hidden'); // Hide spouses section
+                marriageDateContainer.classList.add('hidden'); // NEW
+                engagementDateContainer.classList.add('hidden'); // NEW
                 currentChildren.clear();
                 currentSpouses.clear();
                 renderChildrenList();
@@ -968,6 +1015,8 @@
                         isAlive: isAliveInput.checked,
                         deathDate: (isAliveInput.checked || !deathDateInput.value) ? null : Timestamp.fromDate(new Date(deathDateInput.value)),
                         maritalStatus: maritalStatusInput.value,
+                        marriageDate: maritalStatusInput.value === 'Married' && marriageDateInput.value ? Timestamp.fromDate(new Date(marriageDateInput.value)) : null, // NEW
+                        engagementDate: maritalStatusInput.value === 'Engaged' && engagementDateInput.value ? Timestamp.fromDate(new Date(engagementDateInput.value)) : null, // NEW
                         spouseIds: [], // To store only linked spouse IDs
                         manualSpouseNames: [], // To store names of manually added spouses
                         childrenIds: Array.from(currentChildren.keys()),
@@ -1141,6 +1190,13 @@
                 maritalStatusInput = document.getElementById('maritalStatusInput');
                 maritalStatusError = document.getElementById('maritalStatusError');
 
+                // NEW: Assign marriage and engagement date elements
+                marriageDateContainer = document.getElementById('marriageDateContainer');
+                marriageDateInput = document.getElementById('marriageDateInput');
+                engagementDateContainer = document.getElementById('engagementDateContainer');
+                engagementDateInput = document.getElementById('engagementDateInput');
+
+
                 spousesSection = document.getElementById('spousesSection');
                 spousesListDiv = document.getElementById('spousesList');
                 noSpousesMessage = document.getElementById('noSpousesMessage');
@@ -1185,6 +1241,8 @@
                     isAliveInput.checked = true;
                     deathDateContainer.classList.add('hidden');
                     spousesSection.classList.add('hidden'); // Hide spouses section by default for new person
+                    marriageDateContainer.classList.add('hidden'); // NEW: Hide by default
+                    engagementDateContainer.classList.add('hidden'); // NEW: Hide by default
                 }
 
                 // Initial authentication attempt
@@ -1226,6 +1284,8 @@
                             // For new person, ensure initial state is correct (death date and spouses hidden)
                             deathDateContainer.classList.add('hidden'); // Already set above, but good to be explicit
                             spousesSection.classList.add('hidden'); // Already set above, but good to be explicit
+                            marriageDateContainer.classList.add('hidden'); // NEW: Ensure hidden
+                            engagementDateContainer.classList.add('hidden'); // NEW: Ensure hidden
                         }
                     } else {
                         userId = null;
@@ -1268,12 +1328,20 @@
                 });
 
                 maritalStatusInput.addEventListener('change', () => {
-                    spousesSection.classList.toggle('hidden', maritalStatusInput.value !== 'Married');
-                    if (maritalStatusInput.value !== 'Married') {
+                    const status = maritalStatusInput.value;
+                    spousesSection.classList.toggle('hidden', status !== 'Married');
+                    marriageDateContainer.classList.toggle('hidden', status !== 'Married');
+                    engagementDateContainer.classList.toggle('hidden', status !== 'Engaged'); // Assuming 'Engaged' might be added
+
+                    if (status !== 'Married') {
                         currentSpouses.clear(); // Clear spouses if not married
                         renderSpousesList(); // Re-render to show empty list
                         addSpouseInput.value = '';
                         addSpouseIdInput.value = '';
+                        marriageDateInput.value = ''; // Clear marriage date if not married
+                    }
+                    if (status !== 'Engaged') {
+                        engagementDateInput.value = ''; // Clear engagement date if not engaged
                     }
                     hasUnsavedChanges = true;
                 });
