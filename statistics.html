@@ -58,6 +58,12 @@
             padding: 1.5rem;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            cursor: pointer; /* Indicate clickable */
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
         .stat-box .value {
             font-size: 2.5rem;
@@ -110,35 +116,6 @@
             color: black;
             text-decoration: none;
         }
-        /* Removed Loading Overlay Specific Styles */
-        /* #loadingOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 1rem;
-            z-index: 50;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #4f46e5;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        } */
 
         /* Modal for Chart Details */
         #chartDetailsModal .modal-content {
@@ -159,6 +136,37 @@
         }
         .person-link:hover {
             text-decoration: underline;
+        }
+
+        /* Print specific styles */
+        @media print {
+            body {
+                background-color: #fff;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+            }
+            .btn-primary, .btn-secondary, nav, .flex.flex-wrap.justify-end.gap-4.mt-6.mb-6 {
+                display: none; /* Hide buttons and navigation when printing */
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #eee;
+                margin-bottom: 1rem;
+                page-break-inside: avoid; /* Avoid breaking cards across pages */
+            }
+            .chart-container {
+                height: auto; /* Allow charts to scale naturally */
+                width: 100%;
+            }
+            canvas {
+                max-width: 100%;
+                height: auto !important; /* Override Chart.js inline styles */
+            }
         }
     </style>
 </head>
@@ -200,142 +208,142 @@
         <div class="card">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">إحصائيات عامة</h2>
             <div id="statisticsContent" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                <div class="stat-box">
+                <div class="stat-box" id="statTotalMembers">
                     <div id="totalMembers" class="value">0</div>
                     <div class="label">إجمالي أفراد العائلة</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statAliveMembers">
                     <div id="aliveMembers" class="value">0</div>
                     <div class="label">أفراد على قيد الحياة</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statDeceasedMembers">
                     <div id="deceasedMembers" class="value">0</div>
                     <div class="label">أفراد متوفون</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box"> <!-- Average age is not a list of people -->
                     <div id="averageAge" class="value">0</div>
                     <div class="label">متوسط العمر (الأحياء)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box"> <!-- Average age at death is not a list of people -->
                     <div id="averageAgeAtDeath" class="value">0</div>
                     <div class="label">متوسط العمر عند الوفاة</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statUniqueFamilyNames">
                     <div id="uniqueFamilyNames" class="value">0</div>
                     <div class="label">عدد أسماء العائلات الفريدة</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingMales">
                     <div id="livingMales" class="value">0</div>
                     <div class="label">ذكور أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingFemales">
                     <div id="livingFemales" class="value">0</div>
                     <div class="label">إناث أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingMarried">
                     <div id="livingMarried" class="value">0</div>
                     <div class="label">متزوجون أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingEngaged">
                     <div id="livingEngaged" class="value">0</div>
                     <div class="label">مخطوبون أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingMarriedMales">
                     <div id="livingMarriedMales" class="value">0</div>
                     <div class="label">ذكور متزوجون أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingMarriedFemales">
                     <div id="livingMarriedFemales" class="value">0</div>
                     <div class="label">إناث متزوجات أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingSingleMales">
                     <div id="livingSingleMales" class="value">0</div>
                     <div class="label">ذكور عازبون أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingDivorcedMales">
                     <div id="livingDivorcedMales" class="value">0</div>
                     <div class="label">ذكور مطلقون أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingWidowedMales">
                     <div id="livingWidowedMales" class="value">0</div>
                     <div class="label">ذكور أرامل أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingSingleFemales">
                     <div id="livingSingleFemales" class="value">0</div>
                     <div class="label">إناث عازبات أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingDivorcedFemales">
                     <div id="livingDivorcedFemales" class="value">0</div>
                     <div class="label">إناث مطلقات أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statLivingWidowedFemales">
                     <div id="livingWidowedFemales" class="value">0</div>
                     <div class="label">إناث أرامل أحياء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statMalesOver16">
                     <div id="malesOver16" class="value">0</div>
                     <div class="label">ذكور فوق 16 سنة (أحياء)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statFemalesOver16">
                     <div id="femalesOver16" class="value">0</div>
                     <div class="label">إناث فوق 16 سنة (أحياء)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statMalesUnder16">
                     <div id="malesUnder16" class="value">0</div>
                     <div class="label">ذكور أقل من 16 سنة (أحياء)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statFemalesUnder16">
                     <div id="femalesUnder16" class="value">0</div>
                     <div class="label">إناث أقل من 16 سنة (أحياء)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box"> <!-- Average children per parent is not a list of people -->
                     <div id="avgChildrenPerParent" class="value">0</div>
                     <div class="label">متوسط الأبناء لكل والد</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statMembersWithoutChildren">
                     <div id="membersWithoutChildren" class="value">0</div>
                     <div class="label">أفراد بدون أبناء</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box"> <!-- Profile completion is a percentage, not a list of people -->
                     <div id="profileCompletion" class="value">0%</div>
                     <div class="label">اكتمال الملفات الشخصية</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statMissingBirthDate">
                     <div id="missingBirthDate" class="value">0</div>
                     <div class="label">أفراد بدون تاريخ ميلاد</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statMissingGender">
                     <div id="missingGender" class="value">0</div>
                     <div class="label">أفراد بدون جنس</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box" id="statMissingFamilyName">
+                    <div id="missingFamilyName" class="value">0</div>
+                    <div class="label">أفراد بدون اسم عائلة</div>
+                </div>
+                <div class="stat-box"> <!-- Average age is not a list of people -->
                     <div id="avgMaleMarriageAge" class="value">0</div>
                     <div class="label">متوسط عمر الزواج (ذكور)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box"> <!-- Average age is not a list of people -->
                     <div id="avgFemaleMarriageAge" class="value">0</div>
                     <div class="label">متوسط عمر الزواج (إناث)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box"> <!-- Average age is not a list of people -->
                     <div id="avgMaleEngagementAge" class="value">0</div>
                     <div class="label">متوسط عمر الخطوبة (ذكور)</div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box"> <!-- Average age is not a list of people -->
                     <div id="avgFemaleEngagementAge" class="value">0</div>
                     <div class="label">متوسط عمر الخطوبة (إناث)</div>
                 </div>
             </div>
-            <!-- Removed Loading Overlay for General Statistics -->
-            <!-- <div id="loadingOverlay" class="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-xl z-20">
-                <div class="spinner"></div>
-                <p class="text-lg font-semibold text-gray-800 mr-2">جاري تحميل الإحصائيات...</p>
-            </div> -->
         </div>
 
         <!-- Action Buttons -->
         <div class="flex flex-wrap justify-end gap-4 mt-6 mb-6">
             <button id="exportCsvBtn" class="btn-primary">تصدير البيانات (CSV)</button>
             <button id="exportChartsBtn" class="btn-primary">تصدير المخططات (PNG)</button>
+            <button id="printPageBtn" class="btn-secondary">طباعة الصفحة</button>
         </div>
 
         <!-- Charts Section -->
@@ -430,6 +438,12 @@
                     <p class="text-gray-600">جاري التحميل...</p>
                 </div>
             </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أسماء الأبناء الأكثر شيوعاً</h2>
+                <div id="mostCommonChildrenNamesList" class="p-4">
+                    <p class="text-gray-600">جاري التحميل...</p>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -476,10 +490,6 @@
         let deathsPerYearChartInstance;
         let marriagesEngagementsPerYearChartInstance;
 
-        // DOM elements for loading overlay (removed from HTML, but keeping variables for now if needed for other logic)
-        // const loadingOverlay = document.getElementById('loadingOverlay');
-        const statisticsContent = document.getElementById('statisticsContent'); // The container for stat boxes
-
         // Modal for chart details
         const chartDetailsModal = document.getElementById('chartDetailsModal');
         const chartDetailsTitle = document.getElementById('chartDetailsTitle');
@@ -496,42 +506,21 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Removed Function to show loading overlay
-        /*
-        function showLoadingOverlay() {
-            if (loadingOverlay) {
-                loadingOverlay.classList.remove('hidden');
-            }
-            if (statisticsContent) {
-                statisticsContent.style.opacity = '0';
-            }
-            document.querySelectorAll('.chart-container').forEach(el => el.style.opacity = '0');
-            document.getElementById('mostChildrenList').style.opacity = '0';
-            document.getElementById('oldestMembersList').style.opacity = '0';
-            document.getElementById('youngestMembersList').style.opacity = '0';
-            document.getElementById('topSubFamiliesList').style.opacity = '0';
-        }
-        */
-
-        // Removed Function to hide loading overlay
-        /*
-        function hideLoadingOverlay() {
-            if (loadingOverlay) {
-                loadingOverlay.classList.add('hidden');
-            }
-            if (statisticsContent) {
-                statisticsContent.style.opacity = '1';
-            }
-            document.querySelectorAll('.chart-container').forEach(el => el.style.opacity = '1');
-            document.getElementById('mostChildrenList').style.opacity = '1';
-            document.getElementById('oldestMembersList').style.opacity = '1';
-            document.getElementById('youngestMembersList').style.opacity = '1';
-            document.getElementById('topSubFamiliesList').style.opacity = '1';
-        }
-        */
-
-        // Function to calculate age from birth date
+        // Function to calculate age from birth date (returns formatted string)
         function calculateAge(birthDate) {
+            if (!birthDate || !birthDate.toDate) return null;
+            const today = new Date();
+            const birth = birthDate.toDate();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age; // Return raw years for internal calculation
+        }
+
+        // Function to calculate age in years (returns number)
+        function calculateAgeInYears(birthDate) {
             if (!birthDate || !birthDate.toDate) return null;
             const today = new Date();
             const birth = birthDate.toDate();
@@ -560,7 +549,6 @@
         async function fetchFamilyMembers() {
             if (!userId) {
                 console.log("User ID not available, cannot fetch family members for statistics.");
-                // hideLoadingOverlay(); // Ensure overlay is hidden if we can't proceed
                 return;
             }
             try {
@@ -572,10 +560,34 @@
             } catch (error) {
                 console.error("Error fetching family members for statistics:", error);
                 showModal("حدث خطأ أثناء جلب بيانات العائلة للإحصائيات: " + error.message);
-            } finally {
-                // hideLoadingOverlay(); // Always hide loading overlay regardless of success or failure
             }
         }
+
+        // Function to handle stat box click for drill-down
+        function handleStatBoxClick(categoryLabel, filterFunction) {
+            chartDetailsTitle.textContent = `الأفراد في فئة: ${categoryLabel}`;
+            chartDetailsList.innerHTML = '';
+
+            const filteredPeople = allFamilyMembers.filter(filterFunction);
+
+            if (filteredPeople.length > 0) {
+                filteredPeople.forEach(person => {
+                    const li = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = `profile.html?id=${person.id}`;
+                    link.classList.add('person-link');
+                    link.textContent = person.fullName;
+                    li.appendChild(link);
+                    chartDetailsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'لا يوجد أفراد في هذه الفئة.';
+                chartDetailsList.appendChild(li);
+            }
+            chartDetailsModal.style.display = 'flex';
+        }
+
 
         // Function to render all statistics
         function renderStatistics() {
@@ -599,7 +611,7 @@
             const deceasedMembersArray = allFamilyMembers.filter(p => p.isAlive === false);
             const deceasedMembers = deceasedMembersArray.length;
 
-            const ages = aliveMembersArray.filter(p => p.birthDate).map(p => calculateAge(p.birthDate)).filter(age => age !== null);
+            const ages = aliveMembersArray.filter(p => p.birthDate).map(p => calculateAgeInYears(p.birthDate)).filter(age => age !== null);
             const averageAge = ages.length > 0 ? (ages.reduce((sum, age) => sum + age, 0) / ages.length).toFixed(1) : 0;
 
             const agesAtDeath = deceasedMembersArray.filter(p => p.birthDate && p.deathDate).map(p => calculateAgeAtDeath(p.birthDate, p.deathDate)).filter(age => age !== null);
@@ -622,10 +634,10 @@
             const livingWidowedFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Widowed').length;
 
 
-            const malesOver16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAge(p.birthDate) >= 16).length;
-            const femalesOver16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAge(p.birthDate) >= 16).length;
-            const malesUnder16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAge(p.birthDate) < 16 && calculateAge(p.birthDate) !== null).length;
-            const femalesUnder16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAge(p.birthDate) < 16 && calculateAge(p.birthDate) !== null).length;
+            const malesOver16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAgeInYears(p.birthDate) >= 16).length;
+            const femalesOver16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAgeInYears(p.birthDate) >= 16).length;
+            const malesUnder16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null).length;
+            const femalesUnder16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null).length;
 
             const parentsWithChildren = allFamilyMembers.filter(p => p.childrenIds && p.childrenIds.length > 0);
             const totalChildrenCount = parentsWithChildren.reduce((sum, p) => sum + p.childrenIds.length, 0);
@@ -642,7 +654,7 @@
                 let score = 0;
                 let totalFields = 0;
                 if (person.firstName) { score++; totalFields++; } else { totalFields++; }
-                if (person.familyName) { score++; totalFields++; } else { missingFamilyNameCount++; totalFields++; }
+                if (person.familyName) { score++; totalFields++; } else { missingFamilyNameCount++; totalFields++; } // New stat
                 if (person.gender) { score++; totalFields++; } else { missingGenderCount++; totalFields++; }
                 if (person.birthDate) { score++; totalFields++; } else { missingBirthDateCount++; totalFields++; }
                 if (person.idNumber) { score++; totalFields++; }
@@ -668,7 +680,7 @@
 
             const femaleEngagedAges = allFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
                 .map(p => calculateAgeAtDeath(p.birthDate, p.engagementDate)).filter(age => age !== null);
-            const avgFemaleEngagementAge = femaleEngagedAges.length > 0 ? (femaleEngagedAges.reduce((sum, age) => sum + age, 0) / femaleEngagedAges.length).toFixed(1) : 0;
+            const avgFemaleEngagementAge = femaleEngagedAages.length > 0 ? (femaleEngagedAges.reduce((sum, age) => sum + age, 0) / femaleEngagedAges.length).toFixed(1) : 0;
 
 
             document.getElementById('totalMembers').textContent = totalMembers;
@@ -698,6 +710,7 @@
             document.getElementById('profileCompletion').textContent = `${profileCompletionPercentage}%`;
             document.getElementById('missingBirthDate').textContent = missingBirthDateCount;
             document.getElementById('missingGender').textContent = missingGenderCount;
+            document.getElementById('missingFamilyName').textContent = missingFamilyNameCount; // Update new stat
             document.getElementById('avgMaleMarriageAge').textContent = avgMaleMarriageAge;
             document.getElementById('avgFemaleMarriageAge').textContent = avgFemaleMarriageAge;
             document.getElementById('avgMaleEngagementAge').textContent = avgMaleEngagementAge;
@@ -733,10 +746,10 @@
                         if (labelKey === 'ageGroup') {
                             const [minAge, maxAge] = label.split('-').map(Number);
                             if (label.includes('+')) { // Handle '81+' case
-                                filteredPeople = aliveMembersArray.filter(p => calculateAge(p.birthDate) >= minAge);
+                                filteredPeople = aliveMembersArray.filter(p => calculateAgeInYears(p.birthDate) >= minAge);
                             } else {
                                 filteredPeople = aliveMembersArray.filter(p => {
-                                    const age = calculateAge(p.birthDate);
+                                    const age = calculateAgeInYears(p.birthDate);
                                     return age >= minAge && age <= maxAge;
                                 });
                             }
@@ -1165,7 +1178,7 @@
             oldestMembersListDiv.innerHTML = '';
             const sortedByAgeDesc = aliveMembersArray
                 .filter(p => p.birthDate)
-                .map(p => ({ ...p, age: calculateAge(p.birthDate) }))
+                .map(p => ({ ...p, age: calculateAgeInYears(p.birthDate) }))
                 .sort((a, b) => b.age - a.age)
                 .slice(0, 5);
 
@@ -1191,7 +1204,7 @@
             youngestMembersListDiv.innerHTML = '';
             const sortedByAgeAsc = aliveMembersArray
                 .filter(p => p.birthDate)
-                .map(p => ({ ...p, age: calculateAge(p.birthDate) }))
+                .map(p => ({ ...p, age: calculateAgeInYears(p.birthDate) }))
                 .sort((a, b) => a.age - b.age)
                 .slice(0, 5);
 
@@ -1237,6 +1250,44 @@
                     ul.appendChild(li);
                 });
                 topSubFamiliesListDiv.appendChild(ul);
+            }
+
+            // NEW: Most Common Children Names List
+            const childrenFirstNames = [];
+            allFamilyMembers.forEach(person => {
+                if (person.childrenIds && person.childrenIds.length > 0) {
+                    person.childrenIds.forEach(childId => {
+                        const child = allFamilyMembers.find(p => p.id === childId);
+                        if (child && child.firstName) {
+                            childrenFirstNames.push(child.firstName);
+                        }
+                    });
+                }
+            });
+
+            const firstNameCounts = childrenFirstNames.reduce((acc, name) => {
+                acc[name] = (acc[name] || 0) + 1;
+                return acc;
+            }, {});
+
+            const sortedCommonNames = Object.entries(firstNameCounts)
+                .sort(([, countA], [, countB]) => countB - countA)
+                .slice(0, 5); // Get top 5
+
+            const mostCommonChildrenNamesListDiv = document.getElementById('mostCommonChildrenNamesList');
+            mostCommonChildrenNamesListDiv.innerHTML = '';
+
+            if (sortedCommonNames.length === 0) {
+                mostCommonChildrenNamesListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء الأبناء.</p>';
+            } else {
+                const ul = document.createElement('ul');
+                ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
+                sortedCommonNames.forEach(([name, count]) => {
+                    const li = document.createElement('li');
+                    li.textContent = `${name}: ${count} مرات`;
+                    ul.appendChild(li);
+                });
+                mostCommonChildrenNamesListDiv.appendChild(ul);
             }
         }
 
@@ -1319,11 +1370,13 @@
             showModal("تم تصدير المخططات بنجاح كصور PNG.");
         }
 
+        // Function to print the entire page
+        function printPage() {
+            window.print();
+        }
 
         // Main DOMContentLoaded listener
         document.addEventListener('DOMContentLoaded', async () => {
-            // Removed showLoadingOverlay() from here
-
             // Modal close buttons
             document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
             document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
@@ -1333,6 +1386,33 @@
             // Export buttons event listeners
             document.getElementById('exportCsvBtn').addEventListener('click', exportFamilyDataToCsv);
             document.getElementById('exportChartsBtn').addEventListener('click', exportAllChartsAsPng);
+            document.getElementById('printPageBtn').addEventListener('click', printPage); // New print button listener
+
+            // Add event listeners for stat boxes
+            document.getElementById('statTotalMembers').addEventListener('click', () => handleStatBoxClick('إجمالي أفراد العائلة', p => true));
+            document.getElementById('statAliveMembers').addEventListener('click', () => handleStatBoxClick('أفراد على قيد الحياة', p => p.isAlive !== false));
+            document.getElementById('statDeceasedMembers').addEventListener('click', () => handleStatBoxClick('أفراد متوفون', p => p.isAlive === false));
+            document.getElementById('statUniqueFamilyNames').addEventListener('click', () => handleStatBoxClick('أسماء العائلات الفريدة', p => p.familyName && p.familyName.trim() !== '')); // This might show duplicates if not handled carefully, but for now, it lists all with a family name.
+            document.getElementById('statLivingMales').addEventListener('click', () => handleStatBoxClick('ذكور أحياء', p => p.gender === 'Male' && p.isAlive !== false));
+            document.getElementById('statLivingFemales').addEventListener('click', () => handleStatBoxClick('إناث أحياء', p => p.gender === 'Female' && p.isAlive !== false));
+            document.getElementById('statLivingMarried').addEventListener('click', () => handleStatBoxClick('متزوجون أحياء', p => p.maritalStatus === 'Married' && p.isAlive !== false));
+            document.getElementById('statLivingEngaged').addEventListener('click', () => handleStatBoxClick('مخطوبون أحياء', p => p.maritalStatus === 'Engaged' && p.isAlive !== false));
+            document.getElementById('statLivingMarriedMales').addEventListener('click', () => handleStatBoxClick('ذكور متزوجون أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Married' && p.isAlive !== false));
+            document.getElementById('statLivingMarriedFemales').addEventListener('click', () => handleStatBoxClick('إناث متزوجات أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Married' && p.isAlive !== false));
+            document.getElementById('statLivingSingleMales').addEventListener('click', () => handleStatBoxClick('ذكور عازبون أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Single' && p.isAlive !== false));
+            document.getElementById('statLivingDivorcedMales').addEventListener('click', () => handleStatBoxClick('ذكور مطلقون أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Divorced' && p.isAlive !== false));
+            document.getElementById('statLivingWidowedMales').addEventListener('click', () => handleStatBoxClick('ذكور أرامل أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Widowed' && p.isAlive !== false));
+            document.getElementById('statLivingSingleFemales').addEventListener('click', () => handleStatBoxClick('إناث عازبات أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Single' && p.isAlive !== false));
+            document.getElementById('statLivingDivorcedFemales').addEventListener('click', () => handleStatBoxClick('إناث مطلقات أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Divorced' && p.isAlive !== false));
+            document.getElementById('statLivingWidowedFemales').addEventListener('click', () => handleStatBoxClick('إناث أرامل أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Widowed' && p.isAlive !== false));
+            document.getElementById('statMalesOver16').addEventListener('click', () => handleStatBoxClick('ذكور فوق 16 سنة (أحياء)', p => p.gender === 'Male' && p.isAlive !== false && calculateAgeInYears(p.birthDate) >= 16));
+            document.getElementById('statFemalesOver16').addEventListener('click', () => handleStatBoxClick('إناث فوق 16 سنة (أحياء)', p => p.gender === 'Female' && p.isAlive !== false && calculateAgeInYears(p.birthDate) >= 16));
+            document.getElementById('statMalesUnder16').addEventListener('click', () => handleStatBoxClick('ذكور أقل من 16 سنة (أحياء)', p => p.gender === 'Male' && p.isAlive !== false && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null));
+            document.getElementById('statFemalesUnder16').addEventListener('click', () => handleStatBoxClick('إناث أقل من 16 سنة (أحياء)', p => p.gender === 'Female' && p.isAlive !== false && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null));
+            document.getElementById('statMembersWithoutChildren').addEventListener('click', () => handleStatBoxClick('أفراد بدون أبناء', p => !p.childrenIds || p.childrenIds.length === 0));
+            document.getElementById('statMissingBirthDate').addEventListener('click', () => handleStatBoxClick('أفراد بدون تاريخ ميلاد', p => !p.birthDate));
+            document.getElementById('statMissingGender').addEventListener('click', () => handleStatBoxClick('أفراد بدون جنس', p => !p.gender));
+            document.getElementById('statMissingFamilyName').addEventListener('click', () => handleStatBoxClick('أفراد بدون اسم عائلة', p => !p.familyName || p.familyName.trim() === ''));
 
 
             // Initial authentication attempt
@@ -1358,7 +1438,6 @@
                 } catch (error) {
                     console.error("Error during initial authentication attempt:", error);
                     showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
-                    // Removed hideLoadingOverlay() from here
                 }
             })();
 
@@ -1400,6 +1479,7 @@
                     document.getElementById('profileCompletion').textContent = '0%';
                     document.getElementById('missingBirthDate').textContent = '0';
                     document.getElementById('missingGender').textContent = '0';
+                    document.getElementById('missingFamilyName').textContent = '0';
                     document.getElementById('avgMaleMarriageAge').textContent = '0';
                     document.getElementById('avgFemaleMarriageAge').textContent = '0';
                     document.getElementById('avgMaleEngagementAge').textContent = '0';
@@ -1410,6 +1490,8 @@
                     document.getElementById('oldestMembersList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
                     document.getElementById('youngestMembersList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
                     document.getElementById('topSubFamiliesList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+                    document.getElementById('mostCommonChildrenNamesList').innerHTML = '<p class="text-gray-600">يرجى تسجيل الدخول لعرض الإحصائيات.</p>';
+
 
                     if (genderChartInstance) genderChartInstance.destroy();
                     if (maritalStatusChartInstance) maritalStatusChartInstance.destroy();
@@ -1422,7 +1504,6 @@
                     if (birthsPerYearChartInstance) birthsPerYearChartInstance.destroy();
                     if (deathsPerYearChartInstance) deathsPerYearChartInstance.destroy();
                     if (marriagesEngagementsPerYearChartInstance) marriagesEngagementsPerYearChartInstance.destroy();
-                    // Removed hideLoadingOverlay() from here
                 }
             });
         });
