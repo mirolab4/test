@@ -4,7 +4,7 @@
 // Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Global variables for Firebase config and app ID (provided by Canvas environment)
 const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -18,12 +18,20 @@ export const db = getFirestore(app);
 // Global variable for initial auth token (provided by Canvas environment)
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+// Define the super admin ID number (must match id_login.html)
+const SUPER_ADMIN_ID_NUMBER = "407176064";
+
+// Private promise to ensure auth and permissions are checked once
+let _authCheckPromise = null;
+
 // Function to redirect to a specified URL
 export function redirectTo(url) {
     // Clear custom session storage on logout or redirect to login page
     if (url === 'id_login.html' || url === 'login.html') {
         sessionStorage.removeItem('customUserId');
         sessionStorage.removeItem('isCustomAuth');
+        // Also sign out from Firebase Auth if there's an active session
+        signOut(auth).catch(error => console.error("Error signing out during redirect:", error));
     }
     window.location.href = url;
 }
@@ -119,71 +127,61 @@ function createAuthGuardModal() {
 // Ensure the modal is created when the DOM is ready
 document.addEventListener('DOMContentLoaded', createAuthGuardModal);
 
-
 // Main authentication and authorization logic
-async function checkAuthAndPermissions() {
+async function performAuthCheck() {
     const currentPage = window.location.pathname.split('/').pop();
     const publicPages = ['id_login.html', 'login.html']; // Pages accessible without any authentication
 
     // If on a public page, do nothing and let the page load
     if (publicPages.includes(currentPage)) {
-        return;
+        return { userId: null, userRole: null, allowedPages: [] }; // No active user for public pages
     }
 
     let currentUserId = null;
-    let isAuthenticated = false;
+    let userRole = 'viewer'; // Default role
+    let allowedPages = ['dashboard.html']; // Default minimum allowed pages
 
-    // --- Custom ID-based Authentication Check ---
+    // --- Determine effective currentUserId ---
     const customUserId = sessionStorage.getItem('customUserId');
     const isCustomAuth = sessionStorage.getItem('isCustomAuth') === 'true';
 
     if (isCustomAuth && customUserId) {
         currentUserId = customUserId;
-        isAuthenticated = true;
-        console.log("Custom authenticated user ID:", currentUserId);
+        console.log("AuthGuard: Custom authenticated user ID from sessionStorage:", currentUserId);
     } else {
-        // --- Firebase Auth (Email/Password or Anonymous) Check ---
-        // If not custom authenticated, wait for Firebase Auth state
-        // This is important for initial anonymous sign-in for Firestore access if custom auth is not active
+        // If not custom authenticated, try Firebase Auth (anonymous or actual)
+        // Ensure anonymous sign-in for Firestore access if no other auth is active
         await new Promise(resolve => {
             const unsubscribe = onAuthStateChanged(auth, user => {
                 if (user) {
-                    // If Firebase Auth user exists, use their UID
                     currentUserId = user.uid;
-                    isAuthenticated = true;
-                    console.log("Firebase authenticated user ID:", currentUserId);
+                    console.log("AuthGuard: Firebase authenticated user ID:", currentUserId);
                 } else {
-                    // If no Firebase Auth user, and not custom auth, ensure anonymous sign-in for Firestore rules
+                    // If no Firebase Auth user, sign in anonymously to satisfy Firestore rules
                     signInAnonymously(auth).then(anonUserCredential => {
                         currentUserId = anonUserCredential.user.uid;
-                        isAuthenticated = true; // Consider anonymous as authenticated for Firestore access
-                        console.log("Signed in anonymously for Firestore access:", currentUserId);
+                        console.log("AuthGuard: Signed in anonymously for Firestore access:", currentUserId);
                     }).catch(error => {
-                        console.error("Error signing in anonymously:", error);
+                        console.error("AuthGuard: Error signing in anonymously:", error);
                         showAuthModal("حدث خطأ في المصادقة. يرجى المحاولة مرة أخرى.");
-                        redirectTo('id_login.html'); // Redirect to login on critical auth error
+                        redirectTo('id_login.html');
                     }).finally(resolve);
                 }
-                unsubscribe(); // Unsubscribe after initial check
+                unsubscribe();
             });
         });
     }
 
-    // If still not authenticated (e.g., anonymous sign-in failed or no custom ID), redirect to login
-    if (!isAuthenticated || !currentUserId) {
-        console.log("Not authenticated. Redirecting to login.");
+    // If after all attempts, no currentUserId, redirect to login
+    if (!currentUserId) {
+        console.log("AuthGuard: No effective user ID found. Redirecting to login.");
         showAuthModal("يرجى تسجيل الدخول للوصول إلى هذه الصفحة.");
         setTimeout(() => redirectTo('id_login.html'), 1500);
-        return;
+        return { userId: null, userRole: null, allowedPages: [] };
     }
 
-    // Now currentUserId is set (either custom or Firebase Auth UID)
-    // Fetch user settings to get role and allowed pages
-    let userRole = 'viewer'; // Default role
-    let allowedPages = ['dashboard.html']; // Default minimum allowed pages
-
+    // --- Fetch user settings and role permissions ---
     try {
-        // Try to get user settings using the effective currentUserId
         const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, currentUserId);
         const userSettingsSnap = await getDoc(userSettingsRef);
         let userSettings = {};
@@ -191,23 +189,30 @@ async function checkAuthAndPermissions() {
         if (userSettingsSnap.exists()) {
             userSettings = userSettingsSnap.data();
             userRole = userSettings.role || 'viewer';
-            console.log(`User settings found for ${currentUserId}. Role: ${userRole}`);
+            console.log(`AuthGuard: User settings found for ${currentUserId}. Role: ${userRole}`);
         } else {
-            console.warn(`User settings not found for ${currentUserId}. Defaulting to viewer role.`);
-            // If settings don't exist, create them for the current user (especially for super admin's first login)
+            console.warn(`AuthGuard: User settings not found for ${currentUserId}. Creating default settings.`);
+            // If userSettings don't exist, create them. This happens for super admin's first login
+            // or if a user is added via admin panel without existing userSettings.
             userRole = 'viewer'; // Default to viewer initially
-            if (sessionStorage.getItem('customUserId') === '407176064') { // Check if it's the super admin ID
+            // If it's the super admin ID, ensure they get admin role and canLogin: true
+            if (currentUserId === SUPER_ADMIN_ID_NUMBER) { // This check should ideally be based on linkedFamilyMemberId for super admin
                 userRole = 'admin';
-                console.log("Super admin detected, setting role to admin.");
+                console.log("AuthGuard: Super admin ID detected, setting role to admin.");
             }
             await setDoc(userSettingsRef, {
                 email: userSettings.email || `user_${currentUserId}@familyapp.com`, // Placeholder email
                 role: userRole,
+                canLogin: (currentUserId === SUPER_ADMIN_ID_NUMBER) ? true : false, // Super admin can always login
                 creationDate: new Date(),
-                // canLogin will be true for super admin, and managed by admin for others
-                canLogin: (sessionStorage.getItem('customUserId') === '407176064') ? true : false // Super admin can always login
+                linkedFamilyMemberId: (currentUserId === SUPER_ADMIN_ID_NUMBER) ? SUPER_ADMIN_ID_NUMBER : null // Link super admin ID
             }, { merge: true });
-            console.log(`User settings created for ${currentUserId} with role ${userRole}.`);
+            console.log(`AuthGuard: User settings created for ${currentUserId} with role ${userRole}.`);
+            // Re-fetch to get the newly set data, especially allowedPages if default is set
+            const updatedUserSettingsSnap = await getDoc(userSettingsRef);
+            if (updatedUserSettingsSnap.exists()) {
+                userSettings = updatedUserSettingsSnap.data();
+            }
         }
 
         // Fetch all role permissions
@@ -228,32 +233,44 @@ async function checkAuthAndPermissions() {
             allowedPages.push('dashboard.html');
         }
 
-        console.log(`Effective allowed pages for ${currentUserId} (Role: ${userRole}):`, allowedPages);
+        console.log(`AuthGuard: Effective allowed pages for ${currentUserId} (Role: ${userRole}):`, allowedPages);
 
         // Check if the current page is allowed
         if (!allowedPages.includes(currentPage)) {
-            console.warn(`Access denied for page: ${currentPage}. Redirecting to dashboard.`);
+            console.warn(`AuthGuard: Access denied for page: ${currentPage}. Redirecting to dashboard.`);
             showAuthModal("ليس لديك الصلاحية للوصول إلى هذه الصفحة.");
             setTimeout(() => redirectTo('dashboard.html'), 1500);
-            return;
+            return { userId: null, userRole: null, allowedPages: [] }; // Indicate failure to access page
         }
 
-        // If authenticated and authorized, proceed.
-        // The page's own script will then use the exported 'auth', 'db', 'appId'
-        // and fetch the actual user role and allowed pages from Firestore
-        // to update its UI elements (navigation, action buttons).
-        console.log("Authentication and authorization successful for:", currentPage);
+        console.log("AuthGuard: Authentication and authorization successful for:", currentPage);
+        return { userId: currentUserId, userRole: userRole, allowedPages: allowedPages };
 
     } catch (error) {
-        console.error("Error during authorization check:", error);
+        console.error("AuthGuard: Error during authorization check:", error);
         showAuthModal("حدث خطأ في التحقق من الصلاحيات. يرجى المحاولة مرة أخرى.");
         redirectTo('id_login.html');
+        return { userId: null, userRole: null, allowedPages: [] };
     }
 }
 
-// Run the auth check when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', checkAuthAndPermissions);
+// Export a function that returns a Promise for user data
+export function getUserData() {
+    if (!_authCheckPromise) {
+        _authCheckPromise = performAuthCheck();
+    }
+    return _authCheckPromise;
+}
 
-// Export auth and db for use in other scripts
-// This ensures other pages use the same Firebase instances
-// and are aware of the authentication state managed here.
+// Run the auth check when the DOM is fully loaded
+// This initial run ensures the modal is created and the first auth check happens.
+document.addEventListener('DOMContentLoaded', () => {
+    getUserData().then(data => {
+        if (!data.userId) {
+            // This means a redirect already happened or auth failed.
+            // No further action needed here, as the modal/redirect is handled by performAuthCheck.
+        }
+    }).catch(error => {
+        console.error("Error in initial getUserData call:", error);
+    });
+});
