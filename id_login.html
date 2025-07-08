@@ -164,8 +164,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Define the super admin ID number
-        const SUPER_ADMIN_ID_NUMBER = "407176064"; // Hardcoded super admin ID
+        // Define the super admin ID number (must match auth_guard.js)
+        const SUPER_ADMIN_ID_NUMBER = "407176064";
 
         // DOM Elements
         const idLoginForm = document.getElementById('idLoginForm');
@@ -207,6 +207,7 @@
         // Function to log login attempts
         async function logLoginAttempt(idNumber, status, message) {
             try {
+                // Log login attempts in a public collection
                 const loginAttemptsRef = collection(db, `artifacts/${appId}/public/data/loginAttempts`);
                 await addDoc(loginAttemptsRef, {
                     idNumber: idNumber,
@@ -239,23 +240,32 @@
             showLoadingModal();
 
             try {
-                // Ensure there's an anonymous Firebase Auth user for Firestore access
-                // This is crucial for Firestore security rules that check `request.auth != null`
+                // 1. Sign in anonymously to get a Firebase Auth UID.
+                // This UID will be used as the parent collection for private user settings.
+                let userCredential;
                 if (!auth.currentUser) {
-                    await signInAnonymously(auth);
-                    console.log("Signed in anonymously for Firestore access.");
+                    userCredential = await signInAnonymously(auth);
+                    console.log("Signed in anonymously. Firebase UID:", userCredential.user.uid);
+                } else {
+                    userCredential = { user: auth.currentUser };
+                    console.log("Already signed in anonymously. Firebase UID:", userCredential.user.uid);
                 }
+                const firebaseAuthUid = userCredential.user.uid;
 
-                // Query familyMembers collection for the ID number
-                // IMPORTANT: The `auth.currentUser.uid` here refers to the *anonymous* Firebase Auth UID.
-                // It's used to construct the correct path for the user's private data.
-                const familyMembersRef = collection(db, `artifacts/${appId}/users/${auth.currentUser.uid}/familyMembers`);
+                // 2. Query the familyMembers collection for the ID number.
+                // This query needs to be able to read family members.
+                // For a shared family database, this collection should be public.
+                // Assuming `familyMembers` is now accessible publicly for lookup (e.g., for super admin to find their ID).
+                // IMPORTANT: For initial setup, if familyMembers are under /users/{uid}/,
+                // the super admin needs to have added themselves first, or rules need to allow anonymous read for this specific lookup.
+                // For simplicity here, we assume a public/shared familyMembers collection for lookup.
+                const familyMembersRef = collection(db, `artifacts/${appId}/public/data/familyMembers`); // Assuming public family data for lookup
                 const q = query(familyMembersRef, where("idNumber", "==", idNumber));
                 const querySnapshot = await getDocs(q);
 
                 let loginSuccess = false;
                 let loginMessage = "";
-                let effectiveUserId = null; // This will be the familyMemberId or a placeholder if not found
+                let familyMemberId = null; // This will be the ID of the person from familyMembers collection
 
                 if (querySnapshot.empty) {
                     loginMessage = "رقم الهوية غير موجود في سجلات العائلة.";
@@ -271,28 +281,27 @@
                     loginSuccess = false;
                 } else {
                     const familyMemberDoc = querySnapshot.docs[0];
-                    effectiveUserId = familyMemberDoc.id; // This is the actual ID we want to use for the session
+                    familyMemberId = familyMemberDoc.id; // The actual ID of the person in familyMembers
 
-                    // Check if it's the super admin
+                    // 3. Get/Create userSettings document for the *Firebase Auth UID*
+                    // This document stores the linkedFamilyMemberId and canLogin status.
+                    const userSettingsRef = doc(db, `artifacts/${appId}/users/${firebaseAuthUid}/userSettings`, "profile");
+                    const userSettingsSnap = await getDoc(userSettingsRef);
+                    let userSettingsData = userSettingsSnap.exists() ? userSettingsSnap.data() : {};
+
+                    // Determine role and canLogin status
+                    let roleToSet = userSettingsData.role || 'viewer'; // Keep existing role or default to viewer
+                    let canLoginToSet = userSettingsData.canLogin || false; // Keep existing canLogin or default to false
+
+                    // If it's the super admin ID, ensure admin role and canLogin: true
                     if (idNumber === SUPER_ADMIN_ID_NUMBER) {
-                        loginSuccess = true;
+                        roleToSet = 'admin';
+                        canLoginToSet = true;
                         loginMessage = "تم تسجيل الدخول بنجاح كمدير خارق!";
-                        // Ensure super admin has 'admin' role and canLogin: true
-                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, effectiveUserId);
-                        await setDoc(userSettingsRef, {
-                            email: familyMemberDoc.data().email || `${idNumber}@superadmin.com`, // Placeholder email
-                            role: 'admin',
-                            canLogin: true,
-                            creationDate: Timestamp.now(),
-                            linkedFamilyMemberId: effectiveUserId
-                        }, { merge: true });
-                        console.log("Super admin settings ensured.");
+                        loginSuccess = true;
                     } else {
-                        // For non-super admin IDs, check userSettings.canLogin
-                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, effectiveUserId);
-                        const userSettingsSnap = await getDoc(userSettingsRef);
-
-                        if (userSettingsSnap.exists() && userSettingsSnap.data().canLogin === true) {
+                        // For non-super admin IDs, check if canLogin is true in user settings
+                        if (userSettingsData.canLogin === true) {
                             loginSuccess = true;
                             loginMessage = "تم تسجيل الدخول بنجاح!";
                             console.log("User allowed to login by admin.");
@@ -305,14 +314,27 @@
                             console.log("User not allowed to login.");
                         }
                     }
+
+                    // 4. Update/Create userSettings document
+                    await setDoc(userSettingsRef, {
+                        email: userSettingsData.email || familyMemberDoc.data().email || `id_${idNumber}@familyapp.com`, // Use existing email, family member email, or placeholder
+                        role: roleToSet,
+                        canLogin: canLoginToSet,
+                        creationDate: userSettingsData.creationDate || Timestamp.now(),
+                        linkedFamilyMemberId: familyMemberId // Store the actual family member ID here
+                    }, { merge: true });
+                    console.log(`User settings updated/created for Firebase UID ${firebaseAuthUid}. Linked to Family Member ID: ${familyMemberId}.`);
+
+                    // 5. Store Firebase Auth UID in sessionStorage for auth_guard.js
+                    // auth_guard.js will now use this firebaseAuthUid to fetch user settings.
+                    sessionStorage.setItem('customUserId', firebaseAuthUid); // Store Firebase Auth UID here
+                    sessionStorage.setItem('isCustomAuth', 'true'); // Flag to indicate custom ID-based authentication
+
                 }
 
                 await logLoginAttempt(idNumber, loginSuccess ? 'success' : 'fail', loginMessage);
 
                 if (loginSuccess) {
-                    // Store the effectiveUserId in sessionStorage for auth_guard.js
-                    sessionStorage.setItem('customUserId', effectiveUserId);
-                    sessionStorage.setItem('isCustomAuth', 'true'); // Flag for auth_guard.js
                     showModal(loginMessage + " سيتم توجيهك إلى لوحة التحكم.");
                     setTimeout(() => {
                         redirectTo('dashboard.html');
