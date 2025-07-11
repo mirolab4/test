@@ -6,16 +6,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, collection, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Global variables for Firebase config and app ID (provided by Canvas environment)
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-export const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// Firebase Configuration - Directly embedded
+const firebaseConfig = {
+    apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+    authDomain: "family-9b0b8.firebaseapp.com",
+    databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+    projectId: "family-9b0b8",
+    storageBucket: "family-9b0b8.firebasestorage.app",
+    messagingSenderId: "409089079475",
+    appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+    measurementId: "G-X5LDQB1WC9"
+};
+
+// Export appId for use in other scripts (using projectId for Firestore paths)
+export const appId = firebaseConfig.projectId;
 
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Define the super admin ID number (used for initial admin setup, not direct login)
+// Define the super admin ID number (must match id_login.html)
 const SUPER_ADMIN_ID_NUMBER = "407176064";
 
 // Private promise to ensure auth and permissions are checked once
@@ -25,7 +36,7 @@ let _authCheckPromise = null;
 export function redirectTo(url) {
     // Clear any custom session storage data on logout or redirect to login page
     if (url === 'login.html' || url === 'register.html' || url === 'id_login.html') {
-        sessionStorage.removeItem('customAuthUid');
+        sessionStorage.removeItem('customAuthUid'); // Clear the Firebase Auth UID stored by custom login
         sessionStorage.removeItem('isCustomAuth');
         // Ensure Firebase Auth session is also cleared
         signOut(auth).catch(error => console.error("Error signing out during redirect:", error));
