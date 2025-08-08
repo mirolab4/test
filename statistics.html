@@ -491,9 +491,9 @@
     </div>
 
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 
     <script>
         // Use `var` for global scope so that functions and variables are accessible everywhere.
@@ -1181,14 +1181,14 @@
             showLoadingModal();
             try {
                 // Initialize Firebase
-                var app = firebase.initializeApp(firebaseConfig);
-                var db = firebase.firestore();
-                var auth = firebase.auth();
+                const app = firebase.initializeApp(firebaseConfig);
+                const db = app.firestore();
+                const auth = app.auth();
 
                 // Sign in anonymously
                 await auth.signInAnonymously();
                 
-                const userId = auth.currentUser?.uid || crypto.randomUUID();
+                const userId = auth.currentUser.uid;
                 const peopleCollection = db.collection(`artifacts/${userId}/people`);
                 
                 // Use onSnapshot to listen for real-time updates
