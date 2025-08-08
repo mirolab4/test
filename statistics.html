@@ -328,7 +328,7 @@
                 <h2 class="text-2xl font-semibold text-gray-700">الرسوم البيانية</h2>
                 <div id="export-buttons" class="flex gap-2">
                     <button id="exportChartsPdfBtn" class="btn-primary" title="تصدير المخططات كملف PDF"><i class="fas fa-file-pdf"></i></button>
-                    <button id="exportChartsCsvBtn" class="btn-primary" title="تصدير المخططات كملف CSV"><i class="fas fa-file-csv"></i></button>
+                    <button id="exportChartsCsvBtn" class="btn-primary" title="تصدير بيانات الأعضاء كملف CSV"><i class="fas fa-file-csv"></i></button>
                     <button id="exportChartsPngBtn" class="btn-primary" title="تصدير المخططات كصورة PNG"><i class="fas fa-file-image"></i></button>
                 </div>
             </div>
@@ -385,17 +385,15 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             // قم بلصق إعدادات مشروع Firebase الخاص بك هنا
             // مثال:
-            const firebaseConfig = {
-    apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
-    authDomain: "family-9b0b8.firebaseapp.com",
-    databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
-    projectId: "family-9b0b8",
-    storageBucket: "family-9b0b8.firebasestorage.app",
-    messagingSenderId: "409089079475",
-    appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
-    measurementId: "G-X5LDQB1WC9"
-};
-
+             apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+             authDomain: "family-9b0b8.firebaseapp.com",
+             databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+             projectId: "family-9b0b8",
+             storageBucket: "family-9b0b8.firebasestorage.app",
+             messagingSenderId: "409089079475",
+             appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+             measurementId: "G-X5LDQB1WC9"
+        };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         // ------------------------------------------------------------------
 
@@ -801,6 +799,7 @@
             showMessageModal("وظيفة تصدير PDF غير متاحة حاليًا.");
         });
 
+        // Event listener for CSV export button
         document.getElementById('exportChartsCsvBtn').addEventListener('click', () => {
             const filteredMembers = selectedFamilyName === "All" ? allMembers : allMembers.filter(m => m.familyName === selectedFamilyName);
             if (filteredMembers.length === 0) {
@@ -808,10 +807,10 @@
                 return;
             }
             const csvData = convertToCsv(filteredMembers);
-            downloadFile(csvData, 'family_statistics.csv', 'text/csv');
-            showMessageModal("تم تصدير الإحصائيات بنجاح كملف CSV.");
+            downloadFile(csvData, `family_members_${selectedFamilyName}.csv`, 'text/csv');
         });
 
+        // Event listener for PNG export button
         document.getElementById('exportChartsPngBtn').addEventListener('click', async () => {
             const zip = new JSZip();
             const chartCards = document.querySelectorAll('.chart-card');
@@ -819,7 +818,6 @@
             showModal(loadingModal);
             loadingModal.querySelector('p').innerText = 'جارٍ تصدير الرسوم البيانية...';
 
-            // Use Promise.all to handle multiple asynchronous html2canvas calls
             const chartImages = await Promise.all(Array.from(chartCards).map(async (card) => {
                 const canvas = await html2canvas(card, {
                     scale: 2, // Higher scale for better quality
@@ -834,7 +832,6 @@
                 zip.file(`${img.title}.png`, img.data, { base64: true });
             });
 
-            // Generate and download the zip file
             zip.generateAsync({ type: 'blob' }).then(function(content) {
                 downloadFile(content, 'family_charts.zip', 'application/zip');
                 hideModal(loadingModal);
@@ -880,6 +877,7 @@
             a.href = url;
             a.download = filename;
             document.body.appendChild(a);
+            a.click(); // Trigger the download
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
