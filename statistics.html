@@ -385,13 +385,17 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             // قم بلصق إعدادات مشروع Firebase الخاص بك هنا
             // مثال:
-            // apiKey: "YOUR_API_KEY",
-            // authDomain: "YOUR_AUTH_DOMAIN",
-            // projectId: "YOUR_PROJECT_ID",
-            // storageBucket: "YOUR_STORAGE_BUCKET",
-            // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            // appId: "YOUR_APP_ID"
-        };
+            const firebaseConfig = {
+    apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+    authDomain: "family-9b0b8.firebaseapp.com",
+    databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+    projectId: "family-9b0b8",
+    storageBucket: "family-9b0b8.firebasestorage.app",
+    messagingSenderId: "409089079475",
+    appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+    measurementId: "G-X5LDQB1WC9"
+};
+
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         // ------------------------------------------------------------------
 
