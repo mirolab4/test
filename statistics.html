@@ -369,14 +369,14 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // ------------------------------------------------------------------
         // Firebase and User variables
         let app;
         let db;
         let auth;
-        let userId;
 
         // Firebase configuration provided by the user
         const firebaseConfig = {
@@ -389,9 +389,11 @@
             appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
             measurementId: "G-X5LDQB1WC9"
         };
-        // The appId and auth token are now taken from the firebaseConfig object
-        const appId = firebaseConfig.projectId;
-        const initialAuthToken = null; // We are not using a custom auth token in this new setup.
+
+        // **هام:**
+        // قم بتعديل هذا المتغير ليطابق اسم المجموعة (Collection) في قاعدة بيانات Firestore الخاصة بك.
+        // إذا كانت مجموعتك تسمى 'familyMembers'، فلا تحتاج إلى تغيير أي شيء.
+        const COLLECTION_NAME = 'familyMembers';
         // ------------------------------------------------------------------
 
         // Global data and charts
@@ -432,25 +434,13 @@
                     db = getFirestore(app);
                     auth = getAuth(app);
                     
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    console.log("Firebase initialized successfully.");
+                    // Use anonymous sign-in, which is suitable for a simple app like this
+                    await signInAnonymously(auth);
+                    console.log("Firebase initialized and signed in anonymously.");
 
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            userId = user.uid;
-                            console.log("User authenticated:", userId);
-                            // Start listening for data after authentication
-                            listenForFamilyData();
-                        } else {
-                            console.error("User not authenticated.");
-                            hideModal(loadingModal);
-                            showMessageModal("لم يتم المصادقة على المستخدم. يرجى التأكد من أنك قمت بتسجيل الدخول.");
-                        }
-                    });
+                    // Start listening for data after authentication
+                    listenForFamilyData();
+
                 } else {
                     console.error("Firebase config is missing or invalid.");
                     hideModal(loadingModal);
@@ -465,8 +455,8 @@
 
         // Listen for real-time family data updates from Firestore
         function listenForFamilyData() {
-            const familyCollectionPath = `/artifacts/${appId}/users/${userId}/familyMembers`;
-            const familyRef = collection(db, familyCollectionPath);
+            // Updated path to use the configurable collection name
+            const familyRef = collection(db, COLLECTION_NAME);
 
             onSnapshot(familyRef, (querySnapshot) => {
                 const members = [];
@@ -539,7 +529,6 @@
             const averageAge = ages.length > 0 ? (totalAge / ages.length).toFixed(1) : 0;
             document.getElementById('averageAge').innerText = averageAge;
 
-            // تم تصحيح هذا الجزء لاستخدام الدالة الجديدة calculateAgeAtDeath
             const agesAtDeath = deceasedMembers.map(m => calculateAgeAtDeath(m.birthDate, m.deathDate)).filter(age => age !== null);
             const totalAgeAtDeath = agesAtDeath.reduce((sum, age) => sum + age, 0);
             const averageAgeAtDeath = agesAtDeath.length > 0 ? (totalAgeAtDeath / agesAtDeath.length).toFixed(1) : 0;
