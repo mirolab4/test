@@ -12,10 +12,6 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- JSZip for exporting data -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-    <!-- html2canvas for exporting charts as images -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -156,22 +152,33 @@
             cursor: pointer;
         }
         @media print {
-            body { background-color: #fff; margin: 0; padding: 0; }
-            .container { max-width: none; margin: 0; padding: 0; }
-            .btn-primary, .btn-secondary, nav, .flex.flex-wrap.justify-end.gap-4.mt-6.mb-6, .filter-group, #export-buttons, .back-button { display: none; }
-            .card { box-shadow: none; border: 1px solid #eee; margin-bottom: 1rem; page-break-inside: avoid; }
-            .chart-container { height: auto; width: 100%; }
-            canvas { max-width: 100%; height: auto !important; }
-        }
-        .back-button {
-            background-color: #6b7280;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            transition: background-color 0.2s;
-        }
-        .back-button:hover {
-            background-color: #4b5563;
+            body {
+                background-color: #fff;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+            }
+            .btn-primary, .btn-secondary, nav, .flex.flex-wrap.justify-end.gap-4.mt-6.mb-6, .filter-group {
+                display: none;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #eee;
+                margin-bottom: 1rem;
+                page-break-inside: avoid;
+            }
+            .chart-container {
+                height: auto;
+                width: 100%;
+            }
+            canvas {
+                max-width: 100%;
+                height: auto !important;
+            }
         }
     </style>
 </head>
@@ -187,9 +194,9 @@
     </div>
 
     <!-- Loading Modal -->
-    <div id="loadingModal" class="modal flex">
+    <div id="loadingModal" class="modal">
         <div class="modal-content">
-            <div class="spinner border-4 border-t-4 border-gray-200 border-t-blue-500 rounded-full w-12 h-12 mb-4 mx-auto animate-spin"></div>
+            <div class="spinner"></div>
             <p class="text-lg font-semibold text-gray-800">جارٍ تحميل الإحصائيات...</p>
         </div>
     </div>
@@ -206,10 +213,18 @@
     </div>
 
     <div class="container">
-        <!-- Header -->
+        <!-- Header and Navigation -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
-            <a href="family.html" class="back-button mb-4 md:mb-0"><i class="fas fa-arrow-right ml-2"></i>العودة إلى شجرة العائلة</a>
-            <h1 class="text-3xl font-bold text-gray-800">لوحة إحصائيات العائلة</h1>
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">لوحة إحصائيات العائلة</h1>
+            <nav class="flex flex-wrap gap-3" id="mainNav">
+                <a href="#" class="btn-secondary nav-link">لوحة التحكم</a>
+                <a href="#" class="btn-secondary nav-link">قائمة العائلة</a>
+                <a href="#" class="btn-secondary nav-link">الأحداث</a>
+                <a href="#" class="btn-secondary nav-link">شجرة العائلة</a>
+                <a href="#" class="btn-secondary nav-link">إضافة شخص جديد</a>
+                <a href="#" class="btn-secondary nav-link">تصدير البيانات</a>
+                <a href="#" class="btn-primary">الإحصائيات</a>
+            </nav>
         </div>
 
         <!-- General Statistics -->
@@ -317,50 +332,146 @@
                 </div>
                 <div class="stat-box" id="statMembersWithoutChildren">
                     <div id="membersWithoutChildren" class="value">0</div>
-                    <div class="label">أفراد ليس لديهم أبناء (أحياء)</div>
+                    <div class="label">أفراد بدون أبناء</div>
+                </div>
+                <div class="stat-box">
+                    <div id="profileCompletion" class="value">0%</div>
+                    <div class="label">اكتمال الملفات الشخصية</div>
+                </div>
+                <div class="stat-box" id="statMissingBirthDate">
+                    <div id="missingBirthDate" class="value">0</div>
+                    <div class="label">أفراد بدون تاريخ ميلاد</div>
+                </div>
+                <div class="stat-box" id="statMissingGender">
+                    <div id="missingGender" class="value">0</div>
+                    <div class="label">أفراد بدون جنس</div>
+                </div>
+                <div class="stat-box" id="statMissingFamilyName">
+                    <div id="missingFamilyName" class="value">0</div>
+                    <div class="label">أفراد بدون اسم عائلة</div>
+                </div>
+                <div class="stat-box">
+                    <div id="avgMaleMarriageAge" class="value">0</div>
+                    <div class="label">متوسط عمر الزواج (ذكور)</div>
+                </div>
+                <div class="stat-box">
+                    <div id="avgFemaleMarriageAge" class="value">0</div>
+                    <div class="label">متوسط عمر الزواج (إناث)</div>
+                </div>
+                <div class="stat-box">
+                    <div id="avgMaleEngagementAge" class="value">0</div>
+                    <div class="label">متوسط عمر الخطوبة (ذكور)</div>
+                </div>
+                <div class="stat-box">
+                    <div id="avgFemaleEngagementAge" class="value">0</div>
+                    <div class="label">متوسط عمر الخطوبة (إناث)</div>
                 </div>
             </div>
         </div>
 
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap justify-end gap-4 mt-6 mb-6">
+            <button id="exportCsvBtn" class="btn-primary">تصدير البيانات (CSV)</button>
+            <button id="exportChartsBtn" class="btn-primary">تصدير المخططات (PNG)</button>
+            <button id="printPageBtn" class="btn-secondary">طباعة الصفحة</button>
+        </div>
+
         <!-- Charts Section -->
-        <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-semibold text-gray-700">الرسوم البيانية</h2>
-                <div id="export-buttons" class="flex gap-2">
-                    <button id="exportChartsPdfBtn" class="btn-primary" title="تصدير المخططات كملف PDF"><i class="fas fa-file-pdf"></i></button>
-                    <button id="exportChartsCsvBtn" class="btn-primary" title="تصدير بيانات الأعضاء كملف CSV"><i class="fas fa-file-csv"></i></button>
-                    <button id="exportChartsPngBtn" class="btn-primary" title="تصدير المخططات كصورة PNG"><i class="fas fa-file-image"></i></button>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الجنس</h2>
+                <div class="chart-container">
+                    <canvas id="genderChart"></canvas>
                 </div>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Chart: Gender Distribution -->
-                <div class="chart-card p-4 rounded-lg bg-white shadow-sm" id="genderChartContainer">
-                    <h3 class="text-xl font-medium text-gray-800 text-center mb-4">توزيع الجنس (أحياء)</h3>
-                    <div class="chart-container">
-                        <canvas id="genderChart"></canvas>
-                    </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الحالة الاجتماعية (جميع الأفراد)</h2>
+                <div class="chart-container">
+                    <canvas id="maritalStatusChart"></canvas>
                 </div>
-                <!-- Chart: Age Distribution -->
-                <div class="chart-card p-4 rounded-lg bg-white shadow-sm" id="ageChartContainer">
-                    <h3 class="text-xl font-medium text-gray-800 text-center mb-4">توزيع العمر (أحياء)</h3>
-                    <div class="chart-container">
-                        <canvas id="ageChart"></canvas>
-                    </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الحالة الاجتماعية (الأفراد الأحياء)</h2>
+                <div class="chart-container">
+                    <canvas id="maritalStatusAliveChart"></canvas>
                 </div>
-                <!-- Chart: Marital Status -->
-                <div class="chart-card p-4 rounded-lg bg-white shadow-sm" id="maritalChartContainer">
-                    <h3 class="text-xl font-medium text-gray-800 text-center mb-4">الحالة الاجتماعية (أحياء)</h3>
-                    <div class="chart-container">
-                        <canvas id="maritalStatusChart"></canvas>
-                    </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الأعمار (الأحياء)</h2>
+                <div class="chart-container">
+                    <canvas id="ageDistributionChart"></canvas>
                 </div>
-                <!-- Chart: Children Count -->
-                <div class="chart-card p-4 rounded-lg bg-white shadow-sm" id="childrenCountChartContainer">
-                    <h3 class="text-xl font-medium text-gray-800 text-center mb-4">عدد الأبناء لكل فرد</h3>
-                    <div class="chart-container">
-                        <canvas id="childrenCountChart"></canvas>
-                    </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع أعياد الميلاد حسب الشهر</h2>
+                <div class="chart-container">
+                    <canvas id="birthMonthChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع أسماء العائلات</h2>
+                <div class="chart-container">
+                    <canvas id="familyNameChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الحالة الاجتماعية للذكور (الأحياء)</h2>
+                <div class="chart-container">
+                    <canvas id="maleMaritalStatusChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الحالة الاجتماعية للإناث (الأحياء)</h2>
+                <div class="chart-container">
+                    <canvas id="femaleMaritalStatusChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">المواليد حسب السنة</h2>
+                <div class="chart-container">
+                    <canvas id="birthsPerYearChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الوفيات حسب السنة</h2>
+                <div class="chart-container">
+                    <canvas id="deathsPerYearChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الزيجات والخطوبات حسب السنة</h2>
+                <div class="chart-container">
+                    <canvas id="marriagesEngagementsPerYearChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أكثر الأشخاص أبناءً</h2>
+                <div id="mostChildrenList" class="p-4">
+                    <p class="text-gray-600">جاري التحميل...</p>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أكبر 5 أفراد سناً (الأحياء)</h2>
+                <div id="oldestMembersList" class="p-4">
+                    <p class="text-gray-600">جاري التحميل...</p>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أصغر 5 أفراد سناً (الأحياء)</h2>
+                <div id="youngestMembersList" class="p-4">
+                    <p class="text-gray-600">جاري التحميل...</p>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أعلى 5 عائلات فرعية من حيث العدد</h2>
+                <div id="topSubFamiliesList" class="p-4">
+                    <p class="text-gray-600">جاري التحميل...</p>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أسماء الأبناء الأكثر شيوعاً</h2>
+                <div id="mostCommonChildrenNamesList" class="p-4">
+                    <p class="text-gray-600">جاري التحميل...</p>
                 </div>
             </div>
         </div>
@@ -369,16 +480,9 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, Timestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // ------------------------------------------------------------------
-        // Firebase and User variables
-        let app;
-        let db;
-        let auth;
-
-        // Firebase configuration provided by the user
+        // Firebase configuration from the user's prompt
         const firebaseConfig = {
             apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
             authDomain: "family-9b0b8.firebaseapp.com",
@@ -389,105 +493,67 @@
             appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
             measurementId: "G-X5LDQB1WC9"
         };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // **هام:**
-        // قم بتعديل هذا المتغير ليطابق اسم المجموعة (Collection) في قاعدة بيانات Firestore الخاصة بك.
-        // إذا كانت مجموعتك تسمى 'familyMembers'، فلا تحتاج إلى تغيير أي شيء.
-        const COLLECTION_NAME = 'familyMembers';
-        // ------------------------------------------------------------------
+        let allFamilyMembers = []; // Stores all members fetched from Firestore
+        let filteredFamilyMembers = []; // Stores members filtered by the selected family name
 
-        // Global data and charts
-        let allMembers = [];
-        const charts = {};
-        let familyNames = [];
-        let selectedFamilyName = "All";
+        // Chart instances
+        let genderChartInstance;
+        let maritalStatusChartInstance;
+        let maritalStatusAliveChartInstance;
+        let ageDistributionChartInstance;
+        let birthMonthChartInstance;
+        let familyNameChartInstance;
+        let maleMaritalStatusChartInstance;
+        let femaleMaritalStatusChartInstance;
+        let birthsPerYearChartInstance;
+        let deathsPerYearChartInstance;
+        let marriagesEngagementsPerYearChartInstance;
 
-        // DOM elements
-        const loadingModal = document.getElementById('loadingModal');
+        // Modal for chart details
+        const chartDetailsModal = document.getElementById('chartDetailsModal');
+        const chartDetailsTitle = document.getElementById('chartDetailsTitle');
+        const chartDetailsList = document.getElementById('chartDetailsList');
         const familyFilterSelect = document.getElementById('familyFilter');
 
-        // Initial loading state
-        showModal(loadingModal);
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
+        const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
 
-        // Utility functions for modals
-        function showModal(modalElement) {
-            modalElement.style.display = 'flex';
+        const loadingModal = document.getElementById('loadingModal');
+
+        // Show/Hide Modals
+        function showMessageModal(message, isError = false) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
         }
 
-        function hideModal(modalElement) {
-            modalElement.style.display = 'none';
+        function hideMessageModal() {
+            messageModal.style.display = 'none';
         }
 
-        function showMessageModal(message) {
-            document.getElementById('modalMessage').innerText = message;
-            showModal(document.getElementById('messageModal'));
+        function showLoadingModal() {
+            loadingModal.style.display = 'flex';
         }
 
-        document.getElementById('closeMessageModalBtn').onclick = () => hideModal(document.getElementById('messageModal'));
-        document.getElementById('confirmMessageModalBtn').onclick = () => hideModal(document.getElementById('messageModal'));
-
-        // Initialize Firebase and Auth
-        async function initializeFirebase() {
-            try {
-                if (Object.keys(firebaseConfig).length > 0) {
-                    app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    
-                    // Use anonymous sign-in, which is suitable for a simple app like this
-                    await signInAnonymously(auth);
-                    console.log("Firebase initialized and signed in anonymously.");
-
-                    // Start listening for data after authentication
-                    listenForFamilyData();
-
-                } else {
-                    console.error("Firebase config is missing or invalid.");
-                    hideModal(loadingModal);
-                    showMessageModal("حدث خطأ في إعدادات Firebase. يرجى التأكد من إضافة الإعدادات الصحيحة في الكود.");
-                }
-            } catch (error) {
-                console.error("Error during Firebase initialization:", error);
-                hideModal(loadingModal);
-                showMessageModal(`حدث خطأ أثناء تهيئة Firebase: ${error.message}`);
-            }
+        function hideLoadingModal() {
+            loadingModal.style.display = 'none';
         }
 
-        // Listen for real-time family data updates from Firestore
-        function listenForFamilyData() {
-            // Updated path to use the configurable collection name
-            const familyRef = collection(db, COLLECTION_NAME);
+        // Close message modal
+        closeMessageModalBtn.addEventListener('click', hideMessageModal);
+        confirmMessageModalBtn.addEventListener('click', hideMessageModal);
 
-            onSnapshot(familyRef, (querySnapshot) => {
-                const members = [];
-                if (querySnapshot.empty) {
-                    console.log("No family members found.");
-                    hideModal(loadingModal);
-                    showMessageModal("لا توجد بيانات متاحة لعرضها. يرجى التأكد من إضافة أفراد إلى العائلة أولاً.");
-                    renderStatistics([]); // Render with empty data
-                    return;
-                }
-                querySnapshot.forEach((doc) => {
-                    const member = doc.data();
-                    member.id = doc.id;
-                    members.push(member);
-                });
-                allMembers = members;
-                console.log("Data fetched successfully.");
-                hideModal(loadingModal);
-                renderStatistics(allMembers);
-            }, (error) => {
-                console.error("Error listening to family data:", error);
-                hideModal(loadingModal);
-                showMessageModal(`حدث خطأ في جلب البيانات: ${error.message}`);
-            });
-        }
-
-        // دالة لحساب العمر بناءً على تاريخ الميلاد (مستخدمة للأفراد الأحياء)
-        function calculateAge(birthDate) {
+        // Utility Functions
+        function getAge(birthDate) {
             if (!birthDate) return null;
             const today = new Date();
-            const birth = new Date(birthDate);
+            const birth = birthDate.toDate(); // Convert Firestore Timestamp to Date
             let age = today.getFullYear() - birth.getFullYear();
             const m = today.getMonth() - birth.getMonth();
             if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
@@ -496,11 +562,10 @@
             return age;
         }
 
-        // دالة جديدة لحساب العمر عند الوفاة (مستخدمة للأفراد المتوفين)
-        function calculateAgeAtDeath(birthDate, deathDate) {
+        function getAgeAtDeath(birthDate, deathDate) {
             if (!birthDate || !deathDate) return null;
-            const birth = new Date(birthDate);
-            const death = new Date(deathDate);
+            const birth = birthDate.toDate();
+            const death = deathDate.toDate();
             let age = death.getFullYear() - birth.getFullYear();
             const m = death.getMonth() - birth.getMonth();
             if (m < 0 || (m === 0 && death.getDate() < birth.getDate())) {
@@ -509,381 +574,1028 @@
             return age;
         }
 
-        // Main function to render all statistics and charts
-        function renderStatistics(members) {
-            const livingMembers = members.filter(m => m.alive);
-            const deceasedMembers = members.filter(m => !m.alive);
-            const livingMales = livingMembers.filter(m => m.gender === 'male');
-            const livingFemales = livingMembers.filter(m => m.gender === 'female');
-            const uniqueFamilyNamesSet = new Set(members.map(m => m.familyName).filter(Boolean));
+        // Drill-down functionality
+        function handleDrillDown(chart, event) {
+            const activePoints = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+            if (activePoints.length === 0) return;
 
-            // Update general statistics
-            document.getElementById('totalMembers').innerText = members.length;
-            document.getElementById('aliveMembers').innerText = livingMembers.length;
-            document.getElementById('deceasedMembers').innerText = deceasedMembers.length;
-            document.getElementById('uniqueFamilyNames').innerText = uniqueFamilyNamesSet.size;
+            const clickedPoint = activePoints[0];
+            const datasetIndex = clickedPoint.datasetIndex;
+            const label = chart.data.labels[clickedPoint.index];
 
-            // Age calculations
-            const ages = livingMembers.map(m => calculateAge(m.birthDate)).filter(age => age !== null);
-            const totalAge = ages.reduce((sum, age) => sum + age, 0);
-            const averageAge = ages.length > 0 ? (totalAge / ages.length).toFixed(1) : 0;
-            document.getElementById('averageAge').innerText = averageAge;
+            let membersToShow = [];
+            const isAliveData = chart.data.datasets[datasetIndex].label === 'الأحياء' || chart.data.datasets[datasetIndex].label === 'ذكور' || chart.data.datasets[datasetIndex].label === 'إناث';
 
-            const agesAtDeath = deceasedMembers.map(m => calculateAgeAtDeath(m.birthDate, m.deathDate)).filter(age => age !== null);
-            const totalAgeAtDeath = agesAtDeath.reduce((sum, age) => sum + age, 0);
-            const averageAgeAtDeath = agesAtDeath.length > 0 ? (totalAgeAtDeath / agesAtDeath.length).toFixed(1) : 0;
-            document.getElementById('averageAgeAtDeath').innerText = averageAgeAtDeath;
-
-            // Gender & Marital status
-            document.getElementById('livingMales').innerText = livingMales.length;
-            document.getElementById('livingFemales').innerText = livingFemales.length;
-            
-            const livingMarried = livingMembers.filter(m => m.maritalStatus === 'married');
-            const livingEngaged = livingMembers.filter(m => m.maritalStatus === 'engaged');
-            document.getElementById('livingMarried').innerText = livingMarried.length;
-            document.getElementById('livingEngaged').innerText = livingEngaged.length;
-
-            const livingMarriedMales = livingMarried.filter(m => m.gender === 'male');
-            const livingMarriedFemales = livingMarried.filter(m => m.gender === 'female');
-            document.getElementById('livingMarriedMales').innerText = livingMarriedMales.length;
-            document.getElementById('livingMarriedFemales').innerText = livingMarriedFemales.length;
-
-            const livingSingleMales = livingMales.filter(m => m.maritalStatus === 'single');
-            const livingDivorcedMales = livingMales.filter(m => m.maritalStatus === 'divorced');
-            const livingWidowedMales = livingMales.filter(m => m.maritalStatus === 'widowed');
-            document.getElementById('livingSingleMales').innerText = livingSingleMales.length;
-            document.getElementById('livingDivorcedMales').innerText = livingDivorcedMales.length;
-            document.getElementById('livingWidowedMales').innerText = livingWidowedMales.length;
-
-            const livingSingleFemales = livingFemales.filter(m => m.maritalStatus === 'single');
-            const livingDivorcedFemales = livingFemales.filter(m => m.maritalStatus === 'divorced');
-            const livingWidowedFemales = livingFemales.filter(m => m.maritalStatus === 'widowed');
-            document.getElementById('livingSingleFemales').innerText = livingSingleFemales.length;
-            document.getElementById('livingDivorcedFemales').innerText = livingDivorcedFemales.length;
-            document.getElementById('livingWidowedFemales').innerText = livingWidowedFemales.length;
-            
-            // Age groups
-            const malesOver16 = livingMales.filter(m => calculateAge(m.birthDate) >= 16);
-            const femalesOver16 = livingFemales.filter(m => calculateAge(m.birthDate) >= 16);
-            const malesUnder16 = livingMales.filter(m => calculateAge(m.birthDate) < 16);
-            const femalesUnder16 = livingFemales.filter(m => calculateAge(m.birthDate) < 16);
-            document.getElementById('malesOver16').innerText = malesOver16.length;
-            document.getElementById('femalesOver16').innerText = femalesOver16.length;
-            document.getElementById('malesUnder16').innerText = malesUnder16.length;
-            document.getElementById('femalesUnder16').innerText = femalesUnder16.length;
-
-            // Children stats
-            const parents = livingMembers.filter(m => m.children && m.children.length > 0);
-            const totalChildren = parents.reduce((sum, p) => sum + p.children.length, 0);
-            const avgChildrenPerParent = parents.length > 0 ? (totalChildren / parents.length).toFixed(1) : 0;
-            document.getElementById('avgChildrenPerParent').innerText = avgChildrenPerParent;
-
-            const membersWithoutChildren = livingMembers.filter(m => !m.children || m.children.length === 0);
-            document.getElementById('membersWithoutChildren').innerText = membersWithoutChildren.length;
-
-            // Populate family filter
-            familyNames = ["All", ...Array.from(uniqueFamilyNamesSet).sort()];
-            familyFilterSelect.innerHTML = familyNames.map(name => `<option value="${name}">${name}</option>`).join('');
-            familyFilterSelect.value = selectedFamilyName;
-            
-            // Filter data based on selected family
-            const filteredMembers = selectedFamilyName === "All" ? members : members.filter(m => m.familyName === selectedFamilyName);
-            
-            // Redraw charts with filtered data
-            renderCharts(filteredMembers);
-        }
-
-        // Function to create and update all charts
-        function renderCharts(members) {
-            const livingMembers = members.filter(m => m.alive);
-
-            // Chart 1: Gender Distribution
-            const males = livingMembers.filter(m => m.gender === 'male').length;
-            const females = livingMembers.filter(m => m.gender === 'female').length;
-            updateChart('genderChart', 'pie', {
-                labels: ['ذكور', 'إناث'],
-                datasets: [{
-                    data: [males, females],
-                    backgroundColor: ['#60a5fa', '#f87171'],
-                    borderColor: ['#3b82f6', '#ef4444']
-                }]
-            }, {
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                const total = males + females;
-                                const value = tooltipItem.raw;
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${tooltipItem.label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
-                },
-                onClick: (event, activeElements) => handleChartClick(event, activeElements, 'gender')
-            });
-
-            // Chart 2: Age Distribution
-            const ageRanges = { '0-15': 0, '16-30': 0, '31-50': 0, '51-70': 0, '71+': 0 };
-            livingMembers.forEach(m => {
-                const age = calculateAge(m.birthDate);
-                if (age !== null) {
-                    if (age >= 0 && age <= 15) ageRanges['0-15']++;
-                    else if (age >= 16 && age <= 30) ageRanges['16-30']++;
-                    else if (age >= 31 && age <= 50) ageRanges['31-50']++;
-                    else if (age >= 51 && age <= 70) ageRanges['51-70']++;
-                    else ageRanges['71+']++;
-                }
-            });
-            updateChart('ageChart', 'bar', {
-                labels: Object.keys(ageRanges),
-                datasets: [{
-                    label: 'عدد الأفراد',
-                    data: Object.values(ageRanges),
-                    backgroundColor: '#818cf8',
-                    borderColor: '#4f46e5',
-                    borderWidth: 1
-                }]
-            }, {
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: { title: { display: true, text: 'الفئة العمرية' } },
-                    y: { title: { display: true, text: 'العدد' }, beginAtZero: true }
-                },
-                onClick: (event, activeElements) => handleChartClick(event, activeElements, 'age')
-            });
-
-            // Chart 3: Marital Status
-            const maritalCounts = {
-                'married': livingMembers.filter(m => m.maritalStatus === 'married').length,
-                'single': livingMembers.filter(m => m.maritalStatus === 'single').length,
-                'engaged': livingMembers.filter(m => m.maritalStatus === 'engaged').length,
-                'divorced': livingMembers.filter(m => m.maritalStatus === 'divorced').length,
-                'widowed': livingMembers.filter(m => m.maritalStatus === 'widowed').length,
-                'unknown': livingMembers.filter(m => !m.maritalStatus || m.maritalStatus === 'unknown').length,
-            };
-            const maritalLabels = {
-                'married': 'متزوج', 'single': 'أعزب', 'engaged': 'مخطوب',
-                'divorced': 'مطلق', 'widowed': 'أرمل', 'unknown': 'غير محدد'
-            };
-            const maritalBackgrounds = {
-                'married': '#34d399', 'single': '#fde047', 'engaged': '#93c5fd',
-                'divorced': '#fb7185', 'widowed': '#9ca3af', 'unknown': '#e5e7eb'
-            };
-            const maritalBorderColors = {
-                'married': '#059669', 'single': '#d97706', 'engaged': '#3b82f6',
-                'divorced': '#e11d48', 'widowed': '#4b5563', 'unknown': '#9ca3af'
-            };
-            updateChart('maritalStatusChart', 'doughnut', {
-                labels: Object.keys(maritalCounts).map(key => maritalLabels[key]),
-                datasets: [{
-                    data: Object.values(maritalCounts),
-                    backgroundColor: Object.values(maritalBackgrounds),
-                    borderColor: Object.values(maritalBorderColors),
-                    hoverOffset: 4
-                }]
-            }, {
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                const total = Object.values(maritalCounts).reduce((sum, count) => sum + count, 0);
-                                const value = tooltipItem.raw;
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${tooltipItem.label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
-                },
-                onClick: (event, activeElements) => handleChartClick(event, activeElements, 'maritalStatus', maritalLabels)
-            });
-
-            // Chart 4: Children Count
-            const childrenCounts = livingMembers.filter(m => m.children && m.children.length > 0).map(m => m.children.length);
-            const childrenLabels = Array.from(new Set(childrenCounts)).sort((a, b) => a - b);
-            const childrenData = childrenLabels.map(count => childrenCounts.filter(c => c === count).length);
-            updateChart('childrenCountChart', 'polarArea', {
-                labels: childrenLabels.map(c => c === 1 ? `1 ابن` : `${c} أبناء`),
-                datasets: [{
-                    data: childrenData,
-                    backgroundColor: childrenLabels.map((_, i) => `hsl(${i * 60}, 70%, 75%)`),
-                    borderColor: childrenLabels.map((_, i) => `hsl(${i * 60}, 70%, 50%)`)
-                }]
-            }, {
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return `لديهم ${tooltipItem.label}: ${tooltipItem.raw} فرد`;
-                            }
-                        }
-                    }
-                },
-                onClick: (event, activeElements) => handleChartClick(event, activeElements, 'childrenCount', childrenLabels)
-            });
-        }
-
-        // Helper function to create/update charts
-        function updateChart(canvasId, type, data, options) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            if (charts[canvasId]) {
-                charts[canvasId].destroy();
+            if (chart.canvas.id === 'maritalStatusChart' || chart.canvas.id === 'maritalStatusAliveChart') {
+                membersToShow = filteredFamilyMembers.filter(member => member.maritalStatus === label && (isAliveData ? member.status === 'Alive' : true));
+            } else if (chart.canvas.id === 'genderChart') {
+                membersToShow = filteredFamilyMembers.filter(member => member.gender === label);
+            } else if (chart.canvas.id === 'maleMaritalStatusChart') {
+                membersToShow = filteredFamilyMembers.filter(member => member.gender === 'Male' && member.maritalStatus === label && member.status === 'Alive');
+            } else if (chart.canvas.id === 'femaleMaritalStatusChart') {
+                membersToShow = filteredFamilyMembers.filter(member => member.gender === 'Female' && member.maritalStatus === label && member.status === 'Alive');
+            } else if (chart.canvas.id === 'birthMonthChart') {
+                membersToShow = filteredFamilyMembers.filter(member => {
+                    const month = member.birthDate ? member.birthDate.toDate().getMonth() : null;
+                    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                    return monthNames[month] === label;
+                });
+            } else if (chart.canvas.id === 'familyNameChart') {
+                membersToShow = filteredFamilyMembers.filter(member => member.familyName === label);
+            } else if (chart.canvas.id === 'birthsPerYearChart') {
+                membersToShow = filteredFamilyMembers.filter(member => member.birthDate && member.birthDate.toDate().getFullYear().toString() === label);
+            } else if (chart.canvas.id === 'deathsPerYearChart') {
+                membersToShow = filteredFamilyMembers.filter(member => member.deathDate && member.deathDate.toDate().getFullYear().toString() === label);
+            } else if (chart.canvas.id === 'marriagesEngagementsPerYearChart') {
+                membersToShow = filteredFamilyMembers.filter(member => {
+                    if (!member.engagementDate && !member.marriageDate) return false;
+                    const marriageYear = member.marriageDate ? member.marriageDate.toDate().getFullYear().toString() : null;
+                    const engagementYear = member.engagementDate ? member.engagementDate.toDate().getFullYear().toString() : null;
+                    return (marriageYear === label || engagementYear === label);
+                });
+            } else if (chart.canvas.id === 'ageDistributionChart') {
+                const ageRange = label.split('-');
+                const minAge = parseInt(ageRange[0]);
+                const maxAge = parseInt(ageRange[1]);
+                membersToShow = filteredFamilyMembers.filter(member => {
+                    const age = getAge(member.birthDate);
+                    return member.status === 'Alive' && age !== null && age >= minAge && age <= maxAge;
+                });
             }
-            charts[canvasId] = new Chart(ctx, {
-                type: type,
-                data: data,
+
+            // Display details in the modal
+            chartDetailsTitle.textContent = `الأفراد في فئة: ${label}`;
+            chartDetailsList.innerHTML = '';
+            if (membersToShow.length > 0) {
+                membersToShow.forEach(member => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${member.fullName} (${getAge(member.birthDate)} سنة)`;
+                    chartDetailsList.appendChild(listItem);
+                });
+            } else {
+                const listItem = document.createElement('li');
+                listItem.textContent = 'لا توجد بيانات متاحة.';
+                chartDetailsList.appendChild(listItem);
+            }
+            chartDetailsModal.style.display = 'flex';
+        }
+
+        // Close chart details modal
+        document.getElementById('closeChartDetailsModalBtn').addEventListener('click', () => {
+            chartDetailsModal.style.display = 'none';
+        });
+
+        // Event Listeners for Export and Print buttons
+        document.getElementById('exportCsvBtn').addEventListener('click', () => exportDataToCsv(filteredFamilyMembers));
+        document.getElementById('exportChartsBtn').addEventListener('click', exportAllChartsAsPng);
+        document.getElementById('printPageBtn').addEventListener('click', () => window.print());
+
+        // Export data to CSV
+        function exportDataToCsv(data) {
+            if (data.length === 0) {
+                showMessageModal('لا توجد بيانات لتصديرها.');
+                return;
+            }
+
+            const header = Object.keys(data[0]).join(',');
+            const rows = data.map(obj => Object.values(obj).map(value => {
+                if (value instanceof Timestamp) {
+                    return value.toDate().toISOString();
+                }
+                if (typeof value === 'object' && value !== null) {
+                    return JSON.stringify(value).replace(/"/g, '""');
+                }
+                return `"${String(value).replace(/"/g, '""')}"`;
+            }).join(','));
+
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [header, ...rows].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "family_statistics.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Export all charts to a single PNG
+        async function exportAllChartsAsPng() {
+            const cards = document.querySelectorAll('.card');
+            const canvasContainers = Array.from(cards).map(card => card.querySelector('canvas'));
+            const images = await Promise.all(canvasContainers.filter(c => c).map(async (canvas) => {
+                const title = canvas.closest('.card').querySelector('h2').textContent;
+                const img = new Image();
+                img.src = canvas.toDataURL('image/png');
+                await new Promise(resolve => img.onload = resolve);
+                return { title, img };
+            }));
+
+            const combinedCanvas = document.createElement('canvas');
+            const ctx = combinedCanvas.getContext('2d');
+            let totalHeight = 0;
+            let maxWidth = 0;
+
+            images.forEach(item => {
+                totalHeight += item.img.height + 60; // Add space for title and margin
+                maxWidth = Math.max(maxWidth, item.img.width);
+            });
+
+            combinedCanvas.width = maxWidth;
+            combinedCanvas.height = totalHeight;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+
+            let currentY = 0;
+            ctx.font = '24px "Inter"';
+            ctx.fillStyle = '#1f2937';
+            ctx.textAlign = 'right';
+
+            images.forEach(item => {
+                ctx.fillText(item.title, combinedCanvas.width - 20, currentY + 40);
+                ctx.drawImage(item.img, 0, currentY + 60);
+                currentY += item.img.height + 60;
+            });
+
+            const link = document.createElement('a');
+            link.download = 'family_charts.png';
+            link.href = combinedCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Filter and update statistics
+        function updateStatsAndCharts(members) {
+            if (members.length === 0) {
+                document.getElementById('statisticsContent').innerHTML = '<p class="text-gray-600">لا توجد بيانات لعرضها.</p>';
+                if (genderChartInstance) genderChartInstance.destroy();
+                // Destroy all other charts similarly
+                return;
+            }
+
+            // General Stats
+            const totalMembers = members.length;
+            document.getElementById('totalMembers').textContent = totalMembers;
+
+            const aliveMembers = members.filter(m => m.status === 'Alive');
+            document.getElementById('aliveMembers').textContent = aliveMembers.length;
+
+            const deceasedMembers = members.filter(m => m.status === 'Deceased');
+            document.getElementById('deceasedMembers').textContent = deceasedMembers.length;
+
+            const uniqueFamilyNames = new Set(members.map(m => m.familyName)).size;
+            document.getElementById('uniqueFamilyNames').textContent = uniqueFamilyNames;
+
+            const livingMales = aliveMembers.filter(m => m.gender === 'Male').length;
+            document.getElementById('livingMales').textContent = livingMales;
+
+            const livingFemales = aliveMembers.filter(m => m.gender === 'Female').length;
+            document.getElementById('livingFemales').textContent = livingFemales;
+
+            const livingMarried = aliveMembers.filter(m => m.maritalStatus === 'Married').length;
+            document.getElementById('livingMarried').textContent = livingMarried;
+
+            const livingEngaged = aliveMembers.filter(m => m.maritalStatus === 'Engaged').length;
+            document.getElementById('livingEngaged').textContent = livingEngaged;
+
+            const livingMarriedMales = aliveMembers.filter(m => m.gender === 'Male' && m.maritalStatus === 'Married').length;
+            document.getElementById('livingMarriedMales').textContent = livingMarriedMales;
+            
+            const livingMarriedFemales = aliveMembers.filter(m => m.gender === 'Female' && m.maritalStatus === 'Married').length;
+            document.getElementById('livingMarriedFemales').textContent = livingMarriedFemales;
+
+            const livingSingleMales = aliveMembers.filter(m => m.gender === 'Male' && m.maritalStatus === 'Single').length;
+            document.getElementById('livingSingleMales').textContent = livingSingleMales;
+
+            const livingDivorcedMales = aliveMembers.filter(m => m.gender === 'Male' && m.maritalStatus === 'Divorced').length;
+            document.getElementById('livingDivorcedMales').textContent = livingDivorcedMales;
+
+            const livingWidowedMales = aliveMembers.filter(m => m.gender === 'Male' && m.maritalStatus === 'Widowed').length;
+            document.getElementById('livingWidowedMales').textContent = livingWidowedMales;
+
+            const livingSingleFemales = aliveMembers.filter(m => m.gender === 'Female' && m.maritalStatus === 'Single').length;
+            document.getElementById('livingSingleFemales').textContent = livingSingleFemales;
+
+            const livingDivorcedFemales = aliveMembers.filter(m => m.gender === 'Female' && m.maritalStatus === 'Divorced').length;
+            document.getElementById('livingDivorcedFemales').textContent = livingDivorcedFemales;
+
+            const livingWidowedFemales = aliveMembers.filter(m => m.gender === 'Female' && m.maritalStatus === 'Widowed').length;
+            document.getElementById('livingWidowedFemales').textContent = livingWidowedFemales;
+
+            const malesOver16 = aliveMembers.filter(m => m.gender === 'Male' && getAge(m.birthDate) >= 16).length;
+            document.getElementById('malesOver16').textContent = malesOver16;
+
+            const femalesOver16 = aliveMembers.filter(m => m.gender === 'Female' && getAge(m.birthDate) >= 16).length;
+            document.getElementById('femalesOver16').textContent = femalesOver16;
+
+            const malesUnder16 = aliveMembers.filter(m => m.gender === 'Male' && getAge(m.birthDate) < 16).length;
+            document.getElementById('malesUnder16').textContent = malesUnder16;
+
+            const femalesUnder16 = aliveMembers.filter(m => m.gender === 'Female' && getAge(m.birthDate) < 16).length;
+            document.getElementById('femalesUnder16').textContent = femalesUnder16;
+
+            const membersWithChildren = members.filter(m => m.children && m.children.length > 0);
+            const totalChildrenCount = membersWithChildren.reduce((sum, member) => sum + member.children.length, 0);
+            const avgChildrenPerParent = membersWithChildren.length > 0 ? (totalChildrenCount / membersWithChildren.length).toFixed(2) : 0;
+            document.getElementById('avgChildrenPerParent').textContent = avgChildrenPerParent;
+
+            const membersWithoutChildren = members.filter(m => !m.children || m.children.length === 0).length;
+            document.getElementById('membersWithoutChildren').textContent = membersWithoutChildren;
+
+            const totalProfiles = members.length;
+            const completedProfiles = members.filter(m => m.fullName && m.gender && m.birthDate && m.familyName).length;
+            const profileCompletion = totalProfiles > 0 ? ((completedProfiles / totalProfiles) * 100).toFixed(2) : 0;
+            document.getElementById('profileCompletion').textContent = `${profileCompletion}%`;
+            
+            const missingBirthDate = members.filter(m => !m.birthDate).length;
+            document.getElementById('missingBirthDate').textContent = missingBirthDate;
+
+            const missingGender = members.filter(m => !m.gender).length;
+            document.getElementById('missingGender').textContent = missingGender;
+
+            const missingFamilyName = members.filter(m => !m.familyName).length;
+            document.getElementById('missingFamilyName').textContent = missingFamilyName;
+
+            const maleMarriages = members.filter(m => m.gender === 'Male' && m.maritalStatus === 'Married' && m.marriageDate);
+            const totalMaleMarriageAge = maleMarriages.reduce((sum, m) => sum + getAgeAtMarriage(m.marriageDate, m.birthDate), 0);
+            const avgMaleMarriageAge = maleMarriages.length > 0 ? (totalMaleMarriageAge / maleMarriages.length).toFixed(2) : 0;
+            document.getElementById('avgMaleMarriageAge').textContent = avgMaleMarriageAge;
+
+            const femaleMarriages = members.filter(m => m.gender === 'Female' && m.maritalStatus === 'Married' && m.marriageDate);
+            const totalFemaleMarriageAge = femaleMarriages.reduce((sum, m) => sum + getAgeAtMarriage(m.marriageDate, m.birthDate), 0);
+            const avgFemaleMarriageAge = femaleMarriages.length > 0 ? (totalFemaleMarriageAge / femaleMarriages.length).toFixed(2) : 0;
+            document.getElementById('avgFemaleMarriageAge').textContent = avgFemaleMarriageAge;
+            
+            function getAgeAtMarriage(marriageDate, birthDate) {
+                if (!marriageDate || !birthDate) return 0;
+                const birth = birthDate.toDate();
+                const marriage = marriageDate.toDate();
+                let age = marriage.getFullYear() - birth.getFullYear();
+                const m = marriage.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && marriage.getDate() < birth.getDate())) {
+                    age--;
+                }
+                return age;
+            }
+
+            const maleEngagements = members.filter(m => m.gender === 'Male' && m.maritalStatus === 'Engaged' && m.engagementDate);
+            const totalMaleEngagementAge = maleEngagements.reduce((sum, m) => sum + getAgeAtEngagement(m.engagementDate, m.birthDate), 0);
+            const avgMaleEngagementAge = maleEngagements.length > 0 ? (totalMaleEngagementAge / maleEngagements.length).toFixed(2) : 0;
+            document.getElementById('avgMaleEngagementAge').textContent = avgMaleEngagementAge;
+
+            const femaleEngagements = members.filter(m => m.gender === 'Female' && m.maritalStatus === 'Engaged' && m.engagementDate);
+            const totalFemaleEngagementAge = femaleEngagements.reduce((sum, m) => sum + getAgeAtEngagement(m.engagementDate, m.birthDate), 0);
+            const avgFemaleEngagementAge = femaleEngagements.length > 0 ? (totalFemaleEngagementAge / femaleEngagements.length).toFixed(2) : 0;
+            document.getElementById('avgFemaleEngagementAge').textContent = avgFemaleEngagementAge;
+
+            function getAgeAtEngagement(engagementDate, birthDate) {
+                if (!engagementDate || !birthDate) return 0;
+                const birth = birthDate.toDate();
+                const engagement = engagementDate.toDate();
+                let age = engagement.getFullYear() - birth.getFullYear();
+                const m = engagement.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && engagement.getDate() < birth.getDate())) {
+                    age--;
+                }
+                return age;
+            }
+
+
+            const ages = aliveMembers.filter(m => m.birthDate).map(m => getAge(m.birthDate));
+            const averageAge = ages.length > 0 ? (ages.reduce((sum, age) => sum + age, 0) / ages.length).toFixed(2) : 0;
+            document.getElementById('averageAge').textContent = averageAge;
+
+            const agesAtDeath = deceasedMembers.filter(m => m.birthDate && m.deathDate).map(m => getAgeAtDeath(m.birthDate, m.deathDate));
+            const averageAgeAtDeath = agesAtDeath.length > 0 ? (agesAtDeath.reduce((sum, age) => sum + age, 0) / agesAtDeath.length).toFixed(2) : 0;
+            document.getElementById('averageAgeAtDeath').textContent = averageAgeAtDeath;
+
+            // List Stats
+            const mostChildrenList = document.getElementById('mostChildrenList');
+            const membersWithChildrenCount = members.map(m => ({
+                ...m,
+                childrenCount: m.children ? m.children.length : 0
+            })).sort((a, b) => b.childrenCount - a.childrenCount).slice(0, 5);
+            mostChildrenList.innerHTML = membersWithChildrenCount.length > 0 ?
+                membersWithChildrenCount.map(m => `<p>${m.fullName}: ${m.childrenCount} أبناء</p>`).join('') :
+                '<p class="text-gray-600">لا توجد بيانات.</p>';
+
+            const oldestMembersList = document.getElementById('oldestMembersList');
+            const oldestMembers = aliveMembers.filter(m => m.birthDate).sort((a, b) => a.birthDate.toDate().getTime() - b.birthDate.toDate().getTime()).slice(0, 5);
+            oldestMembersList.innerHTML = oldestMembers.length > 0 ?
+                oldestMembers.map(m => `<p>${m.fullName} (${getAge(m.birthDate)} سنة)</p>`).join('') :
+                '<p class="text-gray-600">لا توجد بيانات.</p>';
+
+            const youngestMembersList = document.getElementById('youngestMembersList');
+            const youngestMembers = aliveMembers.filter(m => m.birthDate).sort((a, b) => b.birthDate.toDate().getTime() - a.birthDate.toDate().getTime()).slice(0, 5);
+            youngestMembersList.innerHTML = youngestMembers.length > 0 ?
+                youngestMembers.map(m => `<p>${m.fullName} (${getAge(m.birthDate)} سنة)</p>`).join('') :
+                '<p class="text-gray-600">لا توجد بيانات.</p>';
+
+            const topSubFamiliesList = document.getElementById('topSubFamiliesList');
+            const familyCounts = members.reduce((acc, member) => {
+                if (member.familyName) {
+                    acc[member.familyName] = (acc[member.familyName] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const sortedFamilies = Object.entries(familyCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
+            topSubFamiliesList.innerHTML = sortedFamilies.length > 0 ?
+                sortedFamilies.map(([name, count]) => `<p>${name}: ${count} أفراد</p>`).join('') :
+                '<p class="text-gray-600">لا توجد بيانات.</p>';
+
+            const mostCommonChildrenNamesList = document.getElementById('mostCommonChildrenNamesList');
+            const childrenNames = members.reduce((acc, member) => {
+                if (member.children) {
+                    member.children.forEach(childId => {
+                        const child = members.find(m => m.id === childId);
+                        if (child && child.firstName) {
+                            acc[child.firstName] = (acc[child.firstName] || 0) + 1;
+                        }
+                    });
+                }
+                return acc;
+            }, {});
+            const sortedChildrenNames = Object.entries(childrenNames).sort(([, a], [, b]) => b - a).slice(0, 5);
+            mostCommonChildrenNamesList.innerHTML = sortedChildrenNames.length > 0 ?
+                sortedChildrenNames.map(([name, count]) => `<p>${name}: ${count} مرات</p>`).join('') :
+                '<p class="text-gray-600">لا توجد بيانات.</p>';
+
+            // Charts
+            const colors = {
+                'Male': '#3b82f6', // Blue
+                'Female': '#f472b6', // Pink
+                'Married': '#22c55e', // Green
+                'Engaged': '#f97316', // Orange
+                'Single': '#6b7280', // Gray
+                'Divorced': '#ef4444', // Red
+                'Widowed': '#9ca3af', // Dark Gray
+                'Alive': '#22c55e',
+                'Deceased': '#ef4444'
+            };
+
+            // Gender Chart
+            if (genderChartInstance) genderChartInstance.destroy();
+            const genderData = members.reduce((acc, member) => {
+                if (member.gender) {
+                    acc[member.gender] = (acc[member.gender] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const genderChartCtx = document.getElementById('genderChart').getContext('2d');
+            genderChartInstance = new Chart(genderChartCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['ذكور', 'إناث'],
+                    datasets: [{
+                        label: 'توزيع الجنس',
+                        data: [genderData['Male'] || 0, genderData['Female'] || 0],
+                        backgroundColor: [colors['Male'], colors['Female']],
+                        hoverOffset: 4
+                    }]
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    ...options
-                }
-            });
-        }
-        
-        // Function to handle chart click events (drill-down)
-        function handleChartClick(event, activeElements, chartType, labelMapping = null) {
-            if (activeElements.length > 0) {
-                const elementIndex = activeElements[0].index;
-                const filteredMembers = selectedFamilyName === "All" ? allMembers : allMembers.filter(m => m.familyName === selectedFamilyName);
-                
-                let detailsTitle = '';
-                let peopleList = [];
-
-                if (chartType === 'gender') {
-                    const label = charts['genderChart'].data.labels[elementIndex];
-                    detailsTitle = `تفاصيل ${label}`;
-                    const gender = label === 'ذكور' ? 'male' : 'female';
-                    peopleList = filteredMembers.filter(m => m.alive && m.gender === gender);
-                } else if (chartType === 'age') {
-                    const label = charts['ageChart'].data.labels[elementIndex];
-                    detailsTitle = `تفاصيل الفئة العمرية: ${label}`;
-                    const [minAge, maxAge] = label.split('-').map(Number);
-                    if (label.includes('+')) {
-                        peopleList = filteredMembers.filter(m => m.alive && calculateAge(m.birthDate) >= minAge);
-                    } else {
-                        peopleList = filteredMembers.filter(m => m.alive && calculateAge(m.birthDate) >= minAge && calculateAge(m.birthDate) <= maxAge);
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Inter',
+                                }
+                            }
+                        }
                     }
-                } else if (chartType === 'maritalStatus') {
-                    const label = charts['maritalStatusChart'].data.labels[elementIndex];
-                    const status = Object.keys(labelMapping).find(key => labelMapping[key] === label);
-                    detailsTitle = `تفاصيل الحالة الاجتماعية: ${label}`;
-                    peopleList = filteredMembers.filter(m => m.alive && m.maritalStatus === status);
-                } else if (chartType === 'childrenCount') {
-                    const count = labelMapping[elementIndex];
-                    detailsTitle = `تفاصيل الأفراد الذين لديهم ${count} أبناء`;
-                    peopleList = filteredMembers.filter(m => m.alive && m.children && m.children.length === count);
                 }
+            });
 
-                const listElement = document.getElementById('chartDetailsList');
-                listElement.innerHTML = peopleList.map(person => 
-                    `<li>${person.fullName} (${calculateAge(person.birthDate)} سنة)</li>`
-                ).join('');
-                document.getElementById('chartDetailsTitle').innerText = detailsTitle;
-                showModal(document.getElementById('chartDetailsModal'));
+            // Marital Status Chart (All)
+            if (maritalStatusChartInstance) maritalStatusChartInstance.destroy();
+            const maritalStatusData = members.reduce((acc, member) => {
+                if (member.maritalStatus) {
+                    acc[member.maritalStatus] = (acc[member.maritalStatus] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const maritalStatusChartCtx = document.getElementById('maritalStatusChart').getContext('2d');
+            maritalStatusChartInstance = new Chart(maritalStatusChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['متزوج', 'أعزب', 'مطلق', 'أرمل', 'مخطوب'],
+                    datasets: [{
+                        label: 'الحالة الاجتماعية',
+                        data: [
+                            maritalStatusData['Married'] || 0,
+                            maritalStatusData['Single'] || 0,
+                            maritalStatusData['Divorced'] || 0,
+                            maritalStatusData['Widowed'] || 0,
+                            maritalStatusData['Engaged'] || 0
+                        ],
+                        backgroundColor: [
+                            colors['Married'],
+                            colors['Single'],
+                            colors['Divorced'],
+                            colors['Widowed'],
+                            colors['Engaged']
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Marital Status Chart (Alive)
+            if (maritalStatusAliveChartInstance) maritalStatusAliveChartInstance.destroy();
+            const maritalStatusAliveData = aliveMembers.reduce((acc, member) => {
+                if (member.maritalStatus) {
+                    acc[member.maritalStatus] = (acc[member.maritalStatus] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const maritalStatusAliveChartCtx = document.getElementById('maritalStatusAliveChart').getContext('2d');
+            maritalStatusAliveChartInstance = new Chart(maritalStatusAliveChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['متزوج', 'أعزب', 'مطلق', 'أرمل', 'مخطوب'],
+                    datasets: [{
+                        label: 'الحالة الاجتماعية للأحياء',
+                        data: [
+                            maritalStatusAliveData['Married'] || 0,
+                            maritalStatusAliveData['Single'] || 0,
+                            maritalStatusAliveData['Divorced'] || 0,
+                            maritalStatusAliveData['Widowed'] || 0,
+                            maritalStatusAliveData['Engaged'] || 0
+                        ],
+                        backgroundColor: [
+                            colors['Married'],
+                            colors['Single'],
+                            colors['Divorced'],
+                            colors['Widowed'],
+                            colors['Engaged']
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Age Distribution Chart
+            if (ageDistributionChartInstance) ageDistributionChartInstance.destroy();
+            const ageDistributionData = {
+                '0-10': 0, '11-20': 0, '21-30': 0, '31-40': 0, '41-50': 0,
+                '51-60': 0, '61-70': 0, '71-80': 0, '81-90': 0, '91+': 0
+            };
+            aliveMembers.forEach(member => {
+                const age = getAge(member.birthDate);
+                if (age !== null) {
+                    if (age <= 10) ageDistributionData['0-10']++;
+                    else if (age <= 20) ageDistributionData['11-20']++;
+                    else if (age <= 30) ageDistributionData['21-30']++;
+                    else if (age <= 40) ageDistributionData['31-40']++;
+                    else if (age <= 50) ageDistributionData['41-50']++;
+                    else if (age <= 60) ageDistributionData['51-60']++;
+                    else if (age <= 70) ageDistributionData['61-70']++;
+                    else if (age <= 80) ageDistributionData['71-80']++;
+                    else if (age <= 90) ageDistributionData['81-90']++;
+                    else ageDistributionData['91+']++;
+                }
+            });
+            const ageDistributionChartCtx = document.getElementById('ageDistributionChart').getContext('2d');
+            ageDistributionChartInstance = new Chart(ageDistributionChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(ageDistributionData),
+                    datasets: [{
+                        label: 'توزيع الأعمار',
+                        data: Object.values(ageDistributionData),
+                        backgroundColor: '#059669', // Emerald
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Birth Month Chart
+            if (birthMonthChartInstance) birthMonthChartInstance.destroy();
+            const birthMonthData = new Array(12).fill(0);
+            const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            members.forEach(member => {
+                if (member.birthDate) {
+                    const month = member.birthDate.toDate().getMonth();
+                    birthMonthData[month]++;
+                }
+            });
+            const birthMonthChartCtx = document.getElementById('birthMonthChart').getContext('2d');
+            birthMonthChartInstance = new Chart(birthMonthChartCtx, {
+                type: 'polarArea',
+                data: {
+                    labels: monthNames,
+                    datasets: [{
+                        data: birthMonthData,
+                        backgroundColor: [
+                            '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6',
+                            '#ec4899', '#be185d', '#d946ef', '#14b8a6', '#06b6d4', '#475569'
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Family Name Chart
+            if (familyNameChartInstance) familyNameChartInstance.destroy();
+            const familyNameData = members.reduce((acc, member) => {
+                if (member.familyName) {
+                    acc[member.familyName] = (acc[member.familyName] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const familyNameChartCtx = document.getElementById('familyNameChart').getContext('2d');
+            familyNameChartInstance = new Chart(familyNameChartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(familyNameData),
+                    datasets: [{
+                        data: Object.values(familyNameData),
+                        backgroundColor: [
+                            '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6',
+                            '#ec4899', '#be185d', '#d946ef', '#14b8a6', '#06b6d4', '#475569'
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Male Marital Status Chart
+            if (maleMaritalStatusChartInstance) maleMaritalStatusChartInstance.destroy();
+            const maleMaritalStatusData = aliveMembers.filter(m => m.gender === 'Male').reduce((acc, member) => {
+                if (member.maritalStatus) {
+                    acc[member.maritalStatus] = (acc[member.maritalStatus] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const maleMaritalStatusChartCtx = document.getElementById('maleMaritalStatusChart').getContext('2d');
+            maleMaritalStatusChartInstance = new Chart(maleMaritalStatusChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['متزوج', 'أعزب', 'مطلق', 'أرمل'],
+                    datasets: [{
+                        label: 'الحالة الاجتماعية للذكور',
+                        data: [
+                            maleMaritalStatusData['Married'] || 0,
+                            maleMaritalStatusData['Single'] || 0,
+                            maleMaritalStatusData['Divorced'] || 0,
+                            maleMaritalStatusData['Widowed'] || 0
+                        ],
+                        backgroundColor: [
+                            colors['Married'],
+                            colors['Single'],
+                            colors['Divorced'],
+                            colors['Widowed']
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Female Marital Status Chart
+            if (femaleMaritalStatusChartInstance) femaleMaritalStatusChartInstance.destroy();
+            const femaleMaritalStatusData = aliveMembers.filter(m => m.gender === 'Female').reduce((acc, member) => {
+                if (member.maritalStatus) {
+                    acc[member.maritalStatus] = (acc[member.maritalStatus] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const femaleMaritalStatusChartCtx = document.getElementById('femaleMaritalStatusChart').getContext('2d');
+            femaleMaritalStatusChartInstance = new Chart(femaleMaritalStatusChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['متزوجة', 'عزباء', 'مطلقة', 'أرملة'],
+                    datasets: [{
+                        label: 'الحالة الاجتماعية للإناث',
+                        data: [
+                            femaleMaritalStatusData['Married'] || 0,
+                            femaleMaritalStatusData['Single'] || 0,
+                            femaleMaritalStatusData['Divorced'] || 0,
+                            femaleMaritalStatusData['Widowed'] || 0
+                        ],
+                        backgroundColor: [
+                            colors['Married'],
+                            colors['Single'],
+                            colors['Divorced'],
+                            colors['Widowed']
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Births Per Year Chart
+            if (birthsPerYearChartInstance) birthsPerYearChartInstance.destroy();
+            const birthsPerYearData = members.filter(m => m.birthDate).reduce((acc, member) => {
+                const year = member.birthDate.toDate().getFullYear();
+                acc[year] = (acc[year] || 0) + 1;
+                return acc;
+            }, {});
+            const sortedBirthYears = Object.keys(birthsPerYearData).sort();
+            const birthsPerYearChartCtx = document.getElementById('birthsPerYearChart').getContext('2d');
+            birthsPerYearChartInstance = new Chart(birthsPerYearChartCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedBirthYears,
+                    datasets: [{
+                        label: 'المواليد',
+                        data: sortedBirthYears.map(year => birthsPerYearData[year]),
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#3b82f6',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Deaths Per Year Chart
+            if (deathsPerYearChartInstance) deathsPerYearChartInstance.destroy();
+            const deathsPerYearData = members.filter(m => m.deathDate).reduce((acc, member) => {
+                const year = member.deathDate.toDate().getFullYear();
+                acc[year] = (acc[year] || 0) + 1;
+                return acc;
+            }, {});
+            const sortedDeathYears = Object.keys(deathsPerYearData).sort();
+            const deathsPerYearChartCtx = document.getElementById('deathsPerYearChart').getContext('2d');
+            deathsPerYearChartInstance = new Chart(deathsPerYearChartCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedDeathYears,
+                    datasets: [{
+                        label: 'الوفيات',
+                        data: sortedDeathYears.map(year => deathsPerYearData[year]),
+                        backgroundColor: '#ef4444',
+                        borderColor: '#ef4444',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Marriages & Engagements Per Year Chart
+            if (marriagesEngagementsPerYearChartInstance) marriagesEngagementsPerYearChartInstance.destroy();
+            const marriageData = members.filter(m => m.marriageDate).reduce((acc, member) => {
+                const year = member.marriageDate.toDate().getFullYear();
+                acc[year] = (acc[year] || 0) + 1;
+                return acc;
+            }, {});
+            const engagementData = members.filter(m => m.engagementDate).reduce((acc, member) => {
+                const year = member.engagementDate.toDate().getFullYear();
+                acc[year] = (acc[year] || 0) + 1;
+                return acc;
+            }, {});
+            const allYears = new Set([...Object.keys(marriageData), ...Object.keys(engagementData)]);
+            const sortedYears = Array.from(allYears).sort();
+            const marriagesEngagementsPerYearChartCtx = document.getElementById('marriagesEngagementsPerYearChart').getContext('2d');
+            marriagesEngagementsPerYearChartInstance = new Chart(marriagesEngagementsPerYearChartCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedYears,
+                    datasets: [
+                        {
+                            label: 'الزيجات',
+                            data: sortedYears.map(year => marriageData[year] || 0),
+                            backgroundColor: '#22c55e',
+                            borderColor: '#22c55e',
+                            tension: 0.1,
+                            fill: false,
+                        },
+                        {
+                            label: 'الخطوبات',
+                            data: sortedYears.map(year => engagementData[year] || 0),
+                            backgroundColor: '#f97316',
+                            borderColor: '#f97316',
+                            tension: 0.1,
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, activeElements, chart) => handleDrillDown(chart, e),
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) {
+                                        return value;
+                                    }
+                                },
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Main function to fetch data and render stats
+        async function fetchDataAndRender() {
+            showLoadingModal();
+            try {
+                // Get all documents from the "people" collection
+                const peopleCollection = collection(db, 'people');
+                const querySnapshot = await getDocs(peopleCollection);
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Populate the family filter dropdown
+                const familyNames = ['الكل', ...new Set(allFamilyMembers.map(m => m.familyName))].filter(Boolean);
+                familyFilterSelect.innerHTML = familyNames.map(name => `<option value="${name}">${name}</option>`).join('');
+
+                // Initially, show all members
+                filteredFamilyMembers = allFamilyMembers;
+                updateStatsAndCharts(filteredFamilyMembers);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                showMessageModal('حدث خطأ أثناء تحميل البيانات: ' + error.message, true);
+            } finally {
+                hideLoadingModal();
             }
         }
         
-        // Close chart details modal
-        document.getElementById('closeChartDetailsModalBtn').onclick = () => hideModal(document.getElementById('chartDetailsModal'));
-
-        // Event listener for family filter change
+        // Add event listener for the family filter
         familyFilterSelect.addEventListener('change', (e) => {
-            selectedFamilyName = e.target.value;
-            renderStatistics(allMembers);
-        });
-
-        // Export functions
-        document.getElementById('exportChartsPdfBtn').addEventListener('click', () => {
-            showMessageModal("وظيفة تصدير PDF غير متاحة حاليًا.");
-        });
-
-        // Event listener for CSV export button
-        document.getElementById('exportChartsCsvBtn').addEventListener('click', () => {
-            const filteredMembers = selectedFamilyName === "All" ? allMembers : allMembers.filter(m => m.familyName === selectedFamilyName);
-            if (filteredMembers.length === 0) {
-                showMessageModal("لا توجد بيانات لتصديرها.");
-                return;
+            const selectedFamily = e.target.value;
+            if (selectedFamily === 'الكل') {
+                filteredFamilyMembers = allFamilyMembers;
+            } else {
+                filteredFamilyMembers = allFamilyMembers.filter(m => m.familyName === selectedFamily);
             }
-            const csvData = convertToCsv(filteredMembers);
-            downloadFile(csvData, `family_members_${selectedFamilyName}.csv`, 'text/csv');
+            updateStatsAndCharts(filteredFamilyMembers);
         });
 
-        // Event listener for PNG export button
-        document.getElementById('exportChartsPngBtn').addEventListener('click', async () => {
-            const zip = new JSZip();
-            const chartCards = document.querySelectorAll('.chart-card');
-            
-            showModal(loadingModal);
-            loadingModal.querySelector('p').innerText = 'جارٍ تصدير الرسوم البيانية...';
-
-            const chartImages = await Promise.all(Array.from(chartCards).map(async (card) => {
-                const canvas = await html2canvas(card, {
-                    scale: 2, // Higher scale for better quality
-                    useCORS: true
-                });
-                const chartTitle = card.querySelector('h3').innerText;
-                const base64Image = canvas.toDataURL('image/png').split(',')[1];
-                return { title: chartTitle, data: base64Image };
-            }));
-
-            chartImages.forEach(img => {
-                zip.file(`${img.title}.png`, img.data, { base64: true });
-            });
-
-            zip.generateAsync({ type: 'blob' }).then(function(content) {
-                downloadFile(content, 'family_charts.zip', 'application/zip');
-                hideModal(loadingModal);
-                showMessageModal("تم تصدير الرسوم البيانية بنجاح كملف مضغوط PNG.");
-            });
-        });
-
-        // Helper function to convert data to CSV
-        function convertToCsv(members) {
-            const headers = [
-                'الاسم الكامل', 'اسم العائلة', 'الجنس', 'تاريخ الميلاد', 'تاريخ الوفاة',
-                'الحالة الاجتماعية', 'تاريخ الزواج', 'تاريخ الخطوبة',
-                'الأبناء (الاسم الكامل)', 'الوالد (الاسم الكامل)', 'الوالدة (الاسم الكامل)',
-                'على قيد الحياة', 'ملاحظات'
-            ].map(value => `"${value}"`).join(',');
-            
-            const rows = members.map(member => {
-                const values = [
-                    member.fullName || '',
-                    member.familyName || '',
-                    member.gender === 'male' ? 'ذكر' : 'أنثى',
-                    member.birthDate || '',
-                    member.deathDate || '',
-                    member.maritalStatus || '',
-                    member.marriageDate || '',
-                    member.engagementDate || '',
-                    (member.children || []).map(c => c.fullName).join('; ') || '',
-                    (member.fatherId || member.fatherFullName) || '',
-                    (member.motherId || member.motherFullName) || '',
-                    member.alive ? 'نعم' : 'لا',
-                    member.notes || ''
-                ].map(value => `"${value}"`.replace(/"/g, '\"\"')); // Escape double quotes for CSV
-                return values.join(',');
-            });
-            return [headers, ...rows].join('\n');
-        }
-
-        // Helper function to download files
-        function downloadFile(data, filename, type) {
-            const blob = new Blob([data], { type });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click(); // Trigger the download
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        // Start initialization immediately
-        initializeFirebase();
+        // Initialize on page load
+        window.onload = fetchDataAndRender;
     </script>
 </body>
 </html>
