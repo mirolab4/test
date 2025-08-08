@@ -553,7 +553,7 @@
         // Function to process data and render statistics
         async function loadAndRenderStats(familyMembers) {
             if (familyMembers.length === 0) {
-                showMessageModal('لا توجد بيانات متاحة لعرضها. يرجى إضافة أفراد إلى العائلة أولاً.');
+                showMessageModal('لا توجد بيانات متاحة لعرضها. يرجى التأكد من أن المسار صحيح أو إضافة أفراد إلى العائلة أولاً.');
                 return;
             }
 
@@ -1041,11 +1041,17 @@
         async function fetchData() {
             showLoading();
             try {
-                const snapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/family-members`));
+                // IMPORTANT: Replace 'PLACEHOLDER_USER_ID' with your actual Firebase User ID (UID)
+                // This is a temporary solution since login was removed.
+                // For a truly public page, move your data to the public path: artifacts/${appId}/public/data/family-members
+                const uid = 'PLACEHOLDER_USER_ID';
+                const collectionPath = `artifacts/${appId}/users/${uid}/family-members`;
+
+                const snapshot = await getDocs(collection(db, collectionPath));
                 allFamilyMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 // Listen for real-time updates
-                const q = query(collection(db, `artifacts/${appId}/public/data/family-members`));
+                const q = query(collection(db, collectionPath));
                 onSnapshot(q, (querySnapshot) => {
                     allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     populateFamilyFilter(allFamilyMembers);
@@ -1059,7 +1065,7 @@
 
             } catch (error) {
                 console.error("Error fetching data:", error);
-                showMessageModal('حدث خطأ أثناء تحميل البيانات. يرجى التحقق من اتصالك وإعادة المحاولة.');
+                showMessageModal('حدث خطأ أثناء تحميل البيانات. يرجى التحقق من اتصالك، والتأكد من أن معرف المستخدم (User ID) صحيح، وأن صلاحيات الوصول للقاعدة مسموح بها.');
                 hideLoading();
             }
         }
