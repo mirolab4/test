@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Inter Font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
-    <!-- Auth Guard Script - MUST BE LOADED FIRST -->
-    <script type="module" src="auth_guard.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -167,16 +165,12 @@
         <!-- Header and Navigation -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">قائمة العائلة</h1>
-            <nav class="flex flex-wrap gap-3" id="mainNav">
-                <a href="dashboard.html" class="btn-secondary nav-link" data-page="dashboard.html" style="display:none;">لوحة التحكم</a>
-                <a href="index.html" class="btn-primary">قائمة العائلة</a>
-                <a href="events.html" class="btn-secondary nav-link" data-page="events.html" style="display:none;">الأحداث</a>
-                <a href="family_tree.html" class="btn-secondary nav-link" data-page="family_tree.html" style="display:none;">شجرة العائلة</a>
-                <a href="add_edit_person.html" class="btn-secondary nav-link" data-page="add_edit_person.html" style="display:none;">إضافة شخص جديد</a>
-                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html" style="display:none;">تصدير البيانات</a>
-                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="display:none;">الإحصائيات</a>
-                <a href="admin_panel.html" class="btn-secondary nav-link" data-page="admin_panel.html" style="display:none;">لوحة المدير</a>
-                <button id="logoutBtn" class="btn-secondary"><i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج</button>
+            <nav class="flex flex-wrap gap-3">
+                <a href="add_edit_person.html" class="btn-primary">
+                    <i class="fas fa-plus ml-2"></i> إضافة شخص جديد
+                </a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
             </nav>
         </div>
 
@@ -363,7 +357,7 @@
                 <input type="checkbox" id="selectAllCheckbox" class="form-checkbox text-indigo-600 rounded-md">
                 <label for="selectAllCheckbox" class="text-gray-700 font-medium">تحديد الكل (المعروض)</label>
             </div>
-            <button id="exportExcelBtn" class="btn-primary w-full md:w-auto nav-link" data-page="export_data.html" style="display:none;">
+            <button id="exportExcelBtn" class="btn-primary w-full md:w-auto">
                 <i class="fas fa-file-excel ml-2"></i> تصدير المحدد إلى Excel
             </button>
         </div>
@@ -380,17 +374,34 @@
 
     <!-- Firebase SDKs -->
     <script type="module">
-        // Import auth, db, appId, and redirectTo from auth_guard.js
-        import { auth, db, appId, redirectTo } from './auth_guard.js';
-        import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { collection, onSnapshot, query, where, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration (replace with your actual config if different)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
         let userId = null;
         let allFamilyMembers = []; // Stores all members fetched from Firestore
         let displayedFamilyMembers = []; // Stores members currently displayed after filtering/searching
         let selectedPersonIds = new Set(); // Stores IDs of selected members
-        let userRole = null; // Store user's role
-        let allowedPages = []; // Store pages allowed for the user
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // Declare DOM elements globally but assign them inside DOMContentLoaded
         let familyMembersGrid;
@@ -399,6 +410,7 @@
         let genderFilter;
         let maritalStatusCheckboxes;
         let lifeStatusFilter;
+        // ageFilter removed as it's no longer in HTML
         let ageMinFilter;
         let ageMaxFilter;
         let hasFatherFilter;
@@ -430,10 +442,9 @@
         let totalDisplayedCountSpan;
         let totalFamilyCountSpan;
 
-        const mainNav = document.getElementById('mainNav'); // Get main navigation element
-        const logoutBtn = document.getElementById('logoutBtn'); // Get logout button
 
-        // Function to show custom modal messages
+        // --- Utility Functions ---
+
         function showModal(message) {
             modalMessage.textContent = message;
             messageModal.style.display = 'flex';
@@ -473,26 +484,22 @@
             showLoadingModal();
             try {
                 const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
-                onSnapshot(q, (snapshot) => { // Use onSnapshot for real-time updates
-                    allFamilyMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    console.log("Family members fetched (real-time):", allFamilyMembers);
-                    totalFamilyCountSpan.textContent = allFamilyMembers.length; // Update total count
-                    displayFamilyMembers(); // Initial display after fetching or on changes
-                    hideLoadingModal();
-                }, (error) => {
-                    console.error("Error fetching real-time family members:", error);
-                    showModal("حدث خطأ أثناء جلب بيانات العائلة: " + error.message);
-                    hideLoadingModal();
-                });
+                const querySnapshot = await getDocs(q);
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Family members fetched:", allFamilyMembers);
+                totalFamilyCountSpan.textContent = allFamilyMembers.length; // Update total count
+                displayFamilyMembers(); // Initial display after fetching
             } catch (error) {
-                console.error("Error setting up family members listener:", error);
-                showModal("حدث خطأ أثناء إعداد مراقب بيانات العائلة: " + error.message);
+                console.error("Error fetching family members:", error);
+                showModal("حدث خطأ أثناء جلب بيانات العائلة: " + error.message);
+            } finally {
                 hideLoadingModal();
             }
         }
 
         // --- Handle Related Person Filter Input (Generic for Father, Mother, Sibling filters) ---
         function handleRelatedPersonFilterInput(inputElement, suggestionsElement, hiddenIdElement) {
+            // Add a check to ensure inputElement is not null before adding event listener
             if (!inputElement) {
                 console.error("Input element is null for handleRelatedPersonFilterInput. Cannot add event listener.");
                 return;
@@ -518,6 +525,7 @@
                         div.textContent = person.fullName; // Display full name in suggestion list
 
                         div.addEventListener('click', () => {
+                            // Always set full name for the input field when a suggestion is selected
                             inputElement.value = person.fullName;
                             hiddenIdElement.value = person.id;
                             suggestionsElement.classList.add('hidden');
@@ -528,6 +536,8 @@
                 }
             });
 
+            // Hide suggestions when clicking outside
+            // Add a check to ensure inputElement is not null before adding event listener
             if (document && inputElement) {
                 document.addEventListener('click', (event) => {
                     if (!inputElement.parentNode.contains(event.target)) {
@@ -559,6 +569,7 @@
             const selectedHasChildren = hasChildrenFilter.value;
             const selectedHasSpouse = hasSpouseFilter.value;
 
+            // Ensure relationship filter IDs are valid before accessing .value
             const filterByFatherIdValue = filterByFatherId ? filterByFatherId.value : '';
             const filterByMotherIdValue = filterByMotherId ? filterByMotherId.value : '';
             const filterBySiblingIdValue = filterBySiblingId ? filterBySiblingId.value : '';
@@ -570,6 +581,7 @@
 
                 const matchesGender = selectedGender === 'All' || person.gender === selectedGender;
 
+                // Marital Status Filter (Updated for multiple selection)
                 const matchesMaritalStatus = selectedMaritalStatuses.length === 0 || selectedMaritalStatuses.includes(person.maritalStatus);
 
                 let matchesLifeStatus = true;
@@ -579,6 +591,7 @@
                     matchesLifeStatus = person.isAlive === false;
                 }
 
+                // Age Range Filter (NEW)
                 let matchesAgeRange = true;
                 if (person.birthDate) {
                     const personAge = calculateAge(person.birthDate);
@@ -660,7 +673,7 @@
                 filteredMembers.forEach(person => {
                     displayedFamilyMembers.push(person); // Add to currently displayed list
                     const personCard = document.createElement('div');
-                    personCard.classList.add('person-card', 'card', 'p-4', 'rounded-xl', 'shadow-md', 'flex', 'flex-col', 'justify-content-between', 'relative');
+                    personCard.classList.add('person-card', 'card', 'p-4', 'rounded-xl', 'shadow-md', 'flex', 'flex-col', 'justify-between', 'relative');
 
                     // Apply gender-based background color
                     if (person.gender === 'Male') {
@@ -734,36 +747,6 @@
                                         displayedFamilyMembers.every(p => selectedPersonIds.has(p.id));
         }
 
-        // Function to update navigation links based on user's allowed pages
-        function updateNavigationLinks() {
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                const pageName = link.dataset.page;
-                if (allowedPages.includes(pageName)) {
-                    link.style.display = ''; // Show the link
-                } else {
-                    link.style.display = 'none'; // Hide the link
-                }
-            });
-
-            // Update Add Person button visibility in the filter section
-            const addPersonButton = document.getElementById('addPersonBtn');
-            if (addPersonButton && allowedPages.includes('add_edit_person.html') && (userRole === 'admin' || userRole === 'editor')) {
-                addPersonButton.style.display = 'block'; // Or 'flex' if it's a flex item
-            } else if (addPersonButton) {
-                addPersonButton.style.display = 'none';
-            }
-
-            // Update Export Excel button visibility
-            const exportExcelButton = document.getElementById('exportExcelBtn');
-            if (exportExcelButton && allowedPages.includes('export_data.html') && (userRole === 'admin' || userRole === 'editor')) {
-                exportExcelButton.style.display = 'block'; // Or 'flex'
-            } else if (exportExcelButton) {
-                exportExcelButton.style.display = 'none';
-            }
-        }
-
-
         // --- Initial Load and Authentication ---
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -774,6 +757,7 @@
             genderFilter = document.getElementById('genderFilter');
             maritalStatusCheckboxes = document.querySelectorAll('input[name="maritalStatusCheckbox"]');
             lifeStatusFilter = document.getElementById('lifeStatusFilter');
+            // ageFilter was removed from HTML, so it's removed from JS too.
             ageMinFilter = document.getElementById('ageMinFilter');
             ageMaxFilter = document.getElementById('ageMaxFilter');
             hasFatherFilter = document.getElementById('hasFatherFilter');
@@ -806,6 +790,7 @@
             selectedCountSpan = document.getElementById('selectedCount');
             totalDisplayedCountSpan = document.getElementById('totalDisplayedCount');
             totalFamilyCountSpan = document.getElementById('totalFamilyCount');
+
 
             // Modal close buttons
             closeMessageModalBtn.addEventListener('click', closeModal);
@@ -840,6 +825,7 @@
                 checkbox.addEventListener('change', displayFamilyMembers);
             });
             lifeStatusFilter.addEventListener('change', displayFamilyMembers);
+            // ageFilter.addEventListener('input', displayFamilyMembers); // Removed this line
             ageMinFilter.addEventListener('input', displayFamilyMembers);
             ageMaxFilter.addEventListener('input', displayFamilyMembers);
             hasFatherFilter.addEventListener('change', displayFamilyMembers);
@@ -852,6 +838,7 @@
                 genderFilter.value = 'All';
                 maritalStatusCheckboxes.forEach(checkbox => checkbox.checked = false);
                 lifeStatusFilter.value = 'Alive';
+                // ageFilter.value = ''; // Removed this line
                 ageMinFilter.value = '';
                 ageMaxFilter.value = '';
                 hasFatherFilter.value = 'All';
@@ -921,57 +908,42 @@
             });
 
 
-            // Logout button
-            logoutBtn.addEventListener('click', async () => {
+            // Initial authentication attempt
+            (async () => {
                 try {
-                    await signOut(auth);
-                    redirectTo('login.html'); // Redirect to login page after logout
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
                 } catch (error) {
-                    console.error("Error logging out:", error);
-                    showModal("حدث خطأ أثناء تسجيل الخروج: " + error.message);
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
                 }
-            });
+            })();
 
             // Listen for auth state changes to get userId and fetch data
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
                     console.log("Authentication state changed. User ID:", userId);
-
-                    // Fetch user settings to get role and allowed pages
-                    try {
-                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userId);
-                        const userSettingsSnap = await getDoc(userSettingsRef);
-
-                        if (userSettingsSnap.exists()) {
-                            const settings = userSettingsSnap.data();
-                            userRole = settings.role || 'viewer';
-                            allowedPages = settings.allowedPages || [];
-                            updateNavigationLinks(); // Update navigation based on fetched permissions
-                        } else {
-                            console.warn("User settings not found for current user. Defaulting to viewer role.");
-                            userRole = 'viewer';
-                            allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html'];
-                            updateNavigationLinks();
-                        }
-                    } catch (error) {
-                        console.error("Error fetching user settings:", error);
-                        showModal("حدث خطأ أثناء جلب إعدادات المستخدم: " + error.message);
-                        userRole = 'viewer'; // Fallback
-                        allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html']; // Fallback
-                        updateNavigationLinks();
-                    }
-
                     await fetchFamilyMembers(); // Fetch and display members after authentication
                 } else {
                     userId = null;
                     console.log("User signed out or no user.");
-                    loadingModal.style.display = 'none'; // Ensure loading modal is hidden
-                    noMembersMessage.classList.remove('hidden');
-                    familyMembersGrid.innerHTML = ''; // Clear existing content
                     showModal("يرجى تسجيل الدخول لعرض وإدارة بيانات العائلة.");
-                    // Hide all navigation links
-                    document.querySelectorAll('.nav-link').forEach(link => link.style.display = 'none');
                 }
             });
         });
