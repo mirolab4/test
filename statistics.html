@@ -1,111 +1,180 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة إحصائيات العائلة</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Inter Font -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; direction: rtl; text-align: right; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
-        .card { background-color: #ffffff; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1.5rem; }
-        .btn-primary { background-color: #4f46e5; color: white; padding: 0.75rem 1.5rem; border-radius: 0.75rem; }
-        .btn-secondary { background-color: #e5e7eb; color: #374151; padding: 0.75rem 1.5rem; border-radius: 0.75rem; }
-        .stat-box { background-color: #e0f2fe; border-radius: 0.75rem; padding: 1.5rem; text-align: center; cursor: pointer; }
-        .stat-box .value { font-size: 2.5rem; font-weight: 700; color: #2563eb; }
-        .stat-box .label { font-size: 1rem; color: #374151; margin-top: 0.5rem; }
-        .chart-container { position: relative; height: 400px; width: 100%; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة إحصائيات العائلة</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {font-family:'Inter',sans-serif;background-color:#f3f4f6;direction:rtl;text-align:right}
+    .container{max-width:1200px;margin:0 auto;padding:1.5rem}
+    .card{background-color:#fff;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,.1);padding:1.5rem;margin-bottom:1.5rem}
+    .btn-primary{background-color:#4f46e5;color:#fff;padding:.75rem 1.5rem;border-radius:.75rem}
+    .btn-secondary{background-color:#e5e7eb;color:#374151;padding:.75rem 1.5rem;border-radius:.75rem}
+    .stat-box{background-color:#e0f2fe;border-radius:.75rem;padding:1.5rem;text-align:center;cursor:pointer}
+    .stat-box .value{font-size:2.5rem;font-weight:700;color:#2563eb}
+    .stat-box .label{font-size:1rem;color:#374151;margin-top:.5rem}
+    .chart-container{position:relative;height:400px;width:100%}
+</style>
 </head>
 <body class="bg-gray-100 p-4">
 
-    <div class="container">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
-            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">لوحة إحصائيات العائلة</h1>
-        </div>
+<div class="container">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">لوحة إحصائيات العائلة</h1>
+    </div>
 
-        <div class="card">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">إحصائيات عامة</h2>
-            <div id="statisticsContent" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                <div class="stat-box"><div id="totalMembers" class="value">0</div><div class="label">إجمالي الأفراد</div></div>
-                <div class="stat-box"><div id="aliveMembers" class="value">0</div><div class="label">الأحياء</div></div>
-                <div class="stat-box"><div id="deceasedMembers" class="value">0</div><div class="label">المتوفين</div></div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الجنس</h2>
-                <div class="chart-container">
-                    <canvas id="genderChart"></canvas>
-                </div>
-            </div>
+    <div class="card">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">إحصائيات عامة</h2>
+        <div id="statisticsContent" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div class="stat-box"><div id="totalMembers" class="value">0</div><div class="label">إجمالي الأفراد</div></div>
+            <div class="stat-box"><div id="aliveMembers" class="value">0</div><div class="label">الأحياء</div></div>
+            <div class="stat-box"><div id="deceasedMembers" class="value">0</div><div class="label">المتوفين</div></div>
+            <div class="stat-box"><div id="averageAge" class="value">0</div><div class="label">متوسط العمر</div></div>
+            <div class="stat-box"><div id="averageAgeAtDeath" class="value">0</div><div class="label">متوسط عمر الوفاة</div></div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="card"><h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الجنس</h2><div class="chart-container"><canvas id="genderChart"></canvas></div></div>
+        <div class="card"><h2 class="text-2xl font-semibold text-gray-700 mb-4">الحالة الاجتماعية</h2><div class="chart-container"><canvas id="maritalStatusChart"></canvas></div></div>
+        <div class="card"><h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الأعمار</h2><div class="chart-container"><canvas id="ageDistributionChart"></canvas></div></div>
+        <div class="card"><h2 class="text-2xl font-semibold text-gray-700 mb-4">أعياد الميلاد حسب الشهر</h2><div class="chart-container"><canvas id="birthMonthChart"></canvas></div></div>
+    </div>
+</div>
 
-        // إعداد Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
-            authDomain: "family-9b0b8.firebaseapp.com",
-            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
-            projectId: "family-9b0b8",
-            storageBucket: "family-9b0b8.firebasestorage.app",
-            messagingSenderId: "409089079475",
-            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
-            measurementId: "G-X5LDQB1WC9"
-        };
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getFirestore, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+// Firebase config
+const firebaseConfig = {
+    apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+    authDomain: "family-9b0b8.firebaseapp.com",
+    databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+    projectId: "family-9b0b8",
+    storageBucket: "family-9b0b8.firebasestorage.app",
+    messagingSenderId: "409089079475",
+    appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+    measurementId: "G-X5LDQB1WC9"
+};
 
-        let allFamilyMembers = [];
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-        async function fetchAllFamilyMembers() {
-            const snapshot = await getDocs(collectionGroup(db, "familyMembers"));
-            allFamilyMembers = snapshot.docs.map(doc => doc.data());
-            renderStatistics();
+let allFamilyMembers = [];
+
+function calculateAge(date) {
+    if (!date?.toDate) return null;
+    const today = new Date();
+    const birth = date.toDate();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+}
+
+function calculateAgeAtDeath(birthDate, deathDate) {
+    if (!birthDate?.toDate || !deathDate?.toDate) return null;
+    const birth = birthDate.toDate();
+    const death = deathDate.toDate();
+    let age = death.getFullYear() - birth.getFullYear();
+    const m = death.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && death.getDate() < birth.getDate())) age--;
+    return age;
+}
+
+async function fetchData() {
+    const snapshot = await getDocs(collectionGroup(db, "familyMembers"));
+    allFamilyMembers = snapshot.docs.map(doc => doc.data());
+    renderStats();
+}
+
+function renderStats() {
+    const total = allFamilyMembers.length;
+    const aliveArray = allFamilyMembers.filter(p => p.isAlive !== false);
+    const deadArray = allFamilyMembers.filter(p => p.isAlive === false);
+    const alive = aliveArray.length;
+    const dead = deadArray.length;
+
+    const avgAge = aliveArray.map(p => calculateAge(p.birthDate)).filter(a => a !== null);
+    const avgAgeValue = avgAge.length ? (avgAge.reduce((a,b)=>a+b,0)/avgAge.length).toFixed(1) : 0;
+
+    const avgDeathAge = deadArray.map(p => calculateAgeAtDeath(p.birthDate, p.deathDate)).filter(a => a !== null);
+    const avgDeathValue = avgDeathAge.length ? (avgDeathAge.reduce((a,b)=>a+b,0)/avgDeathAge.length).toFixed(1) : 0;
+
+    document.getElementById("totalMembers").textContent = total;
+    document.getElementById("aliveMembers").textContent = alive;
+    document.getElementById("deceasedMembers").textContent = dead;
+    document.getElementById("averageAge").textContent = avgAgeValue;
+    document.getElementById("averageAgeAtDeath").textContent = avgDeathValue;
+
+    drawCharts(aliveArray);
+}
+
+function drawCharts(aliveArray) {
+    // Gender chart
+    const genderData = allFamilyMembers.reduce((acc,p) => {
+        const g = p.gender || "غير محدد";
+        acc[g] = (acc[g]||0)+1;
+        return acc;
+    },{});
+    new Chart(document.getElementById("genderChart"), {
+        type: "pie",
+        data: {labels: Object.keys(genderData), datasets:[{data: Object.values(genderData), backgroundColor:["#4f46e5","#ec4899","#6b7280"]}]}
+    });
+
+    // Marital status
+    const maritalData = allFamilyMembers.reduce((acc,p) => {
+        const m = p.maritalStatus || "غير محدد";
+        acc[m] = (acc[m]||0)+1;
+        return acc;
+    },{});
+    new Chart(document.getElementById("maritalStatusChart"), {
+        type: "pie",
+        data: {labels: Object.keys(maritalData), datasets:[{data: Object.values(maritalData), backgroundColor:["#22c55e","#f59e0b","#ef4444","#6b7280"]}]}
+    });
+
+    // Age distribution
+    const ageGroups = {'0-10':0,'11-20':0,'21-30':0,'31-40':0,'41-50':0,'51-60':0,'61-70':0,'71-80':0,'81+':0};
+    aliveArray.forEach(p=>{
+        const age=calculateAge(p.birthDate);
+        if(age>=0 && age<=10) ageGroups['0-10']++;
+        else if(age<=20) ageGroups['11-20']++;
+        else if(age<=30) ageGroups['21-30']++;
+        else if(age<=40) ageGroups['31-40']++;
+        else if(age<=50) ageGroups['41-50']++;
+        else if(age<=60) ageGroups['51-60']++;
+        else if(age<=70) ageGroups['61-70']++;
+        else if(age<=80) ageGroups['71-80']++;
+        else if(age>80) ageGroups['81+']++;
+    });
+    new Chart(document.getElementById("ageDistributionChart"), {
+        type: "bar",
+        data: {labels:Object.keys(ageGroups),datasets:[{data:Object.values(ageGroups),backgroundColor:"#4f46e5"}]},
+        options:{scales:{y:{beginAtZero:true}}}
+    });
+
+    // Birth month
+    const monthNames=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    const birthMonths=new Array(12).fill(0);
+    allFamilyMembers.forEach(p=>{
+        if(p.birthDate?.toDate){
+            birthMonths[p.birthDate.toDate().getMonth()]++;
         }
+    });
+    new Chart(document.getElementById("birthMonthChart"), {
+        type:"bar",
+        data:{labels:monthNames,datasets:[{data:birthMonths,backgroundColor:"#14b8a6"}]},
+        options:{scales:{y:{beginAtZero:true}}}
+    });
+}
 
-        function renderStatistics() {
-            const total = allFamilyMembers.length;
-            const alive = allFamilyMembers.filter(p => p.isAlive !== false).length;
-            const dead = allFamilyMembers.filter(p => p.isAlive === false).length;
+fetchData();
+</script>
 
-            document.getElementById("totalMembers").textContent = total;
-            document.getElementById("aliveMembers").textContent = alive;
-            document.getElementById("deceasedMembers").textContent = dead;
-
-            const genderData = allFamilyMembers.reduce((acc, p) => {
-                const g = p.gender || "غير محدد";
-                acc[g] = (acc[g] || 0) + 1;
-                return acc;
-            }, {});
-
-            new Chart(document.getElementById("genderChart"), {
-                type: "pie",
-                data: {
-                    labels: Object.keys(genderData),
-                    datasets: [{
-                        data: Object.values(genderData),
-                        backgroundColor: ["#4f46e5", "#ec4899", "#6b7280"]
-                    }]
-                }
-            });
-        }
-
-        fetchAllFamilyMembers();
-    </script>
 </body>
 </html>
