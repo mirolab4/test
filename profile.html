@@ -6,12 +6,8 @@
     <title>تفاصيل الشخص</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome CDN for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Inter Font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
-    <!-- Auth Guard Script - MUST BE LOADED FIRST -->
-    <script type="module" src="auth_guard.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -153,16 +149,11 @@
         <!-- Header and Navigation -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">تفاصيل الشخص</h1>
-            <nav class="flex flex-wrap gap-3" id="mainNav">
-                <a href="dashboard.html" class="btn-secondary nav-link" data-page="dashboard.html" style="display:none;">لوحة التحكم</a>
-                <a href="index.html" class="btn-secondary nav-link" data-page="index.html" style="display:none;">قائمة العائلة</a>
-                <a href="events.html" class="btn-secondary nav-link" data-page="events.html" style="display:none;">الأحداث</a>
-                <a href="family_tree.html" class="btn-secondary nav-link" data-page="family_tree.html" style="display:none;">شجرة العائلة</a>
-                <a href="add_edit_person.html" class="btn-secondary nav-link" data-page="add_edit_person.html" style="display:none;">إضافة شخص جديد</a>
-                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html" style="display:none;">تصدير البيانات</a>
-                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="display:none;">الإحصائيات</a>
-                <a href="admin_panel.html" class="btn-secondary nav-link" data-page="admin_panel.html" style="display:none;">لوحة المدير</a>
-                <button id="logoutBtn" class="btn-secondary"><i class="fas fa-sign-out-alt ml-2"></i>تسجيل الخروج</button>
+            <nav class="flex flex-wrap gap-3">
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary">الأحداث</a>
+                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
+                <a href="add_edit_person.html" class="btn-primary">إضافة شخص جديد</a>
             </nav>
         </div>
 
@@ -213,8 +204,8 @@
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end gap-4 mt-8 pt-4 border-t">
-                    <button id="editPersonBtn" class="btn-primary nav-action-btn" data-action-role="editor,admin" style="display:none;">تعديل البيانات</button>
-                    <button id="deletePersonBtn" class="btn-danger nav-action-btn" data-action-role="admin" style="display:none;">حذف الشخص</button>
+                    <button id="editPersonBtn" class="btn-primary">تعديل البيانات</button>
+                    <button id="deletePersonBtn" class="btn-danger">حذف الشخص</button>
                 </div>
             </div>
         </div>
@@ -222,17 +213,35 @@
 
     <!-- Firebase SDKs -->
     <script type="module">
-        // Import auth, db, appId, and redirectTo from auth_guard.js
-        import { auth, db, appId, redirectTo } from './auth_guard.js';
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, deleteDoc, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+
+        // Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+            authDomain: "family-9b0b8.firebaseapp.com",
+            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+            projectId: "family-9b0b8",
+            storageBucket: "family-9b0b8.firebasestorage.app",
+            messagingSenderId: "409089079475",
+            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+            measurementId: "G-X5LDQB1WC9"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
         let userId = null;
         let currentPersonId = null; // ID of the person whose profile is being viewed
         let currentPersonData = null; // Store current person's data
-        let userRole = null; // Store user's role
-        let allowedPages = []; // Store pages allowed for the user
+
+        // Get app ID from environment or use a default
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // Function to show custom modal messages
         function showModal(message, modalId = 'messageModal') {
@@ -445,6 +454,32 @@
             }
         }
 
+        // Helper function to display related person's name as a clickable link (kept for consistency but logic moved)
+        // This function is now less critical as the main logic is in fetchAndDisplayPerson
+        async function displayRelation(idKey, nameElementId) {
+            const element = document.getElementById(nameElementId);
+            if (!element) {
+                console.error(`Element with ID '${nameElementId}' not found.`);
+                return;
+            }
+
+            // This function is now mainly a fallback or for specific cases
+            // The primary logic for displaying related names is now within fetchAndDisplayPerson
+            element.textContent = currentPersonData[nameElementId.replace('Name', '')] || 'غير متوفر'; // Display direct name
+            if (currentPersonData[idKey]) {
+                const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
+                if (relatedDoc.exists()) {
+                    const relatedData = relatedDoc.data();
+                    const link = document.createElement('a');
+                    link.href = `profile.html?id=${currentPersonData[idKey]}`;
+                    link.classList.add('relation-link');
+                    link.textContent = relatedData.fullName || 'غير محدد';
+                    element.innerHTML = ''; // Clear previous content
+                    element.appendChild(link);
+                }
+            }
+        }
+
         // Function to handle person deletion
         async function deletePerson() {
             if (!currentPersonId || !userId) {
@@ -476,29 +511,6 @@
             };
         }
 
-        // Function to update navigation and action button visibility based on user's allowed pages and role
-        function updateNavigationAndActionButtons() {
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                const pageName = link.dataset.page;
-                if (allowedPages.includes(pageName)) {
-                    link.style.display = ''; // Show the link
-                } else {
-                    link.style.display = 'none'; // Hide the link
-                }
-            });
-
-            const actionButtons = document.querySelectorAll('.nav-action-btn');
-            actionButtons.forEach(button => {
-                const requiredRoles = button.dataset.actionRole ? button.dataset.actionRole.split(',') : [];
-                if (requiredRoles.includes(userRole)) {
-                    button.style.display = ''; // Show the button
-                } else {
-                    button.style.display = 'none'; // Hide the button
-                }
-            });
-        }
-
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
@@ -519,47 +531,37 @@
                 return;
             }
 
-            // Logout button
-            document.getElementById('logoutBtn').addEventListener('click', async () => {
+            // Initial authentication attempt
+            (async () => {
                 try {
-                    await signOut(auth);
-                    redirectTo('login.html'); // Redirect to login page after logout
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } catch (tokenError) {
+                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
+                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
+                                await signInAnonymously(auth);
+                                console.log("Signed in anonymously after custom token failure.");
+                            } else {
+                                throw tokenError;
+                            }
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
                 } catch (error) {
-                    console.error("Error logging out:", error);
-                    showModal("حدث خطأ أثناء تسجيل الخروج: " + error.message);
+                    console.error("Error during initial authentication attempt:", error);
+                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
                 }
-            });
+            })();
 
             // Listen for auth state changes to get userId and fetch data
-            onAuthStateChanged(auth, async (user) => {
+            onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
                     console.log("Authentication state changed. User ID:", userId);
-
-                    // Fetch user settings to get role and allowed pages
-                    try {
-                        const userSettingsRef = doc(db, `artifacts/${appId}/userSettings`, userId);
-                        const userSettingsSnap = await getDoc(userSettingsRef);
-
-                        if (userSettingsSnap.exists()) {
-                            const settings = userSettingsSnap.data();
-                            userRole = settings.role || 'viewer';
-                            allowedPages = settings.allowedPages || [];
-                            updateNavigationAndActionButtons(); // Update navigation and action buttons based on fetched permissions
-                        } else {
-                            console.warn("User settings not found for current user. Defaulting to viewer role.");
-                            userRole = 'viewer';
-                            allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html'];
-                            updateNavigationAndActionButtons();
-                        }
-                    } catch (error) {
-                        console.error("Error fetching user settings:", error);
-                        showModal("حدث خطأ أثناء جلب إعدادات المستخدم: " + error.message);
-                        userRole = 'viewer'; // Fallback
-                        allowedPages = ['dashboard.html', 'index.html', 'family_tree.html', 'events.html', 'profile.html', 'statistics.html']; // Fallback
-                        updateNavigationAndActionButtons();
-                    }
-
                     fetchAndDisplayPerson(currentPersonId); // Fetch and display data after authentication
                 } else {
                     userId = null;
@@ -568,9 +570,6 @@
                     document.getElementById('noPersonMessage').classList.remove('hidden');
                     document.getElementById('personContent').classList.add('hidden');
                     showModal("يرجى تسجيل الدخول لعرض تفاصيل الشخص.", 'messageModal');
-                    // Hide all navigation and action buttons
-                    document.querySelectorAll('.nav-link').forEach(link => link.style.display = 'none');
-                    document.querySelectorAll('.nav-action-btn').forEach(button => button.style.display = 'none');
                 }
             });
 
