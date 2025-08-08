@@ -377,8 +377,23 @@
         let db;
         let auth;
         let userId;
+
+        // --- قم بتعديل هذه المتغيرات إذا لم يتم توفيرها تلقائياً ---
+        // في بيئة العمل هذه، يتم تمرير الإعدادات تلقائيًا.
+        // إذا كنت تستخدم هذا الكود في مكان آخر، يرجى استبدال القيم أدناه ببيانات مشروعك.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // قم بلصق إعدادات مشروع Firebase الخاص بك هنا
+            // مثال:
+            // apiKey: "YOUR_API_KEY",
+            // authDomain: "YOUR_AUTH_DOMAIN",
+            // projectId: "YOUR_PROJECT_ID",
+            // storageBucket: "YOUR_STORAGE_BUCKET",
+            // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            // appId: "YOUR_APP_ID"
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // ------------------------------------------------------------------
 
         // Global data and charts
         let allMembers = [];
@@ -417,7 +432,7 @@
                     app = initializeApp(firebaseConfig);
                     db = getFirestore(app);
                     auth = getAuth(app);
-                    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                    
                     if (initialAuthToken) {
                         await signInWithCustomToken(auth, initialAuthToken);
                     } else {
@@ -440,7 +455,7 @@
                 } else {
                     console.error("Firebase config is missing or invalid.");
                     hideModal(loadingModal);
-                    showMessageModal("حدث خطأ في إعدادات Firebase.");
+                    showMessageModal("حدث خطأ في إعدادات Firebase. يرجى التأكد من إضافة الإعدادات الصحيحة في الكود.");
                 }
             } catch (error) {
                 console.error("Error during Firebase initialization:", error);
@@ -861,7 +876,6 @@
             a.href = url;
             a.download = filename;
             document.body.appendChild(a);
-            a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
