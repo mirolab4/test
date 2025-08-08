@@ -485,7 +485,7 @@
             });
         }
 
-        // Function to calculate age
+        // دالة لحساب العمر بناءً على تاريخ الميلاد (مستخدمة للأفراد الأحياء)
         function calculateAge(birthDate) {
             if (!birthDate) return null;
             const today = new Date();
@@ -497,7 +497,20 @@
             }
             return age;
         }
-        
+
+        // دالة جديدة لحساب العمر عند الوفاة (مستخدمة للأفراد المتوفين)
+        function calculateAgeAtDeath(birthDate, deathDate) {
+            if (!birthDate || !deathDate) return null;
+            const birth = new Date(birthDate);
+            const death = new Date(deathDate);
+            let age = death.getFullYear() - birth.getFullYear();
+            const m = death.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && death.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
         // Main function to render all statistics and charts
         function renderStatistics(members) {
             const livingMembers = members.filter(m => m.alive);
@@ -518,7 +531,8 @@
             const averageAge = ages.length > 0 ? (totalAge / ages.length).toFixed(1) : 0;
             document.getElementById('averageAge').innerText = averageAge;
 
-            const agesAtDeath = deceasedMembers.map(m => calculateAge(m.deathDate)).filter(age => age !== null);
+            // تم تصحيح هذا الجزء لاستخدام الدالة الجديدة calculateAgeAtDeath
+            const agesAtDeath = deceasedMembers.map(m => calculateAgeAtDeath(m.birthDate, m.deathDate)).filter(age => age !== null);
             const totalAgeAtDeath = agesAtDeath.reduce((sum, age) => sum + age, 0);
             const averageAgeAtDeath = agesAtDeath.length > 0 ? (totalAgeAtDeath / agesAtDeath.length).toFixed(1) : 0;
             document.getElementById('averageAgeAtDeath').innerText = averageAgeAtDeath;
