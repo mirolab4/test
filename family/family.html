@@ -371,7 +371,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const appId = 'family-tree-app';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const baseCollectionPath = `artifacts/${appId}/familyMembers`;
 
         // DOM Elements
