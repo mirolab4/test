@@ -131,6 +131,7 @@
             transform-origin: top center;
             cursor: grab;
             border: 1px solid #e5e7eb;
+            transition: transform 0.3s ease;
         }
 
         #familyTreeContainer.dragging {
@@ -394,6 +395,17 @@
                 font-size: 0.95rem;
             }
         }
+        
+        /* Tree connections for multiple children */
+        .children-container .tree-node:first-child::before {
+            left: calc(50% + 10px);
+        }
+        .children-container .tree-node:last-child::before {
+            left: calc(50% - 10px);
+        }
+        .children-container .tree-node:only-child::before {
+            left: 50%;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-4">
@@ -425,8 +437,8 @@
                 <a href="index.html" class="btn-secondary"><i class="fas fa-list mr-2"></i>قائمة العائلة</a>
                 <a href="events.html" class="btn-secondary"><i class="fas fa-calendar mr-2"></i>الأحداث</a>
                 <a href="family_tree.html" class="btn-primary"><i class="fas fa-tree mr-2"></i>شجرة العائلة</a>
-                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html"><i class="fas fa-chart-bar mr-2"></i>الإحصائيات</a>
-                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html"><i class="fas fa-file-export mr-2"></i>تصدير البيانات</a>
+                <a href="statistics.html" class="btn-secondary"><i class="fas fa-chart-bar mr-2"></i>الإحصائيات</a>
+                <a href="export_data.html" class="btn-secondary"><i class="fas fa-file-export mr-2"></i>تصدير البيانات</a>
                 <a href="add_edit_person.html" class="btn-secondary"><i class="fas fa-user-plus mr-2"></i>إضافة شخص جديد</a>
             </nav>
         </div>
@@ -548,7 +560,9 @@
             </div>
         </div>
     </div>
-<script type="module">
+
+    <!-- Firebase SDKs -->
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -675,48 +689,35 @@
         }
 
         // Build hierarchical tree data structure
-        function buildFamilyTreeData() {
+        function buildFamilyTreeData(members) {
             const memberMap = new Map();
             
-            // Create nodes for all members
-            allFamilyMembers.forEach(member => {
+            // First pass: create all member nodes
+            members.forEach(member => {
                 memberMap.set(member.id, {
                     ...member,
                     children: []
                 });
             });
             
-            // Build parent-child relationships
-            allFamilyMembers.forEach(member => {
-                // Add children
+            // Second pass: build parent-child relationships
+            members.forEach(member => {
                 if (member.childrenIds && member.childrenIds.length > 0) {
                     member.childrenIds.forEach(childId => {
                         if (memberMap.has(childId)) {
                             const child = memberMap.get(childId);
+                            // Set parent-child relationship
                             child.parentId = member.id;
                             memberMap.get(member.id).children.push(child);
                         }
                     });
                 }
-                
-                // Add spouse relationships
-                if (member.spouseIds && member.spouseIds.length > 0) {
-                    member.spouseIds.forEach(spouseId => {
-                        if (memberMap.has(spouseId)) {
-                            const spouse = memberMap.get(spouseId);
-                            if (!memberMap.get(member.id).spouses) {
-                                memberMap.get(member.id).spouses = [];
-                            }
-                            memberMap.get(member.id).spouses.push(spouse);
-                        }
-                    });
-                }
             });
             
-            // Find roots (people with no parents)
+            // Third pass: find roots (people without parent or parent not in filtered set)
             const roots = [];
             memberMap.forEach(member => {
-                if (!member.parentId) {
+                if (!member.parentId || !memberMap.has(member.parentId)) {
                     roots.push(member);
                 }
             });
@@ -761,8 +762,9 @@
             nameSpan.textContent = person.fullName || 'غير محدد';
             personCard.appendChild(nameSpan);
 
-            // Age
+            // Calculate age
             const age = calculateAge(person.birthDate);
+            
             if (age !== null) {
                 const ageSpan = document.createElement('span');
                 ageSpan.classList.add('person-details');
@@ -793,17 +795,16 @@
                 const toggleBtn = document.createElement('div');
                 toggleBtn.classList.add('toggle-children-btn');
                 toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                
                 toggleBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const childrenContainer = nodeDiv.querySelector('.children-container');
                     if (childrenContainer) {
                         childrenContainer.classList.toggle('collapsed');
                         toggleBtn.classList.toggle('collapsed');
-                        if (childrenContainer.classList.contains('collapsed')) {
-                            toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-                        } else {
-                            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                        }
+                        toggleBtn.innerHTML = childrenContainer.classList.contains('collapsed') 
+                            ? '<i class="fas fa-chevron-right"></i>' 
+                            : '<i class="fas fa-chevron-down"></i>';
                     }
                 });
                 personCard.appendChild(toggleBtn);
@@ -820,7 +821,6 @@
             const node = renderPersonNode(person);
             parentElement.appendChild(node);
 
-            // Render children if exists
             if (person.children && person.children.length > 0) {
                 const childrenContainer = document.createElement('div');
                 childrenContainer.classList.add('children-container');
@@ -841,7 +841,7 @@
             }
         }
 
-        // Apply filters to family data
+        // Apply all filters to the family data
         function applyAllFilters() {
             const familyFilter = familyFilterSelect.value;
             const genderFilter = genderFilterSelect.value;
@@ -883,28 +883,41 @@
             loadingIndicator.classList.remove('hidden');
             noTreeDataMessage.classList.add('hidden');
             familyTreeContainer.innerHTML = '';
-            familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-
-            // Build tree data
-            const roots = buildFamilyTreeData();
-
-            if (roots.length === 0) {
+            
+            try {
+                const roots = buildFamilyTreeData(currentFilteredMembers);
+                
+                if (roots.length === 0) {
+                    loadingIndicator.classList.add('hidden');
+                    noTreeDataMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                // Create a wrapper for the tree
+                const treeWrapper = document.createElement('div');
+                treeWrapper.classList.add('flex', 'flex-wrap', 'justify-center', 'gap-8');
+                
+                // Render each root person and their descendants
+                roots.forEach(root => {
+                    const rootContainer = document.createElement('div');
+                    rootContainer.classList.add('flex', 'flex-col', 'items-center');
+                    renderTree(root, rootContainer);
+                    treeWrapper.appendChild(rootContainer);
+                });
+                
+                familyTreeContainer.appendChild(treeWrapper);
+                
+                // Reset zoom and pan
+                translateX = 0;
+                translateY = 0;
+                scale = 1;
+                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            } catch (error) {
+                console.error("Error building tree:", error);
+                showModal("حدث خطأ أثناء بناء الشجرة: " + error.message);
+            } finally {
                 loadingIndicator.classList.add('hidden');
-                noTreeDataMessage.classList.remove('hidden');
-                return;
             }
-
-            // Create a wrapper for the tree
-            const treeWrapper = document.createElement('div');
-            treeWrapper.classList.add('flex', 'flex-col', 'items-center');
-
-            // Render each root person and their descendants
-            roots.forEach(root => {
-                renderTree(root, treeWrapper);
-            });
-
-            familyTreeContainer.appendChild(treeWrapper);
-            loadingIndicator.classList.add('hidden');
         }
 
         // Pan and Zoom functionality
@@ -958,6 +971,10 @@
 
         // Export tree as image
         function exportTreeAsImage() {
+            // Temporarily reset transform for accurate capture
+            const originalTransform = familyTreeContainer.style.transform;
+            familyTreeContainer.style.transform = 'none';
+
             html2canvas(familyTreeContainer, {
                 useCORS: true,
                 scrollX: -window.scrollX,
@@ -973,6 +990,9 @@
             }).catch(error => {
                 console.error("Error exporting tree as image:", error);
                 showModal("حدث خطأ أثناء تصدير الشجرة كصورة: " + error.message);
+            }).finally(() => {
+                // Restore original transform
+                familyTreeContainer.style.transform = originalTransform;
             });
         }
 
@@ -1013,6 +1033,11 @@
             
             // Export button
             exportTreeImageBtn.addEventListener('click', exportTreeAsImage);
+
+            // Search input
+            personSearchInput.addEventListener('input', () => {
+                applyAllFilters();
+            });
 
             // Setup tree interactions
             setupPanZoom();
