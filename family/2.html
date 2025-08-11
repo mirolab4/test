@@ -13,9 +13,9 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            direction: rtl;
-            text-align: right;
+            background-color: #f3f4f6; /* Light gray background */
+            direction: rtl; /* Right-to-left for Arabic */
+            text-align: right; /* Align text to the right */
         }
         .container {
             max-width: 1200px;
@@ -24,37 +24,37 @@
         }
         .card {
             background-color: #ffffff;
-            border-radius: 1rem;
+            border-radius: 1rem; /* Rounded corners */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
         .btn-primary {
-            background-color: #4f46e5;
+            background-color: #4f46e5; /* Indigo */
             color: white;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
+            border-radius: 0.75rem; /* Rounded corners */
             transition: background-color 0.2s;
         }
         .btn-primary:hover {
-            background-color: #4338ca;
+            background-color: #4338ca; /* Darker indigo */
         }
         .btn-secondary {
-            background-color: #e5e7eb;
-            color: #374151;
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
             transition: background-color 0.2s;
         }
         .btn-secondary:hover {
-            background-color: #d1d5db;
+            background-color: #d1d5db; /* Darker light gray */
         }
         .input-field {
-            border: 1px solid #d1d5db;
+            border: 1px solid #d1d5db; /* Light gray border */
             padding: 0.75rem 1rem;
             border-radius: 0.75rem;
             width: 100%;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Include padding in width */
         }
         .input-group {
             position: relative;
@@ -83,15 +83,15 @@
         }
         /* Custom modal styles */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
             left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
             justify-content: center;
             align-items: center;
         }
@@ -107,17 +107,17 @@
         }
         .close-button {
             color: #aaa;
-            float: left;
+            float: left; /* Align to left for RTL */
             font-size: 28px;
             font-weight: bold;
-            cursor: pointer;
+            cursor: pointer; /* Add cursor pointer for better UX */
         }
         .close-button:hover,
         .close-button:focus {
             color: black;
             text-decoration: none;
         }
-        .relation-item {
+        .relation-item { /* Unified style for child and spouse list items */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -128,13 +128,13 @@
             border-bottom: none;
         }
         .error-message {
-            color: #ef4444;
-            font-size: 0.875rem;
+            color: #ef4444; /* Red color for errors */
+            font-size: 0.875rem; /* Small text */
             margin-top: 0.25rem;
             text-align: right;
         }
         .input-field.error {
-            border-color: #ef4444;
+            border-color: #ef4444; /* Red border for invalid fields */
         }
         /* Loading Modal Specific Styles */
         #loadingModal .modal-content {
@@ -189,7 +189,7 @@
                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html">الإحصائيات</a>
                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html">تصدير البيانات</a>
                <a href="add_edit_person.html" class="btn-primary">إضافة شخص جديد</a>
-           </nav>
+            </nav>
         </div>
 
         <!-- Add/Edit Person Form -->
@@ -397,10 +397,12 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp, onSnapshot, arrayUnion, arrayRemove, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Wrap the rest of the script in an IIFE to prevent global scope conflicts
         (async () => {
+            // Firebase configuration provided by the user
             const firebaseConfig = {
                 apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
                 authDomain: "family-9b0b8.firebaseapp.com",
@@ -412,217 +414,84 @@
                 measurementId: "G-X5LDQB1WC9"
             };
 
+            // Initialize Firebase
             const app = initializeApp(firebaseConfig);
             const db = getFirestore(app);
             const auth = getAuth(app);
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
             let userId = null;
-            let editingPersonId = null;
-            let allFamilyMembers = [];
-            let originalPersonData = null;
-            let hasUnsavedChanges = false;
-
-            // DOM Elements
-            const pageTitle = document.getElementById('pageTitle');
-            const personForm = document.getElementById('personForm');
-            const firstNameInput = document.getElementById('firstNameInput');
-            const firstNameError = document.getElementById('firstNameError');
-            const fatherNameInput = document.getElementById('fatherNameInput');
-            const fatherSuggestions = document.getElementById('fatherSuggestions');
-            const fatherIdInput = document.getElementById('fatherIdInput');
-            const grandFatherNameInput = document.getElementById('grandFatherNameInput');
-            const familyNameInput = document.getElementById('familyNameInput');
-            const familyNameError = document.getElementById('familyNameError');
-            const motherNameInput = document.getElementById('motherNameInput');
-            const motherSuggestions = document.getElementById('motherSuggestions');
-            const motherIdInput = document.getElementById('motherIdInput');
-            const idNumberInput = document.getElementById('idNumberInput');
-            const idNumberError = document.getElementById('idNumberError');
-            const phoneNumberInput = document.getElementById('phoneNumberInput');
-            const birthDateInput = document.getElementById('birthDateInput');
-            const birthDateError = document.getElementById('birthDateError');
-            const genderMale = document.getElementById('genderMale');
-            const genderFemale = document.getElementById('genderFemale');
-            const genderError = document.getElementById('genderError');
-            const isAliveInput = document.getElementById('isAliveInput');
-            const deathDateContainer = document.getElementById('deathDateContainer');
-            const deathDateInput = document.getElementById('deathDateInput');
-            const deathDateError = document.getElementById('deathDateError');
-            const maritalStatusInput = document.getElementById('maritalStatusInput');
-            const maritalStatusError = document.getElementById('maritalStatusError');
-            const marriageDateContainer = document.getElementById('marriageDateContainer');
-            const marriageDateInput = document.getElementById('marriageDateInput');
-            const engagementDateContainer = document.getElementById('engagementDateContainer');
-            const engagementDateInput = document.getElementById('engagementDateInput');
-            const spousesSection = document.getElementById('spousesSection');
-            const spousesListDiv = document.getElementById('spousesList');
-            const noSpousesMessage = document.getElementById('noSpousesMessage');
-            const addSpouseInput = document.getElementById('addSpouseInput');
-            const addSpouseSuggestions = document.getElementById('addSpouseSuggestions');
-            const addSpouseIdInput = document.getElementById('addSpouseIdInput');
-            const addSpouseBtn = document.getElementById('addSpouseBtn');
-            const spouseError = document.getElementById('spouseError');
-            const spouseGenderError = document.getElementById('spouseGenderError');
-            const childrenListDiv = document.getElementById('childrenList');
-            const noChildrenMessage = document.getElementById('noChildrenMessage');
-            const addChildInput = document.getElementById('addChildInput');
-            const childrenSuggestions = document.getElementById('childrenSuggestions');
-            const addChildIdInput = document.getElementById('addChildIdInput');
-            const addChildBtn = document.getElementById('addChildBtn');
-            const savePersonBtn = document.getElementById('savePersonBtn');
-            const saveAndAddAnotherBtn = document.getElementById('saveAndAddAnotherBtn');
-            const cancelBtn = document.getElementById('cancelBtn');
-            const facebookLinkInput = document.getElementById('facebookLinkInput');
-            const linkedinLinkInput = document.getElementById('linkedinLinkInput');
-            const websiteLinkInput = document.getElementById('websiteLinkInput');
+            let editingPersonId = null; // Stores ID if in edit mode
+            let allFamilyMembers = []; // Cache all family members for suggestions
+            let originalPersonData = null; // Store original data for comparison during updates
+            let hasUnsavedChanges = false; // Track if there are unsaved changes
             
-            // Modals
-            const messageModal = document.getElementById('messageModal');
-            const modalMessage = document.getElementById('modalMessage');
-            const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
-            const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
-            const loadingModal = document.getElementById('loadingModal');
+            // Get app ID from environment or use a default
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
+            // Custom modal function for messages
+            const modal = document.getElementById('messageModal');
+            const modalMessage = document.getElementById('modalMessage');
+            const closeBtn = document.getElementById('closeMessageModalBtn');
+            const confirmBtn = document.getElementById('confirmMessageModalBtn');
+
+            function showModal(message, isConfirmation = false, onConfirm = () => {}) {
+                modalMessage.textContent = message;
+                confirmBtn.style.display = isConfirmation ? 'block' : 'none';
+                modal.style.display = 'flex';
+                const closeHandler = () => {
+                    modal.style.display = 'none';
+                    if (!isConfirmation) {
+                        confirmBtn.removeEventListener('click', confirmHandler);
+                        closeBtn.removeEventListener('click', closeHandler);
+                    }
+                };
+                const confirmHandler = () => {
+                    modal.style.display = 'none';
+                    onConfirm();
+                    confirmBtn.removeEventListener('click', confirmHandler);
+                    closeBtn.removeEventListener('click', closeHandler);
+                };
+                closeBtn.onclick = closeHandler;
+                if (!isConfirmation) {
+                    confirmBtn.onclick = closeHandler;
+                } else {
+                    confirmBtn.onclick = confirmHandler;
+                }
+            }
+
+            // Function to show and hide the loading modal
+            const loadingModal = document.getElementById('loadingModal');
+            const showLoadingModal = () => loadingModal.style.display = 'flex';
+            const hideLoadingModal = () => loadingModal.style.display = 'none';
+
+            // --- Firestore Helper Functions ---
+            const getFamilyCollection = () => {
+                const userPath = auth.currentUser ? auth.currentUser.uid : 'anonymous';
+                return collection(db, `artifacts/${appId}/public/data/family`);
+            };
+
+            const fetchAllFamilyMembers = async () => {
+                const familyCollection = getFamilyCollection();
+                const q = query(familyCollection);
+                const querySnapshot = await getDocs(q);
+                allFamilyMembers = [];
+                querySnapshot.forEach(doc => {
+                    allFamilyMembers.push({ id: doc.id, ...doc.data() });
+                });
+                console.log('Fetched all family members:', allFamilyMembers);
+            };
+
+            // Function to get a person's name by ID
+            const getPersonNameById = (id) => {
+                const person = allFamilyMembers.find(p => p.id === id);
+                return person ? person.firstName : 'غير معروف';
+            };
+            
+            // --- UI and Data Handling ---
             let currentSpouses = new Map();
             let currentChildren = new Map();
 
-            // Utility functions
-            const showModal = (message, onConfirm = null) => {
-                modalMessage.textContent = message;
-                messageModal.style.display = 'flex';
-                confirmMessageModalBtn.onclick = () => {
-                    messageModal.style.display = 'none';
-                    if (onConfirm) onConfirm();
-                };
-                closeMessageModalBtn.onclick = () => {
-                    messageModal.style.display = 'none';
-                };
-            };
-
-            const showLoading = () => {
-                loadingModal.style.display = 'flex';
-            };
-
-            const hideLoading = () => {
-                loadingModal.style.display = 'none';
-            };
-
-            // Firebase Initialization and Authentication
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log('Signed in anonymously with UID:', userId);
-                    await initializeAppAndData();
-                } else {
-                    // Sign in anonymously if not authenticated
-                    try {
-                        const { user } = await signInAnonymously(auth);
-                        userId = user.uid;
-                        console.log('Signed in anonymously with UID:', userId);
-                        await initializeAppAndData();
-                    } catch (error) {
-                        console.error("Error signing in anonymously:", error);
-                        showModal("حدث خطأ أثناء محاولة تسجيل الدخول المجهول. يرجى المحاولة مرة أخرى.");
-                    }
-                }
-            });
-
-            const initializeAppAndData = async () => {
-                await fetchAllFamilyMembers();
-                const urlParams = new URLSearchParams(window.location.search);
-                editingPersonId = urlParams.get('id');
-
-                if (editingPersonId) {
-                    pageTitle.textContent = 'تعديل بيانات شخص';
-                    await loadPersonData(editingPersonId);
-                } else {
-                    pageTitle.textContent = 'إضافة شخص جديد';
-                }
-
-                setupEventListeners();
-                hasUnsavedChanges = false;
-            };
-
-            // Fetch all family members from Firestore for search/suggestions
-            const fetchAllFamilyMembers = async () => {
-                try {
-                    const peopleCol = collection(db, `artifacts/${appId}/public/data/people`);
-                    const peopleSnapshot = await getDocs(peopleCol);
-                    allFamilyMembers = peopleSnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    console.log('Fetched all family members:', allFamilyMembers);
-                } catch (error) {
-                    console.error('Error fetching all family members:', error);
-                    showModal('حدث خطأ أثناء تحميل قائمة العائلة.');
-                }
-            };
-
-            // Load existing person data for editing
-            const loadPersonData = async (id) => {
-                try {
-                    const personDocRef = doc(db, `artifacts/${appId}/public/data/people`, id);
-                    const personDoc = await getDoc(personDocRef);
-
-                    if (personDoc.exists()) {
-                        originalPersonData = personDoc.data();
-                        const data = originalPersonData;
-                        
-                        // Populate form fields
-                        firstNameInput.value = data.firstName || '';
-                        fatherNameInput.value = data.fatherName || '';
-                        fatherIdInput.value = data.fatherId || '';
-                        grandFatherNameInput.value = data.grandFatherName || '';
-                        familyNameInput.value = data.familyName || '';
-                        motherNameInput.value = data.motherName || '';
-                        motherIdInput.value = data.motherId || '';
-                        idNumberInput.value = data.idNumber || '';
-                        phoneNumberInput.value = data.phoneNumber || '';
-                        birthDateInput.value = data.birthDate || '';
-
-                        if (data.gender) {
-                            if (data.gender === 'Male') genderMale.checked = true;
-                            else if (data.gender === 'Female') genderFemale.checked = true;
-                        }
-
-                        isAliveInput.checked = data.isAlive !== false;
-                        if (!isAliveInput.checked) {
-                            deathDateContainer.classList.remove('hidden');
-                            deathDateInput.value = data.deathDate || '';
-                        } else {
-                             deathDateContainer.classList.add('hidden');
-                        }
-
-                        notesInput.value = data.notes || '';
-                        maritalStatusInput.value = data.maritalStatus || '';
-                        
-                        // Handle spouse and children data
-                        const spousesData = data.spouses || [];
-                        currentSpouses = new Map(spousesData.map(s => [s.id, s]));
-                        renderSpousesList();
-
-                        const childrenData = data.children || [];
-                        currentChildren = new Map(childrenData.map(c => [c.id, c]));
-                        renderChildrenList();
-
-                        maritalStatusInput.dispatchEvent(new Event('change')); // Trigger event to show/hide spouse section
-
-                        // Additional links
-                        facebookLinkInput.value = data.facebookLink || '';
-                        linkedinLinkInput.value = data.linkedinLink || '';
-                        websiteLinkInput.value = data.websiteLink || '';
-                        
-                    } else {
-                        showModal('لم يتم العثور على بيانات الشخص.');
-                    }
-                } catch (error) {
-                    console.error('Error loading person data:', error);
-                    showModal('حدث خطأ أثناء تحميل بيانات الشخص.');
-                }
-            };
-
+            // Function to render spouses list
             const renderSpousesList = () => {
                 spousesListDiv.innerHTML = '';
                 if (currentSpouses.size === 0) {
@@ -630,27 +499,21 @@
                 } else {
                     noSpousesMessage.classList.add('hidden');
                     currentSpouses.forEach((spouse, id) => {
-                        const spouseName = spouse.isManual ? `${spouse.name} (يدوي)` : spouse.name;
-                        const listItem = document.createElement('div');
-                        listItem.classList.add('relation-item');
-                        listItem.innerHTML = `
+                        const spouseName = spouse.isManual ? spouse.name : getPersonNameById(id);
+                        const item = document.createElement('div');
+                        item.className = 'relation-item';
+                        item.innerHTML = `
                             <span class="text-gray-800">${spouseName}</span>
-                            <button type="button" class="text-red-500 hover:text-red-700" data-id="${id}">
-                                <i class="fas fa-trash-alt"></i>
+                            <button type="button" data-id="${id}" class="remove-spouse text-red-500 hover:text-red-700 transition-colors">
+                                <i class="fas fa-times-circle"></i>
                             </button>
                         `;
-                        listItem.querySelector('button').addEventListener('click', (e) => {
-                            const spouseIdToRemove = e.currentTarget.dataset.id;
-                            if (currentSpouses.delete(spouseIdToRemove)) {
-                                hasUnsavedChanges = true;
-                                renderSpousesList();
-                            }
-                        });
-                        spousesListDiv.appendChild(listItem);
+                        spousesListDiv.appendChild(item);
                     });
                 }
             };
             
+            // Function to render children list
             const renderChildrenList = () => {
                 childrenListDiv.innerHTML = '';
                 if (currentChildren.size === 0) {
@@ -658,203 +521,201 @@
                 } else {
                     noChildrenMessage.classList.add('hidden');
                     currentChildren.forEach((child, id) => {
-                        const listItem = document.createElement('div');
-                        listItem.classList.add('relation-item');
-                        listItem.innerHTML = `
-                            <span class="text-gray-800">${child.name}</span>
-                            <button type="button" class="text-red-500 hover:text-red-700" data-id="${id}">
-                                <i class="fas fa-trash-alt"></i>
+                        const childName = child.isManual ? child.name : getPersonNameById(id);
+                        const item = document.createElement('div');
+                        item.className = 'relation-item';
+                        item.innerHTML = `
+                            <span class="text-gray-800">${childName}</span>
+                            <button type="button" data-id="${id}" class="remove-child text-red-500 hover:text-red-700 transition-colors">
+                                <i class="fas fa-times-circle"></i>
                             </button>
                         `;
-                        listItem.querySelector('button').addEventListener('click', (e) => {
-                            const childIdToRemove = e.currentTarget.dataset.id;
-                            if (currentChildren.delete(childIdToRemove)) {
-                                hasUnsavedChanges = true;
-                                renderChildrenList();
-                            }
-                        });
-                        childrenListDiv.appendChild(listItem);
+                        childrenListDiv.appendChild(item);
                     });
                 }
             };
 
-            // Search and suggestion logic
-            const setupSearchInput = (input, suggestionsDiv, hiddenIdInput) => {
-                input.addEventListener('input', () => {
-                    const searchTerm = input.value.trim();
-                    if (searchTerm.length > 2) {
-                        const filtered = allFamilyMembers.filter(person =>
-                            (person.firstName + ' ' + (person.familyName || '')).toLowerCase().includes(searchTerm.toLowerCase())
-                        );
-                        renderSuggestions(filtered, suggestionsDiv, input, hiddenIdInput);
+            // Populate form with existing data in edit mode
+            const populateForm = async (personId) => {
+                editingPersonId = personId;
+                pageTitle.textContent = 'تعديل بيانات شخص';
+                const familyCollection = getFamilyCollection();
+                const personRef = doc(familyCollection, personId);
+                const docSnap = await getDoc(personRef);
+
+                if (docSnap.exists()) {
+                    originalPersonData = docSnap.data();
+                    const data = originalPersonData;
+                    
+                    firstNameInput.value = data.firstName || '';
+                    fatherIdInput.value = data.fatherId || '';
+                    if (data.fatherId) {
+                        const father = allFamilyMembers.find(p => p.id === data.fatherId);
+                        fatherNameInput.value = father ? father.firstName : '';
                     } else {
-                        suggestionsDiv.classList.add('hidden');
+                        fatherNameInput.value = data.fatherName || '';
                     }
-                    hiddenIdInput.value = ''; // Clear hidden ID on input change
-                });
-            };
-
-            const renderSuggestions = (suggestions, suggestionsDiv, input, hiddenIdInput) => {
-                suggestionsDiv.innerHTML = '';
-                suggestions.forEach(person => {
-                    const item = document.createElement('div');
-                    item.classList.add('suggestions-list-item');
-                    item.textContent = `${person.firstName} ${person.familyName || ''}`;
-                    item.addEventListener('click', () => {
-                        input.value = item.textContent;
-                        hiddenIdInput.value = person.id;
-                        suggestionsDiv.classList.add('hidden');
-                    });
-                    suggestionsDiv.appendChild(item);
-                });
-                suggestionsDiv.classList.remove('hidden');
-            };
-
-            const setupEventListeners = () => {
-                // Attach event listeners for search inputs
-                setupSearchInput(fatherNameInput, fatherSuggestions, fatherIdInput);
-                setupSearchInput(motherNameInput, motherSuggestions, motherIdInput);
-                setupSearchInput(addSpouseInput, addSpouseSuggestions, addSpouseIdInput);
-                setupSearchInput(addChildInput, childrenSuggestions, addChildIdInput);
-
-                // Handle isAlive checkbox
-                isAliveInput.addEventListener('change', () => {
-                    if (!isAliveInput.checked) {
-                        deathDateContainer.classList.remove('hidden');
+                    motherIdInput.value = data.motherId || '';
+                    if (data.motherId) {
+                        const mother = allFamilyMembers.find(p => p.id === data.motherId);
+                        motherNameInput.value = mother ? mother.firstName : '';
                     } else {
-                        deathDateContainer.classList.add('hidden');
-                        deathDateInput.value = '';
+                        motherNameInput.value = data.motherName || '';
                     }
-                    hasUnsavedChanges = true;
-                });
-
-                // Handle marital status change
-                maritalStatusInput.addEventListener('change', () => {
-                    if (maritalStatusInput.value === 'Married' || maritalStatusInput.value === 'Divorced' || maritalStatusInput.value === 'Widowed') {
-                        spousesSection.classList.remove('hidden');
+                    grandFatherNameInput.value = data.grandFatherName || '';
+                    familyNameInput.value = data.familyName || '';
+                    idNumberInput.value = data.idNumber || '';
+                    phoneNumberInput.value = data.phoneNumber || '';
+                    birthDateInput.value = data.birthDate || '';
+                    notesInput.value = data.notes || '';
+                    maritalStatusInput.value = data.maritalStatus || '';
+                    
+                    if (data.maritalStatus === 'Married') {
                         marriageDateContainer.classList.remove('hidden');
+                        marriageDateInput.value = data.marriageDate || '';
                     } else {
-                        spousesSection.classList.add('hidden');
                         marriageDateContainer.classList.add('hidden');
                     }
-                    hasUnsavedChanges = true;
-                });
-
-                // Add spouse button
-                addSpouseBtn.addEventListener('click', () => {
-                    const spouseName = addSpouseInput.value.trim();
-                    const spouseId = addSpouseIdInput.value.trim();
-
-                    if (!spouseName) {
-                        showModal("يجب إدخال اسم الزوج/الزوجة.");
-                        return;
-                    }
-
-                    // Get gender of current person
-                    const currentPersonGender = document.querySelector('input[name="gender"]:checked')?.value;
-                    if (!currentPersonGender) {
-                        showModal("يجب تحديد جنس الشخص أولاً قبل إضافة زوج/زوجة.");
-                        return;
-                    }
-
-                    // Check if spouse is a known person with a gender
-                    if (spouseId) {
-                        const spouseData = allFamilyMembers.find(p => p.id === spouseId);
-                        if (spouseData && spouseData.gender && spouseData.gender === currentPersonGender) {
-                            spouseGenderError.classList.remove('hidden');
-                            showModal("لا يمكن إضافة زوج/زوجة من نفس الجنس.");
-                            return;
-                        } else {
-                            spouseGenderError.classList.add('hidden');
-                        }
+                    if (data.maritalStatus === 'Engaged') { // Optional: if you add an 'Engaged' status
+                        engagementDateContainer.classList.remove('hidden');
+                        engagementDateInput.value = data.engagementDate || '';
+                    } else {
+                        engagementDateContainer.classList.add('hidden');
                     }
                     
-                    const isManual = !spouseId;
-                    const entryId = isManual ? `manual-${crypto.randomUUID()}` : spouseId;
-
-                    if (!currentSpouses.has(entryId)) {
-                        currentSpouses.set(entryId, { id: entryId, name: spouseName, isManual: isManual });
-                        addSpouseInput.value = '';
-                        addSpouseIdInput.value = '';
-                        addSpouseSuggestions.classList.add('hidden');
-                        renderSpousesList();
-                        hasUnsavedChanges = true;
-                    } else {
-                        showModal("هذا الزوج/الزوجة مضاف بالفعل.");
-                    }
-                });
-                
-                // Add child button
-                addChildBtn.addEventListener('click', () => {
-                    const childName = addChildInput.value.trim();
-                    const childId = addChildIdInput.value.trim();
-
-                    if (!childName) {
-                        showModal("يجب إدخال اسم الابن/الابنة.");
-                        return;
+                    if (data.gender === 'Male') {
+                        genderMale.checked = true;
+                    } else if (data.gender === 'Female') {
+                        genderFemale.checked = true;
                     }
                     
-                    const isManual = !childId;
-                    const entryId = isManual ? `manual-${crypto.randomUUID()}` : childId;
+                    isAliveInput.checked = data.isAlive !== false; // Default to true if not specified
+                    deathDateContainer.classList.toggle('hidden', isAliveInput.checked);
+                    deathDateInput.value = data.deathDate || '';
 
-                    if (!currentChildren.has(entryId)) {
-                        currentChildren.set(entryId, { id: entryId, name: childName, isManual: isManual });
-                        addChildInput.value = '';
-                        addChildIdInput.value = '';
-                        childrenSuggestions.classList.add('hidden');
-                        renderChildrenList();
-                        hasUnsavedChanges = true;
-                    } else {
-                        showModal("هذا الابن/الابنة مضاف بالفعل.");
-                    }
-                });
-
-                // Handle form submission
-                personForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    if (!validateForm()) return;
-                    await savePerson(false);
-                });
-
-                saveAndAddAnotherBtn.addEventListener('click', async () => {
-                    if (!validateForm()) return;
-                    await savePerson(true);
-                });
-
-                // Cancel button
-                cancelBtn.addEventListener('click', () => {
-                    if (hasUnsavedChanges) {
-                        showModal('لديك تغييرات غير محفوظة. هل أنت متأكد من إلغاء العملية؟', () => {
-                            window.location.href = 'index.html';
+                    // Load spouses and children
+                    currentSpouses = new Map();
+                    if (data.spouses) {
+                        data.spouses.forEach(spouse => {
+                            if (typeof spouse === 'string') {
+                                // Linked spouse
+                                const spousePerson = allFamilyMembers.find(p => p.id === spouse);
+                                if (spousePerson) {
+                                    currentSpouses.set(spouse, { id: spouse, name: spousePerson.firstName, isManual: false });
+                                }
+                            } else {
+                                // Manual spouse
+                                currentSpouses.set(spouse.id, spouse);
+                            }
                         });
-                    } else {
-                        window.location.href = 'index.html';
                     }
-                });
+                    renderSpousesList();
+
+                    currentChildren = new Map();
+                    if (data.children) {
+                        data.children.forEach(child => {
+                            if (typeof child === 'string') {
+                                // Linked child
+                                const childPerson = allFamilyMembers.find(p => p.id === child);
+                                if (childPerson) {
+                                    currentChildren.set(child, { id: child, name: childPerson.firstName, isManual: false });
+                                }
+                            } else {
+                                // Manual child
+                                currentChildren.set(child.id, child);
+                            }
+                        });
+                    }
+                    renderChildrenList();
+
+                    // Social links
+                    facebookLinkInput.value = data.facebookLink || '';
+                    linkedinLinkInput.value = data.linkedinLink || '';
+                    websiteLinkInput.value = data.websiteLink || '';
+
+                    hasUnsavedChanges = false;
+                } else {
+                    console.error("No such document!");
+                    showModal('حدث خطأ: لم يتم العثور على بيانات هذا الشخص.');
+                }
+            };
+            
+            // Function to reset the form
+            const resetForm = () => {
+                personForm.reset();
+                pageTitle.textContent = 'إضافة شخص جديد';
+                editingPersonId = null;
+                originalPersonData = null;
+                hasUnsavedChanges = false;
+                currentSpouses = new Map();
+                currentChildren = new Map();
+                renderSpousesList();
+                renderChildrenList();
+                deathDateContainer.classList.add('hidden');
+                marriageDateContainer.classList.add('hidden');
+                engagementDateContainer.classList.add('hidden');
+                // Clear any suggestion-related hidden inputs and lists
+                fatherIdInput.value = '';
+                motherIdInput.value = '';
+                addSpouseIdInput.value = '';
+                addChildIdInput.value = '';
+                fatherSuggestions.classList.add('hidden');
+                motherSuggestions.classList.add('hidden');
+                addSpouseSuggestions.classList.add('hidden');
+                childrenSuggestions.classList.add('hidden');
             };
 
+            // Function to get form data
+            const getFormData = () => {
+                const formData = {
+                    firstName: firstNameInput.value.trim() || null,
+                    familyName: familyNameInput.value.trim() || null,
+                    fatherName: fatherNameInput.value.trim() || null,
+                    fatherId: fatherIdInput.value || null,
+                    motherName: motherNameInput.value.trim() || null,
+                    motherId: motherIdInput.value || null,
+                    grandFatherName: grandFatherNameInput.value.trim() || null,
+                    idNumber: idNumberInput.value.trim() || null,
+                    phoneNumber: phoneNumberInput.value.trim() || null,
+                    birthDate: birthDateInput.value || null,
+                    gender: document.querySelector('input[name="gender"]:checked')?.value || null,
+                    maritalStatus: maritalStatusInput.value || null,
+                    notes: notesInput.value.trim() || null,
+                    isAlive: isAliveInput.checked,
+                    deathDate: deathDateInput.value || null,
+                    marriageDate: maritalStatusInput.value === 'Married' ? marriageDateInput.value : null,
+                    spouses: Array.from(currentSpouses.values()),
+                    children: Array.from(currentChildren.values()),
+                    facebookLink: facebookLinkInput.value.trim() || null,
+                    linkedinLink: linkedinLinkInput.value.trim() || null,
+                    websiteLink: websiteLinkInput.value.trim() || null,
+                    lastUpdated: Timestamp.now(),
+                };
+                // Clean up empty fields
+                Object.keys(formData).forEach(key => formData[key] == null && delete formData[key]);
+                return formData;
+            };
+
+            // --- Form Validation and Submission ---
             const validateForm = () => {
                 let isValid = true;
-                
-                // Reset errors
-                firstNameError.classList.add('hidden');
-                familyNameError.classList.add('hidden');
-                birthDateError.classList.add('hidden');
-                genderError.classList.add('hidden');
-                maritalStatusError.classList.add('hidden');
-                spouseError.classList.add('hidden');
+                // Clear previous errors
+                document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.input-field.error').forEach(el => el.classList.remove('error'));
 
-                // Validate required fields
                 if (!firstNameInput.value.trim()) {
                     firstNameError.classList.remove('hidden');
+                    firstNameInput.classList.add('error');
                     isValid = false;
                 }
                 if (!familyNameInput.value.trim()) {
                     familyNameError.classList.remove('hidden');
+                    familyNameInput.classList.add('error');
                     isValid = false;
                 }
-                if (!birthDateInput.value.trim()) {
+                if (!birthDateInput.value) {
                     birthDateError.classList.remove('hidden');
+                    birthDateInput.classList.add('error');
                     isValid = false;
                 }
                 if (!document.querySelector('input[name="gender"]:checked')) {
@@ -863,94 +724,393 @@
                 }
                 if (!maritalStatusInput.value) {
                     maritalStatusError.classList.remove('hidden');
+                    maritalStatusInput.classList.add('error');
                     isValid = false;
                 }
-                
+                if (maritalStatusInput.value === 'Married' && currentSpouses.size === 0) {
+                    spouseError.classList.remove('hidden');
+                    isValid = false;
+                }
+                if (!isAliveInput.checked && !deathDateInput.value) {
+                    deathDateError.classList.remove('hidden');
+                    deathDateInput.classList.add('error');
+                    isValid = false;
+                }
                 return isValid;
             };
-
-            const savePerson = async (shouldAddAnother) => {
-                showLoading();
+            
+            // Main save function
+            const savePersonData = async (shouldAddAnother = false) => {
+                if (!validateForm()) {
+                    showModal('يرجى ملء جميع الحقول المطلوبة بشكل صحيح.');
+                    return;
+                }
                 
-                const personData = {
-                    firstName: firstNameInput.value.trim(),
-                    fatherName: fatherNameInput.value.trim(),
-                    fatherId: fatherIdInput.value.trim() || null,
-                    grandFatherName: grandFatherNameInput.value.trim(),
-                    familyName: familyNameInput.value.trim(),
-                    motherName: motherNameInput.value.trim(),
-                    motherId: motherIdInput.value.trim() || null,
-                    idNumber: idNumberInput.value.trim() || null,
-                    phoneNumber: phoneNumberInput.value.trim() || null,
-                    birthDate: birthDateInput.value,
-                    gender: document.querySelector('input[name="gender"]:checked')?.value || null,
-                    isAlive: isAliveInput.checked,
-                    deathDate: isAliveInput.checked ? null : deathDateInput.value,
-                    notes: notesInput.value.trim(),
-                    maritalStatus: maritalStatusInput.value,
-                    marriageDate: maritalStatusInput.value === 'Married' ? marriageDateInput.value : null,
-                    spouses: Array.from(currentSpouses.values()),
-                    children: Array.from(currentChildren.values()),
-                    facebookLink: facebookLinkInput.value.trim(),
-                    linkedinLink: linkedinLinkInput.value.trim(),
-                    websiteLink: websiteLinkInput.value.trim()
-                };
-
+                showLoadingModal();
                 try {
-                    let docRef;
+                    const formData = getFormData();
+                    const familyCollection = getFamilyCollection();
+                    
+                    // Handle editing existing person
                     if (editingPersonId) {
-                        docRef = doc(db, `artifacts/${appId}/public/data/people`, editingPersonId);
-                        await setDoc(docRef, personData, { merge: true });
-                        showModal('تم تحديث بيانات الشخص بنجاح!');
+                        const personRef = doc(familyCollection, editingPersonId);
+                        
+                        // Compare formData with originalPersonData to get only changed fields
+                        const changedData = {};
+                        for (const key in formData) {
+                            if (JSON.stringify(formData[key]) !== JSON.stringify(originalPersonData[key])) {
+                                changedData[key] = formData[key];
+                            }
+                        }
+                        
+                        if (Object.keys(changedData).length > 0) {
+                            await setDoc(personRef, changedData, { merge: true });
+                            console.log("Document successfully updated!");
+                            showModal('تم تحديث بيانات الشخص بنجاح!');
+                        } else {
+                            showModal('لم يتم إجراء أي تغييرات للحفظ.');
+                        }
                     } else {
-                        const peopleCol = collection(db, `artifacts/${appId}/public/data/people`);
-                        docRef = await addDoc(peopleCol, personData);
-                        showModal('تم إضافة الشخص بنجاح!');
+                        // Handle new person
+                        const docRef = await addDoc(familyCollection, formData);
+                        console.log("Document written with ID: ", docRef.id);
+                        showModal('تمت إضافة الشخص الجديد بنجاح!');
                     }
-
+                    
                     if (shouldAddAnother) {
                         resetForm();
                     } else {
-                        // Redirect to the person's detail page or family list
+                        // Go back to the main list (or refresh the view)
                         window.location.href = 'index.html';
                     }
+                    
+                    hasUnsavedChanges = false;
 
-                } catch (error) {
-                    console.error('Error saving person:', error);
-                    showModal('حدث خطأ أثناء حفظ البيانات. يرجى المحاولة مرة أخرى.');
+                } catch (e) {
+                    console.error("Error adding/updating document: ", e);
+                    showModal('حدث خطأ أثناء حفظ البيانات: ' + e.message);
                 } finally {
-                    hideLoading();
+                    hideLoadingModal();
                 }
             };
             
-            const resetForm = () => {
-                personForm.reset();
-                editingPersonId = null;
-                originalPersonData = null;
-                hasUnsavedChanges = false;
-                currentSpouses.clear();
-                currentChildren.clear();
-                renderSpousesList();
-                renderChildrenList();
-                pageTitle.textContent = 'إضافة شخص جديد';
+            // --- Event Listeners and Initial Setup ---
+            document.addEventListener('DOMContentLoaded', async () => {
+                console.log("DOM fully loaded and parsed.");
+
+                // Wait for authentication state to be ready
+                await new Promise(resolve => {
+                    const unsubscribe = onAuthStateChanged(auth, user => {
+                        userId = user ? user.uid : null;
+                        unsubscribe();
+                        resolve();
+                    });
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        signInWithCustomToken(auth, __initial_auth_token)
+                            .then(() => {
+                                console.log("Signed in with custom token.");
+                            })
+                            .catch((error) => {
+                                console.error("Error signing in with custom token:", error);
+                            });
+                    } else {
+                        signInAnonymously(auth)
+                            .then(() => {
+                                console.log("Signed in anonymously.");
+                            })
+                            .catch((error) => {
+                                console.error("Error signing in anonymously:", error);
+                            });
+                    }
+                });
+
+                // Get DOM elements
+                pageTitle = document.getElementById('pageTitle');
+                personForm = document.getElementById('personForm');
+                firstNameInput = document.getElementById('firstNameInput');
+                firstNameError = document.getElementById('firstNameError');
+                fatherNameInput = document.getElementById('fatherNameInput');
+                fatherSuggestions = document.getElementById('fatherSuggestions');
+                fatherIdInput = document.getElementById('fatherIdInput');
+                grandFatherNameInput = document.getElementById('grandFatherNameInput');
+                familyNameInput = document.getElementById('familyNameInput');
+                familyNameError = document.getElementById('familyNameError');
+                motherNameInput = document.getElementById('motherNameInput');
+                motherSuggestions = document.getElementById('motherSuggestions');
+                motherIdInput = document.getElementById('motherIdInput');
+                idNumberInput = document.getElementById('idNumberInput');
+                idNumberError = document.getElementById('idNumberError');
+                phoneNumberInput = document.getElementById('phoneNumberInput');
+                birthDateInput = document.getElementById('birthDateInput');
+                birthDateError = document.getElementById('birthDateError');
+                genderMale = document.getElementById('genderMale');
+                genderFemale = document.getElementById('genderFemale');
+                genderError = document.getElementById('genderError');
+                isAliveInput = document.getElementById('isAliveInput');
+                deathDateContainer = document.getElementById('deathDateContainer');
+                deathDateInput = document.getElementById('deathDateInput');
+                deathDateError = document.getElementById('deathDateError');
+                maritalStatusInput = document.getElementById('maritalStatusInput');
+                maritalStatusError = document.getElementById('maritalStatusError');
+                marriageDateContainer = document.getElementById('marriageDateContainer');
+                marriageDateInput = document.getElementById('marriageDateInput');
+                engagementDateContainer = document.getElementById('engagementDateContainer');
+                engagementDateInput = document.getElementById('engagementDateInput');
+                spousesListDiv = document.getElementById('spousesList');
+                noSpousesMessage = document.getElementById('noSpousesMessage');
+                addSpouseInput = document.getElementById('addSpouseInput');
+                addSpouseSuggestions = document.getElementById('addSpouseSuggestions');
+                addSpouseIdInput = document.getElementById('addSpouseIdInput');
+                addSpouseBtn = document.getElementById('addSpouseBtn');
+                spouseError = document.getElementById('spouseError');
+                spouseGenderError = document.getElementById('spouseGenderError');
+                childrenListDiv = document.getElementById('childrenList');
+                noChildrenMessage = document.getElementById('noChildrenMessage');
+                addChildInput = document.getElementById('addChildInput');
+                childrenSuggestions = document.getElementById('childrenSuggestions');
+                addChildIdInput = document.getElementById('addChildIdInput');
+                addChildBtn = document.getElementById('addChildBtn');
+                facebookLinkInput = document.getElementById('facebookLinkInput');
+                linkedinLinkInput = document.getElementById('linkedinLinkInput');
+                websiteLinkInput = document.getElementById('websiteLinkInput');
+                
+                // Fetch all family members once and then listen for changes
+                const familyCollection = getFamilyCollection();
+                onSnapshot(familyCollection, (snapshot) => {
+                    snapshot.docChanges().forEach(change => {
+                        const personData = { id: change.doc.id, ...change.doc.data() };
+                        if (change.type === "added" || change.type === "modified") {
+                            const existingIndex = allFamilyMembers.findIndex(p => p.id === personData.id);
+                            if (existingIndex > -1) {
+                                allFamilyMembers[existingIndex] = personData;
+                            } else {
+                                allFamilyMembers.push(personData);
+                            }
+                        } else if (change.type === "removed") {
+                            allFamilyMembers = allFamilyMembers.filter(p => p.id !== personData.id);
+                        }
+                    });
+                    console.log('Real-time update on family members:', allFamilyMembers);
+                    // Re-render spouses and children lists if in edit mode
+                    if (editingPersonId) {
+                        renderSpousesList();
+                        renderChildrenList();
+                    }
+                }, (error) => {
+                    console.error("Error listening to collection:", error);
+                });
+
+                // Check URL for person ID to switch to edit mode
+                const urlParams = new URLSearchParams(window.location.search);
+                const personId = urlParams.get('id');
+                if (personId) {
+                    await populateForm(personId);
+                } else {
+                    resetForm();
+                }
+
+                // Initial UI state setup
                 deathDateContainer.classList.add('hidden');
                 marriageDateContainer.classList.add('hidden');
-                spousesSection.classList.add('hidden');
-            };
-            
-            // Check for person ID in URL and initialize
-            const urlParams = new URLSearchParams(window.location.search);
-            editingPersonId = urlParams.get('id');
+                engagementDateContainer.classList.add('hidden');
 
-            // Handle beforeunload event to warn about unsaved changes
-            window.addEventListener('beforeunload', (e) => {
-                if (hasUnsavedChanges) {
-                    const confirmationMessage = "لديك تغييرات غير محفوظة. هل أنت متأكد من مغادرة هذه الصفحة؟";
-                    e.returnValue = confirmationMessage;
-                    return confirmationMessage;
-                }
+                // --- Live UI and Input Handlers ---
+                isAliveInput.addEventListener('change', () => {
+                    deathDateContainer.classList.toggle('hidden', isAliveInput.checked);
+                    hasUnsavedChanges = true;
+                });
+                
+                maritalStatusInput.addEventListener('change', () => {
+                    marriageDateContainer.classList.add('hidden');
+                    engagementDateContainer.classList.add('hidden');
+                    if (maritalStatusInput.value === 'Married') {
+                        marriageDateContainer.classList.remove('hidden');
+                    } else if (maritalStatusInput.value === 'Engaged') {
+                        engagementDateContainer.classList.remove('hidden');
+                    }
+                    hasUnsavedChanges = true;
+                });
+                
+                // General input change tracking
+                personForm.addEventListener('input', () => {
+                    hasUnsavedChanges = true;
+                });
+
+                // Suggestion handlers
+                const setupSuggestions = (input, suggestionsList, hiddenInput, filterGender = null) => {
+                    input.addEventListener('input', () => {
+                        const query = input.value.trim().toLowerCase();
+                        if (query.length > 1) {
+                            suggestionsList.innerHTML = '';
+                            const filteredMembers = allFamilyMembers.filter(p => {
+                                const match = p.firstName?.toLowerCase().includes(query) ||
+                                              p.familyName?.toLowerCase().includes(query) ||
+                                              `${p.firstName} ${p.familyName}`.toLowerCase().includes(query);
+                                const genderMatch = filterGender ? p.gender === filterGender : true;
+                                const isSelf = editingPersonId && p.id === editingPersonId;
+                                return match && genderMatch && !isSelf;
+                            });
+
+                            if (filteredMembers.length > 0) {
+                                filteredMembers.forEach(member => {
+                                    const item = document.createElement('div');
+                                    item.className = 'suggestions-list-item';
+                                    item.textContent = `${member.firstName} ${member.familyName || ''}`;
+                                    item.dataset.id = member.id;
+                                    item.addEventListener('click', () => {
+                                        input.value = `${member.firstName} ${member.familyName || ''}`;
+                                        hiddenInput.value = member.id;
+                                        suggestionsList.classList.add('hidden');
+                                        hasUnsavedChanges = true;
+                                    });
+                                    suggestionsList.appendChild(item);
+                                });
+                                suggestionsList.classList.remove('hidden');
+                            } else {
+                                suggestionsList.classList.add('hidden');
+                                hiddenInput.value = ''; // Clear ID if no suggestion is selected
+                            }
+                        } else {
+                            suggestionsList.classList.add('hidden');
+                            hiddenInput.value = '';
+                        }
+                    });
+
+                    // Hide suggestions when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!input.contains(e.target) && !suggestionsList.contains(e.target)) {
+                            suggestionsList.classList.add('hidden');
+                        }
+                    });
+                };
+                
+                // Father suggestions (Male only)
+                setupSuggestions(fatherNameInput, fatherSuggestions, fatherIdInput, 'Male');
+                // Mother suggestions (Female only)
+                setupSuggestions(motherNameInput, motherSuggestions, motherIdInput, 'Female');
+                // Spouse suggestions (opposite gender)
+                addSpouseInput.addEventListener('input', () => {
+                    const currentGender = document.querySelector('input[name="gender"]:checked')?.value;
+                    const oppositeGender = currentGender === 'Male' ? 'Female' : 'Male';
+                    setupSuggestions(addSpouseInput, addSpouseSuggestions, addSpouseIdInput, oppositeGender);
+                });
+                // Child suggestions (any gender)
+                setupSuggestions(addChildInput, childrenSuggestions, addChildIdInput);
+
+                // Add spouse button
+                addSpouseBtn.addEventListener('click', () => {
+                    const spouseName = addSpouseInput.value.trim();
+                    const spouseId = addSpouseIdInput.value;
+                    if (!spouseName) {
+                        showModal("يرجى إدخال اسم الزوج/الزوجة.");
+                        return;
+                    }
+                    
+                    const currentGender = document.querySelector('input[name="gender"]:checked')?.value;
+                    if (!currentGender) {
+                        showModal("يرجى تحديد جنس الشخص الحالي أولاً.");
+                        return;
+                    }
+                    
+                    if (spouseId) {
+                        // Check gender compatibility for linked spouse
+                        const spousePerson = allFamilyMembers.find(p => p.id === spouseId);
+                        if (spousePerson && spousePerson.gender === currentGender) {
+                            showModal("لا يمكن إضافة زوج/زوجة من نفس الجنس.");
+                            return;
+                        }
+                    }
+
+                    // Determine if it's a manual entry or linked
+                    const isManual = !spouseId;
+                    const entryId = isManual ? `manual-${crypto.randomUUID()}` : spouseId;
+
+                    if (!currentSpouses.has(entryId)) {
+                        currentSpouses.set(entryId, { id: entryId, name: spouseName, isManual: isManual });
+                        addSpouseInput.value = '';
+                        addSpouseIdInput.value = ''; // Ensure hidden ID is cleared for next entry
+                        addSpouseSuggestions.classList.add('hidden');
+                        renderSpousesList();
+                        hasUnsavedChanges = true;
+                    } else {
+                        showModal("هذا الزوج/الزوجة مضاف بالفعل.");
+                    }
+                });
+
+                // Remove spouse button
+                spousesListDiv.addEventListener('click', (e) => {
+                    if (e.target.closest('.remove-spouse')) {
+                        const id = e.target.closest('.remove-spouse').dataset.id;
+                        currentSpouses.delete(id);
+                        renderSpousesList();
+                        hasUnsavedChanges = true;
+                    }
+                });
+
+                // Add child button
+                addChildBtn.addEventListener('click', () => {
+                    const childName = addChildInput.value.trim();
+                    const childId = addChildIdInput.value;
+                    if (!childName) {
+                        showModal("يرجى إدخال اسم الابن/الابنة.");
+                        return;
+                    }
+
+                    // Determine if it's a manual entry or linked
+                    const isManual = !childId;
+                    const entryId = isManual ? `manual-${crypto.randomUUID()}` : childId;
+
+                    if (!currentChildren.has(entryId)) {
+                        currentChildren.set(entryId, { id: entryId, name: childName, isManual: isManual });
+                        addChildInput.value = '';
+                        addChildIdInput.value = ''; // Ensure hidden ID is cleared
+                        childrenSuggestions.classList.add('hidden');
+                        renderChildrenList();
+                        hasUnsavedChanges = true;
+                    } else {
+                        showModal("هذا الابن/الابنة مضاف بالفعل.");
+                    }
+                });
+
+                // Remove child button
+                childrenListDiv.addEventListener('click', (e) => {
+                    if (e.target.closest('.remove-child')) {
+                        const id = e.target.closest('.remove-child').dataset.id;
+                        currentChildren.delete(id);
+                        renderChildrenList();
+                        hasUnsavedChanges = true;
+                    }
+                });
+
+                // Form submission
+                personForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    savePersonData(false);
+                });
+
+                document.getElementById('saveAndAddAnotherBtn').addEventListener('click', () => {
+                    savePersonData(true);
+                });
+
+                document.getElementById('cancelBtn').addEventListener('click', () => {
+                    if (hasUnsavedChanges) {
+                        showModal("لديك تغييرات غير محفوظة. هل أنت متأكد من أنك تريد الإلغاء؟", true, () => {
+                            window.location.href = 'index.html';
+                        });
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                });
             });
 
+            // Handle page exit to warn about unsaved changes
+            window.addEventListener('beforeunload', (e) => {
+                if (hasUnsavedChanges) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+            
         })(); // End of IIFE
     </script>
 </body>
