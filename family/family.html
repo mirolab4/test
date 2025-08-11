@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شجرة العائلة</title>
+    <title>شجرة العائلة - النسخة المحسنة</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
@@ -13,43 +13,69 @@
     <!-- html2canvas for exporting tree as image -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #e0f2fe;
+            --female: #fce7f3;
+            --male: #e0f2fe;
+            --deceased: #9ca3af;
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
             direction: rtl;
             text-align: right;
+            min-height: 100vh;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 1.5rem;
         }
         .card {
-            background-color: #ffffff;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 1.8rem;
             margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(209, 213, 219, 0.3);
         }
         .btn-primary {
-            background-color: #4f46e5;
+            background-color: var(--primary);
             color: white;
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
-            transition: background-color 0.2s;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
         }
         .btn-primary:hover {
-            background-color: #4338ca;
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(79, 70, 229, 0.3);
         }
         .btn-secondary {
-            background-color: #e5e7eb;
-            color: #374151;
+            background-color: #f1f5f9;
+            color: #334155;
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
-            transition: background-color 0.2s;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         .btn-secondary:hover {
-            background-color: #d1d5db;
+            background-color: #e2e8f0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .modal {
             display: none;
@@ -63,16 +89,22 @@
             background-color: rgba(0,0,0,0.4);
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(3px);
         }
         .modal-content {
             background-color: #fefefe;
             margin: auto;
             padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             width: 90%;
             max-width: 500px;
             text-align: center;
+            animation: modalAppear 0.3s ease-out;
+        }
+        @keyframes modalAppear {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .close-button {
             color: #aaa;
@@ -80,6 +112,7 @@
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
+            transition: color 0.2s;
         }
         .close-button:hover,
         .close-button:focus {
@@ -88,16 +121,18 @@
         }
         #familyTreeContainer {
             overflow: hidden;
-            padding: 1rem;
-            background-color: #fcfcfc;
-            border-radius: 1rem;
-            min-height: 500px;
+            padding: 1.5rem;
+            background: linear-gradient(145deg, #f9fafb, #f3f4f6);
+            border-radius: 1.5rem;
+            min-height: 600px;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             position: relative;
             transform-origin: top center;
             cursor: grab;
+            border: 1px dashed #d1d5db;
+            transition: all 0.3s ease;
         }
         #familyTreeContainer.dragging {
             cursor: grabbing;
@@ -106,57 +141,73 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 0.5rem;
+            margin: 0.75rem;
             position: relative;
-            padding-top: 2rem;
+            padding-top: 3rem;
             flex-shrink: 0;
+            transition: all 0.3s ease;
         }
         .person-card {
-            background-color: #e0f2fe;
-            border: 1px solid #90cdf4;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
+            background-color: var(--male);
+            border: 2px solid #90cdf4;
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            min-width: 140px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            min-width: 160px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-            font-size: 0.9rem;
-            line-height: 1.3;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            line-height: 1.4;
             position: relative;
+            z-index: 2;
         }
         .person-card.female {
-            background-color: #fce7f3;
-            border: 1px solid #f9a8d4;
+            background-color: var(--female);
+            border: 2px solid #f9a8d4;
         }
         .person-card.deceased {
-            opacity: 0.7;
-            border-color: #6b7280;
+            opacity: 0.85;
+            border-color: var(--deceased);
+            position: relative;
+        }
+        .person-card.deceased::after {
+            content: "†";
+            position: absolute;
+            top: 5px;
+            left: 8px;
+            font-size: 1.2rem;
+            color: var(--deceased);
         }
         .person-card.highlight {
             outline: 3px solid #f59e0b;
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
-            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+            transform: scale(1.08);
+            z-index: 10;
         }
         .person-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
         }
         .person-name {
-            font-weight: 600;
-            color: #2d3748;
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 1.05rem;
+            margin-bottom: 0.25rem;
         }
         .person-details {
-            font-size: 0.8rem;
-            color: #4a5568;
+            font-size: 0.85rem;
+            color: #4b5563;
+            display: block;
+            line-height: 1.5;
         }
         .children-container {
             display: flex;
             justify-content: center;
-            margin-top: 1.5rem;
+            margin-top: 2rem;
             position: relative;
-            padding-top: 1.5rem;
-            transition: all 0.3s ease-out;
+            padding-top: 2rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .children-container.collapsed {
             max-height: 0;
@@ -164,6 +215,7 @@
             margin-top: 0;
             padding-top: 0;
             opacity: 0;
+            transform: translateY(-10px);
         }
         .tree-node::before {
             content: '';
@@ -171,9 +223,9 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 2px;
-            height: 2rem;
-            background-color: #60a5fa;
+            width: 3px;
+            height: 3rem;
+            background: linear-gradient(to bottom, #60a5fa, #3b82f6);
             z-index: 1;
         }
         .tree-node:first-child::before {
@@ -185,13 +237,13 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 2px;
-            background-color: #60a5fa;
+            height: 3px;
+            background: linear-gradient(to right, #60a5fa, #3b82f6);
             z-index: 1;
         }
         .children-container .tree-node::before {
-            height: 1.5rem;
-            top: -1.5rem;
+            height: 2rem;
+            top: -2rem;
         }
         #familyTreeContainer > .tree-node::before {
             display: none;
@@ -199,53 +251,72 @@
         .toggle-children-btn {
             position: absolute;
             top: 50%;
-            left: -10px;
+            left: -15px;
             transform: translateY(-50%) rotate(90deg);
-            background-color: #4f46e5;
+            background-color: var(--primary);
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 26px;
+            height: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             cursor: pointer;
             z-index: 10;
-            transition: transform 0.2s ease-in-out;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .toggle-children-btn.collapsed {
             transform: translateY(-50%) rotate(0deg);
         }
         .toggle-children-btn:hover {
-            background-color: #4338ca;
+            background-color: var(--primary-dark);
+            transform: translateY(-50%) rotate(90deg) scale(1.1);
+        }
+        .toggle-children-btn.collapsed:hover {
+            transform: translateY(-50%) rotate(0deg) scale(1.1);
         }
         .filter-search-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 1.2rem;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.8rem;
+            background: #f8fafc;
+            padding: 1.2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
         .filter-search-group label {
-            font-weight: 500;
+            font-weight: 600;
             color: #4b5563;
+            min-width: 100px;
         }
         .filter-search-group select,
         .filter-search-group input[type="text"] {
-            border: 1px solid #d1d5db;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+            padding: 0.7rem 1.2rem;
+            border-radius: 0.75rem;
             background-color: white;
             flex-grow: 1;
-            min-width: 150px;
+            min-width: 180px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .filter-search-group select:focus,
+        .filter-search-group input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            outline: none;
         }
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #4f46e5;
+            border: 5px solid rgba(0, 0, 0, 0.05);
+            border-left-color: var(--primary);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
             margin: 0 auto;
         }
@@ -254,97 +325,240 @@
             100% { transform: rotate(360deg); }
         }
         .debug-console {
-            background-color: #1e293b;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
             color: #cbd5e1;
-            padding: 1rem;
-            border-radius: 0.5rem;
+            padding: 1.2rem;
+            border-radius: 1rem;
             max-height: 300px;
             overflow-y: auto;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             font-size: 0.9rem;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
         }
         .debug-console h3 {
             color: #f8fafc;
-            border-bottom: 1px solid #475569;
-            padding-bottom: 0.5rem;
-            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #475569;
+            padding-bottom: 0.7rem;
+            margin-bottom: 0.7rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         .debug-console .log {
             color: #94a3b8;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.35rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: 0.3rem;
+            background: rgba(30, 41, 59, 0.5);
         }
         .debug-console .error {
-            color: #f87171;
+            color: #fecaca;
+            background: rgba(220, 38, 38, 0.15);
         }
         .debug-console .success {
-            color: #4ade80;
+            color: #bbf7d0;
+            background: rgba(22, 163, 74, 0.15);
+        }
+        .debug-console .warning {
+            color: #fde68a;
+            background: rgba(245, 158, 11, 0.15);
+        }
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .zoom-btn:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+        .reset-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: white;
+            color: #64748b;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .reset-btn:hover {
+            background-color: #f1f5f9;
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .controls-info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.85rem;
+            color: #475569;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .no-children-msg {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        .generation-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            z-index: 5;
+            white-space: nowrap;
         }
     </style>
 </head>
-<body class="bg-gray-100 p-4">
+<body class="p-4">
 
     <!-- Custom Message Modal -->
     <div id="messageModal" class="modal">
         <div class="modal-content">
             <span id="closeMessageModalBtn" class="close-button">&times;</span>
-            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
+            <div class="mb-4">
+                <i id="modalIcon" class="fas fa-info-circle text-3xl text-blue-500 mb-3"></i>
+                <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-1"></p>
+                <p id="modalSubMessage" class="text-gray-600 text-sm"></p>
+            </div>
             <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
         </div>
     </div>
 
     <div class="container">
         <!-- Header and Navigation -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
-            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">شجرة العائلة</h1>
-            <nav class="flex flex-wrap gap-3">
-                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
-                <a href="events.html" class="btn-secondary">الأحداث</a>
-                <a href="family_tree.html" class="btn-primary">شجرة العائلة</a>
-                <a href="statistics.html" class="btn-secondary">الإحصائيات</a>
-                <a href="export_data.html" class="btn-secondary">تصدير البيانات</a>
-                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-5 bg-white rounded-2xl shadow-lg">
+            <div class="flex items-center gap-3 mb-4 md:mb-0">
+                <i class="fas fa-tree text-3xl text-emerald-600"></i>
+                <h1 class="text-3xl font-bold text-gray-800">شجرة العائلة المحسنة</h1>
+            </div>
+            <nav class="flex flex-wrap gap-3 justify-center">
+                <a href="index.html" class="btn-secondary"><i class="fas fa-list mr-2"></i>قائمة العائلة</a>
+                <a href="events.html" class="btn-secondary"><i class="fas fa-calendar-day mr-2"></i>الأحداث</a>
+                <a href="family_tree.html" class="btn-primary"><i class="fas fa-tree mr-2"></i>شجرة العائلة</a>
+                <a href="statistics.html" class="btn-secondary"><i class="fas fa-chart-bar mr-2"></i>الإحصائيات</a>
+                <a href="export_data.html" class="btn-secondary"><i class="fas fa-file-export mr-2"></i>تصدير البيانات</a>
+                <a href="add_edit_person.html" class="btn-secondary"><i class="fas fa-user-plus mr-2"></i>إضافة شخص</a>
             </nav>
         </div>
 
         <!-- Family Tree Display Area -->
         <div class="card">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">الشجرة البيانية</h2>
+            <div class="flex flex-wrap justify-between items-center mb-5">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-sitemap text-indigo-500"></i>
+                    الشجرة البيانية التفاعلية
+                </h2>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-600">
+                        <i class="fas fa-male text-blue-400 mr-1"></i> ذكر 
+                        <i class="fas fa-female text-pink-400 mx-3"></i> أنثى
+                        <i class="fas fa-cross text-gray-500 mx-1"></i> متوفى
+                    </span>
+                </div>
+            </div>
 
             <!-- Filter and Search Controls -->
             <div class="filter-search-group">
-                <label for="familyFilter">تحديد العائلة:</label>
+                <label for="familyFilter"><i class="fas fa-filter mr-2"></i>تحديد العائلة:</label>
                 <select id="familyFilter" class="w-auto">
                     <option value="All">الكل</option>
                     <!-- Family names will be populated here by JavaScript -->
                 </select>
-                <label for="personSearchInput">البحث عن شخص:</label>
+                
+                <label for="personSearchInput"><i class="fas fa-search mr-2"></i>البحث عن شخص:</label>
                 <input type="text" id="personSearchInput" placeholder="اكتب الاسم الكامل..." class="w-auto">
-                <button id="clearSearchBtn" class="btn-secondary px-3 py-1 rounded-md text-sm">مسح البحث</button>
-                <button id="exportTreeImageBtn" class="btn-primary px-3 py-1 rounded-md text-sm">تصدير الشجرة (PNG)</button>
+                
+                <button id="clearSearchBtn" class="btn-secondary px-4 py-2 rounded-lg">
+                    <i class="fas fa-times mr-2"></i>مسح البحث
+                </button>
+                
+                <button id="exportTreeImageBtn" class="btn-primary px-4 py-2 rounded-lg">
+                    <i class="fas fa-download mr-2"></i>تصدير الشجرة
+                </button>
             </div>
 
-            <div id="loadingIndicator" class="text-center py-6">
+            <div id="loadingIndicator" class="text-center py-8">
                 <div class="spinner"></div>
-                <p class="text-lg text-gray-600 mt-4">جاري بناء شجرة العائلة...</p>
+                <p class="text-xl text-gray-700 mt-5 font-medium">جاري بناء شجرة العائلة...</p>
+                <p class="text-gray-600 mt-2">قد يستغرق هذا بضع لحظات</p>
             </div>
-            <div id="noTreeDataMessage" class="text-center py-6 hidden">
-                <i class="fas fa-tree text-gray-400 text-4xl mb-4"></i>
-                <h3 class="text-xl font-bold text-gray-700 mb-2">لا توجد بيانات كافية</h3>
-                <p class="text-gray-600 mb-4">لم يتم العثور على بيانات كافية لبناء شجرة العائلة.</p>
-                <a href="add_edit_person.html" class="btn-primary">
-                    <i class="fas fa-user-plus mr-2"></i>إضافة شخص جديد
+            
+            <div id="noTreeDataMessage" class="text-center py-8 hidden">
+                <i class="fas fa-tree text-gray-400 text-5xl mb-5"></i>
+                <h3 class="text-2xl font-bold text-gray-700 mb-3">لا توجد بيانات كافية</h3>
+                <p class="text-gray-600 mb-6 max-w-md mx-auto">لم يتم العثور على بيانات كافية لبناء شجرة العائلة. يمكنك البدء بإضافة أفراد العائلة.</p>
+                <a href="add_edit_person.html" class="btn-primary px-5 py-3 text-lg">
+                    <i class="fas fa-user-plus mr-3"></i>إضافة شخص جديد
                 </a>
             </div>
-            <div id="familyTreeContainerWrapper" style="overflow: hidden;">
+            
+            <div id="familyTreeContainerWrapper" style="overflow: hidden; position: relative;">
+                <div class="controls-info">
+                    <i class="fas fa-info-circle text-indigo-500"></i>
+                    اسحب للتحريك - عجلة الماوس للتصغير/التكبير
+                </div>
                 <div id="familyTreeContainer">
                     <!-- Family tree will be rendered here by JavaScript -->
+                </div>
+                <div class="zoom-controls">
+                    <div id="zoomInBtn" class="zoom-btn">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div id="zoomOutBtn" class="zoom-btn">
+                        <i class="fas fa-minus"></i>
+                    </div>
+                </div>
+                <div id="resetViewBtn" class="reset-btn">
+                    <i class="fas fa-sync-alt"></i> إعادة ضبط العرض
                 </div>
             </div>
             
             <!-- Debug Console -->
             <div class="debug-console mt-6">
-                <h3>سجل التشغيل</h3>
+                <h3><i class="fas fa-terminal mr-2"></i>سجل التشغيل</h3>
                 <div id="debugLogs"></div>
             </div>
         </div>
@@ -383,6 +597,9 @@
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const exportTreeImageBtn = document.getElementById('exportTreeImageBtn');
         const debugLogs = document.getElementById('debugLogs');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const resetViewBtn = document.getElementById('resetViewBtn');
 
         // Pan and Zoom variables
         let isDragging = false;
@@ -390,10 +607,14 @@
         let translateX = 0;
         let translateY = 0;
         let scale = 1;
+        const scaleStep = 0.1;
+        const minScale = 0.5;
+        const maxScale = 2;
 
         // State
         let allFamilyMembers = [];
         let currentFilteredMembers = [];
+        let highlightedPersonId = null;
 
         // Function to add debug logs
         function addDebugLog(message, type = 'log') {
@@ -401,12 +622,20 @@
             logElement.classList.add(type);
             logElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             debugLogs.appendChild(logElement);
-            debugLogs.scrollTop = debugLogs.scrollHeight; // Auto-scroll to bottom
+            debugLogs.scrollTop = debugLogs.scrollHeight;
         }
 
         // Function to show custom modal messages
-        function showModal(message) {
+        function showModal(message, subMessage = '', icon = 'info') {
             document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modalSubMessage').textContent = subMessage;
+            
+            const iconElem = document.getElementById('modalIcon');
+            iconElem.className = 'fas ' + 
+                (icon === 'error' ? 'fa-exclamation-circle text-red-500' : 
+                 icon === 'success' ? 'fa-check-circle text-green-500' : 
+                 'fa-info-circle text-blue-500') + ' text-3xl mb-3';
+            
             document.getElementById('messageModal').style.display = 'flex';
             addDebugLog(`عرض رسالة: ${message}`, 'log');
         }
@@ -421,9 +650,13 @@
             if (!birthDate || !birthDate.toDate) return 'غير محدد';
             const today = new Date();
             const birth = birthDate.toDate();
+            
+            // If deceased, calculate age at death
+            if (birth > today) return 'تاريخ غير صحيح';
 
             let years = today.getFullYear() - birth.getFullYear();
             const m = today.getMonth() - birth.getMonth();
+            
             if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
                 years--;
             }
@@ -451,7 +684,7 @@
             } catch (error) {
                 console.error("Error fetching family members:", error);
                 addDebugLog(`خطأ في جلب البيانات: ${error.message}`, 'error');
-                showModal("حدث خطأ في جلب بيانات العائلة: " + error.message);
+                showModal("حدث خطأ في جلب بيانات العائلة", error.message, 'error');
                 return [];
             }
         }
@@ -497,13 +730,18 @@
         // Build hierarchical tree data structure
         function buildFamilyTreeData() {
             const memberMap = new Map();
+            const childrenMap = new Map();
             
-            // Create nodes
+            // Create nodes and children map
             currentFilteredMembers.forEach(member => {
                 memberMap.set(member.id, {
                     ...member,
-                    children: []
+                    children: [],
+                    generation: 0
                 });
+                
+                // Initialize children map for each member
+                childrenMap.set(member.id, []);
             });
             
             // Build parent-child relationships
@@ -514,23 +752,48 @@
                     member.childrenIds.forEach(childId => {
                         if (memberMap.has(childId)) {
                             const child = memberMap.get(childId);
-                            // Set parent-child relationship
-                            child.parentId = member.id;
+                            // Add child to parent's children array
                             memberMap.get(member.id).children.push(child);
+                            // Set child's parent
+                            child.parentId = member.id;
                             addDebugLog(`تم ربط ${child.fullName} كطفل لـ ${member.fullName}`, 'success');
                         } else {
-                            addDebugLog(`لم يتم العثور على الطفل ${childId} لـ ${member.fullName}`, 'error');
+                            addDebugLog(`لم يتم العثور على الطفل ${childId} لـ ${member.fullName}`, 'warning');
                         }
                     });
                 }
             });
             
+            // Calculate generations (BFS)
+            const queue = [];
+            memberMap.forEach(member => {
+                if (!member.parentId || !memberMap.has(member.parentId)) {
+                    member.generation = 0;
+                    queue.push(member);
+                }
+            });
+            
+            while (queue.length > 0) {
+                const current = queue.shift();
+                current.children.forEach(child => {
+                    child.generation = current.generation + 1;
+                    queue.push(child);
+                });
+            }
+            
             // Find roots (people without parent or parent not in filtered set)
             const roots = [];
             memberMap.forEach(member => {
-                if (!member.parentId || !memberMap.has(member.parentId)) {
+                if (member.generation === 0) {
                     roots.push(member);
                 }
+            });
+
+            // Sort roots by birth date
+            roots.sort((a, b) => {
+                const dateA = a.birthDate?.toDate()?.getTime() || 0;
+                const dateB = b.birthDate?.toDate()?.getTime() || 0;
+                return dateA - dateB;
             });
 
             // Log roots
@@ -547,6 +810,14 @@
             const nodeDiv = document.createElement('div');
             nodeDiv.classList.add('tree-node');
             nodeDiv.dataset.personId = person.id;
+
+            // Add generation label for the root nodes
+            if (person.generation === 0) {
+                const genLabel = document.createElement('div');
+                genLabel.classList.add('generation-label');
+                genLabel.textContent = 'الجيل الأول';
+                nodeDiv.appendChild(genLabel);
+            }
 
             const personCard = document.createElement('div');
             personCard.classList.add('person-card');
@@ -570,18 +841,19 @@
             ageSpan.textContent = `العمر: ${calculateAge(person.birthDate)}`;
             personCard.appendChild(ageSpan);
 
-            // Life status
-            if (person.isAlive === false) {
-                const statusSpan = document.createElement('span');
-                statusSpan.classList.add('person-details');
-                statusSpan.textContent = `(متوفى)`;
-                personCard.appendChild(statusSpan);
+            // Birth year if available
+            if (person.birthDate && person.birthDate.toDate) {
+                const birthYear = person.birthDate.toDate().getFullYear();
+                const yearSpan = document.createElement('span');
+                yearSpan.classList.add('person-details');
+                yearSpan.textContent = `(${birthYear})`;
+                personCard.appendChild(yearSpan);
             }
 
             // Add Child button
             const addChildBtn = document.createElement('button');
             addChildBtn.classList.add('btn-primary', 'mt-2', 'px-2', 'py-1', 'text-xs', 'rounded-md');
-            addChildBtn.textContent = 'إضافة ابن/ابنة';
+            addChildBtn.innerHTML = '<i class="fas fa-baby mr-1"></i> إضافة ابن/ابنة';
             addChildBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 window.location.href = `add_edit_person.html?parentId=${person.id}&parentGender=${person.gender}`;
@@ -606,12 +878,27 @@
                     }
                 });
                 personCard.appendChild(toggleBtn);
+            } else {
+                // Show "no children" message for adults
+                if (person.birthDate && person.birthDate.toDate) {
+                    const birthYear = person.birthDate.toDate().getFullYear();
+                    const currentYear = new Date().getFullYear();
+                    const age = currentYear - birthYear;
+                    
+                    if (age > 18) {
+                        const noChildrenMsg = document.createElement('div');
+                        noChildrenMsg.classList.add('no-children-msg');
+                        noChildrenMsg.textContent = 'لا يوجد أطفال مسجلين';
+                        nodeDiv.appendChild(noChildrenMsg);
+                    }
+                }
             }
 
             // Click to view profile
             personCard.addEventListener('click', (e) => {
                 if (!e.target.classList.contains('toggle-children-btn') && 
-                    !e.target.closest('.toggle-children-btn')) {
+                    !e.target.closest('.toggle-children-btn') &&
+                    !e.target.classList.contains('btn-primary')) {
                     window.location.href = `profile.html?id=${person.id}`;
                 }
             });
@@ -664,7 +951,7 @@
                 }
                 
                 const treeWrapper = document.createElement('div');
-                treeWrapper.classList.add('flex', 'flex-wrap', 'justify-center', 'gap-8');
+                treeWrapper.classList.add('flex', 'flex-wrap', 'justify-center', 'gap-10');
                 
                 roots.forEach(root => {
                     const rootContainer = document.createElement('div');
@@ -676,16 +963,18 @@
                 familyTreeContainer.appendChild(treeWrapper);
                 
                 // Reset zoom and pan
-                translateX = 0;
-                translateY = 0;
-                scale = 1;
-                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                resetTreeView();
+                
+                // Highlight person if search was active
+                if (highlightedPersonId) {
+                    highlightPerson(highlightedPersonId);
+                }
                 
                 addDebugLog(`تم بناء الشجرة بنجاح مع ${roots.length} عائلة أساسية`, 'success');
             } catch (error) {
                 console.error("Error building tree:", error);
                 addDebugLog(`خطأ في بناء الشجرة: ${error.message}`, 'error');
-                showModal("حدث خطأ أثناء بناء الشجرة: " + error.message);
+                showModal("حدث خطأ أثناء بناء الشجرة", error.message, 'error');
             } finally {
                 loadingIndicator.classList.add('hidden');
             }
@@ -699,33 +988,76 @@
             });
 
             if (searchTerm.length > 0) {
+                let found = false;
                 document.querySelectorAll('.tree-node').forEach(node => {
                     const personId = node.dataset.personId;
                     const person = allFamilyMembers.find(m => m.id === personId);
                     if (person && person.fullName && person.fullName.toLowerCase().includes(searchTerm)) {
-                        node.querySelector('.person-card').classlassList.add('highlight');
+                        node.querySelector('.person-card').classList.add('highlight');
+                        highlightedPersonId = personId;
+                        found = true;
+                        
+                        // Scroll to the highlighted person
+                        const rect = node.getBoundingClientRect();
+                        const containerRect = familyTreeContainer.getBoundingClientRect();
+                        const offsetX = rect.left - containerRect.left;
+                        const offsetY = rect.top - containerRect.top;
+                        
+                        // Adjust position with current translation and scale
+                        translateX = -offsetX * scale + window.innerWidth / 2 - rect.width / 2;
+                        translateY = -offsetY * scale + 100;
+                        
+                        familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
                     }
                 });
+                
+                if (!found) {
+                    addDebugLog(`لم يتم العثور على شخص باسم: ${searchTerm}`, 'warning');
+                    showModal("لم يتم العثور على شخص", "الرجاء التأكد من صحة الاسم المدخل", 'error');
+                }
+            } else {
+                highlightedPersonId = null;
+            }
+        }
+
+        // Highlight a specific person
+        function highlightPerson(personId) {
+            document.querySelectorAll('.person-card').forEach(card => {
+                card.classList.remove('highlight');
+            });
+            
+            const node = document.querySelector(`.tree-node[data-person-id="${personId}"]`);
+            if (node) {
+                node.querySelector('.person-card').classList.add('highlight');
+                
+                // Scroll to the highlighted person
+                const rect = node.getBoundingClientRect();
+                const containerRect = familyTreeContainer.getBoundingClientRect();
+                const offsetX = rect.left - containerRect.left;
+                const offsetY = rect.top - containerRect.top;
+                
+                translateX = -offsetX * scale + window.innerWidth / 2 - rect.width / 2;
+                translateY = -offsetY * scale + 100;
+                
+                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
             }
         }
 
         // Pan and Zoom functionality
         function setupPanZoom() {
             familyTreeContainer.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return; // Only left mouse button
                 isDragging = true;
                 familyTreeContainer.classList.add('dragging');
                 startX = e.clientX - translateX;
                 startY = e.clientY - translateY;
             });
 
-            familyTreeContainer.addEventListener('mouseleave', () => {
-                isDragging = false;
-                familyTreeContainer.classList.remove('dragging');
-            });
-
-            familyTreeContainer.addEventListener('mouseup', () => {
-                isDragging = false;
-                familyTreeContainer.classList.remove('dragging');
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    familyTreeContainer.classList.remove('dragging');
+                }
             });
 
             familyTreeContainer.addEventListener('mousemove', (e) => {
@@ -733,29 +1065,41 @@
                 e.preventDefault();
                 translateX = e.clientX - startX;
                 translateY = e.clientY - startY;
-                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                applyTransform();
             });
 
             familyTreeContainer.addEventListener('wheel', (e) => {
                 e.preventDefault();
-                const scaleAmount = 0.1;
                 const mouseX = e.clientX - familyTreeContainer.getBoundingClientRect().left;
                 const mouseY = e.clientY - familyTreeContainer.getBoundingClientRect().top;
 
                 const oldScale = scale;
                 if (e.deltaY < 0) {
-                    scale += scaleAmount;
+                    scale += scaleStep;
                 } else {
-                    scale -= scaleAmount;
+                    scale -= scaleStep;
                 }
-                scale = Math.max(0.5, Math.min(2, scale));
+                scale = Math.max(minScale, Math.min(maxScale, scale));
 
                 // Adjust translation to zoom towards the mouse cursor
                 translateX = mouseX - ((mouseX - translateX) * (scale / oldScale));
                 translateY = mouseY - ((mouseY - translateY) * (scale / oldScale));
 
-                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                applyTransform();
             });
+        }
+
+        // Apply current transform to the tree
+        function applyTransform() {
+            familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+
+        // Reset tree view to initial position
+        function resetTreeView() {
+            translateX = 0;
+            translateY = 0;
+            scale = 1;
+            applyTransform();
         }
 
         // Export tree as image
@@ -764,23 +1108,27 @@
             const originalTransform = familyTreeContainer.style.transform;
             familyTreeContainer.style.transform = 'none';
 
+            // Show saving message
+            showModal("جاري تصدير الشجرة", "الرجاء الانتظار بينما نقوم بحفظ الصورة...", 'info');
+            
             html2canvas(familyTreeContainer, {
                 useCORS: true,
                 scrollX: -window.scrollX,
                 scrollY: -window.scrollY,
                 windowWidth: familyTreeContainer.scrollWidth,
                 windowHeight: familyTreeContainer.scrollHeight,
+                scale: 2 // Higher quality
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = 'family_tree.png';
+                link.download = `شجرة_العائلة_${new Date().toLocaleDateString('ar-EG')}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 addDebugLog('تم تصدير الشجرة كصورة PNG بنجاح', 'success');
-                showModal("تم تصدير الشجرة بنجاح كصورة PNG.");
+                showModal("تم التصدير بنجاح", "تم حفظ صورة الشجرة في جهازك", 'success');
             }).catch(error => {
                 console.error("Error exporting tree as image:", error);
                 addDebugLog(`خطأ في تصدير الشجرة: ${error.message}`, 'error');
-                showModal("حدث خطأ أثناء تصدير الشجرة كصورة: " + error.message);
+                showModal("حدث خطأ أثناء التصدير", error.message, 'error');
             }).finally(() => {
                 // Restore original transform
                 familyTreeContainer.style.transform = originalTransform;
@@ -804,9 +1152,20 @@
             personSearchInput.addEventListener('input', applySearchHighlight);
             clearSearchBtn.addEventListener('click', () => {
                 personSearchInput.value = '';
+                highlightedPersonId = null;
                 applySearchHighlight();
+                resetTreeView();
             });
             exportTreeImageBtn.addEventListener('click', exportTreeAsImage);
+            zoomInBtn.addEventListener('click', () => {
+                scale = Math.min(maxScale, scale + scaleStep);
+                applyTransform();
+            });
+            zoomOutBtn.addEventListener('click', () => {
+                scale = Math.max(minScale, scale - scaleStep);
+                applyTransform();
+            });
+            resetViewBtn.addEventListener('click', resetTreeView);
 
             // Fetch data and build the tree
             try {
@@ -826,7 +1185,7 @@
             } catch (error) {
                 console.error("Failed to load family tree data:", error);
                 addDebugLog(`فشل تحميل بيانات شجرة العائلة: ${error.message}`, 'error');
-                showModal("فشل تحميل بيانات شجرة العائلة: " + error.message);
+                showModal("فشل تحميل بيانات شجرة العائلة", error.message, 'error');
                 loadingIndicator.classList.add('hidden');
                 noTreeDataMessage.classList.remove('hidden');
             }
