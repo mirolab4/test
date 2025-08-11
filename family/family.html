@@ -548,9 +548,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Firebase SDKs -->
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -570,11 +568,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // appId ثابت (مأخوذ من ملف add_edit_person.html)
         const appId = 'family-tree-app';
-
-        // -- مسار التجميع العام في Firestore --
         const baseCollectionPath = `artifacts/${appId}/familyMembers`;
 
         // DOM Elements
@@ -598,20 +592,20 @@
         let translateY = 0;
         let scale = 1;
 
-        // Define variables to store family data
+        // State
         let allFamilyMembers = [];
         const familyNames = new Set();
         let currentFilteredMembers = [];
 
         // Function to show custom modal messages
-        function showModal(message, modalId = 'messageModal') {
+        function showModal(message) {
             document.getElementById('modalMessage').textContent = message;
-            document.getElementById(modalId).style.display = 'flex';
+            document.getElementById('messageModal').style.display = 'flex';
         }
 
         // Function to close custom modal messages
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+        function closeModal() {
+            document.getElementById('messageModal').style.display = 'none';
         }
 
         // Function to calculate age from birth date
@@ -634,20 +628,19 @@
             return `${age} سنة`;
         }
 
-        // Function to fetch all family members
+        // Fetch all family members from Firebase
         async function fetchAllFamilyMembersForTree() {
             try {
                 const q = collection(db, baseCollectionPath);
                 const querySnapshot = await getDocs(q);
                 
-                // Update allFamilyMembers variable
                 allFamilyMembers = querySnapshot.docs.map(doc => ({ 
                     id: doc.id, 
                     ...doc.data(),
-                    childrenIds: doc.data().childrenIds || [] // Ensure childrenIds exists
+                    childrenIds: doc.data().childrenIds || []
                 }));
                 
-                // Collect unique family names
+                // Update family names set
                 familyNames.clear();
                 allFamilyMembers.forEach(member => {
                     if (member.familyName) {
@@ -655,14 +648,11 @@
                     }
                 });
                 
-                // Update family filter dropdown
                 updateFamilyFilterOptions();
-                
-                console.log("All family members fetched for tree:", allFamilyMembers);
                 return allFamilyMembers;
             } catch (error) {
-                console.error("Error fetching family members for tree:", error);
-                showModal("حدث خطأ أثناء جلب بيانات العائلة لشجرة العائلة: " + error.message);
+                console.error("Error fetching family members:", error);
+                showModal("حدث خطأ في جلب بيانات العائلة: " + error.message);
                 return [];
             }
         }
@@ -684,39 +674,49 @@
             });
         }
 
-        // Function to build the hierarchical tree data structure
-        function buildFamilyTreeData(members) {
+        // Build hierarchical tree data structure
+        function buildFamilyTreeData() {
             const memberMap = new Map();
             
-            // First pass: create all member nodes
-            members.forEach(member => {
+            // Create nodes for all members
+            allFamilyMembers.forEach(member => {
                 memberMap.set(member.id, {
                     ...member,
                     children: []
                 });
             });
             
-            // Second pass: build parent-child relationships
-            members.forEach(member => {
+            // Build parent-child relationships
+            allFamilyMembers.forEach(member => {
+                // Add children
                 if (member.childrenIds && member.childrenIds.length > 0) {
                     member.childrenIds.forEach(childId => {
                         if (memberMap.has(childId)) {
-                            memberMap.get(member.id).children.push(memberMap.get(childId));
+                            const child = memberMap.get(childId);
+                            child.parentId = member.id;
+                            memberMap.get(member.id).children.push(child);
+                        }
+                    });
+                }
+                
+                // Add spouse relationships
+                if (member.spouseIds && member.spouseIds.length > 0) {
+                    member.spouseIds.forEach(spouseId => {
+                        if (memberMap.has(spouseId)) {
+                            const spouse = memberMap.get(spouseId);
+                            if (!memberMap.get(member.id).spouses) {
+                                memberMap.get(member.id).spouses = [];
+                            }
+                            memberMap.get(member.id).spouses.push(spouse);
                         }
                     });
                 }
             });
             
-            // Third pass: find roots (people who are not children of anyone)
+            // Find roots (people with no parents)
             const roots = [];
             memberMap.forEach(member => {
-                let isChild = false;
-                memberMap.forEach(potentialParent => {
-                    if (potentialParent.childrenIds && potentialParent.childrenIds.includes(member.id)) {
-                        isChild = true;
-                    }
-                });
-                if (!isChild) {
+                if (!member.parentId) {
                     roots.push(member);
                 }
             });
@@ -731,7 +731,7 @@
             return roots;
         }
 
-        // Function to render a single person node
+        // Render a single person node
         function renderPersonNode(person) {
             const nodeDiv = document.createElement('div');
             nodeDiv.classList.add('tree-node');
@@ -749,19 +749,20 @@
 
             // Click to view profile
             personCard.addEventListener('click', (e) => {
-                if (!e.target.classList.contains('toggle-children-btn') && !e.target.closest('.toggle-children-btn')) {
+                if (!e.target.classList.contains('toggle-children-btn') && 
+                    !e.target.closest('.toggle-children-btn')) {
                     window.location.href = `profile.html?id=${person.id}`;
                 }
             });
 
+            // Person name
             const nameSpan = document.createElement('span');
             nameSpan.classList.add('person-name');
             nameSpan.textContent = person.fullName || 'غير محدد';
             personCard.appendChild(nameSpan);
 
-            // Calculate age
+            // Age
             const age = calculateAge(person.birthDate);
-            
             if (age !== null) {
                 const ageSpan = document.createElement('span');
                 ageSpan.classList.add('person-details');
@@ -769,6 +770,7 @@
                 personCard.appendChild(ageSpan);
             }
 
+            // Life status
             if (person.isAlive === false) {
                 const statusSpan = document.createElement('span');
                 statusSpan.classList.add('person-details', 'text-red-600');
@@ -786,11 +788,11 @@
             });
             personCard.appendChild(addChildBtn);
 
-            // Collapse/Expand button
+            // Collapse/Expand button (if has children)
             if (person.children && person.children.length > 0) {
                 const toggleBtn = document.createElement('div');
                 toggleBtn.classList.add('toggle-children-btn');
-                toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
                 toggleBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const childrenContainer = nodeDiv.querySelector('.children-container');
@@ -798,9 +800,9 @@
                         childrenContainer.classList.toggle('collapsed');
                         toggleBtn.classList.toggle('collapsed');
                         if (childrenContainer.classList.contains('collapsed')) {
-                            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                        } else {
                             toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                        } else {
+                            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
                         }
                     }
                 });
@@ -818,25 +820,28 @@
             const node = renderPersonNode(person);
             parentElement.appendChild(node);
 
+            // Render children if exists
             if (person.children && person.children.length > 0) {
                 const childrenContainer = document.createElement('div');
                 childrenContainer.classList.add('children-container');
 
-                // Sort children by birth date for consistent display
+                // Sort children by birth date
                 person.children.sort((a, b) => {
                     const dateA = a.birthDate ? a.birthDate.toDate().getTime() : 0;
                     const dateB = b.birthDate ? b.birthDate.toDate().getTime() : 0;
                     return dateA - dateB;
                 });
 
+                // Render each child
                 person.children.forEach(child => {
                     renderTree(child, childrenContainer);
                 });
+                
                 node.appendChild(childrenContainer);
             }
         }
 
-        // Apply all filters to the family data
+        // Apply filters to family data
         function applyAllFilters() {
             const familyFilter = familyFilterSelect.value;
             const genderFilter = genderFilterSelect.value;
@@ -870,7 +875,6 @@
                 return true;
             });
             
-            console.log(`Filtered members count: ${currentFilteredMembers.length}`);
             buildAndDisplayFamilyTree();
         }
 
@@ -881,26 +885,26 @@
             familyTreeContainer.innerHTML = '';
             familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
-            // Build tree data from currentFilteredMembers
-            const roots = buildFamilyTreeData(currentFilteredMembers);
+            // Build tree data
+            const roots = buildFamilyTreeData();
 
             if (roots.length === 0) {
                 loadingIndicator.classList.add('hidden');
                 noTreeDataMessage.classList.remove('hidden');
-                console.log("No root members found with current filters");
                 return;
             }
 
-            // Render each root and its descendants
+            // Create a wrapper for the tree
+            const treeWrapper = document.createElement('div');
+            treeWrapper.classList.add('flex', 'flex-col', 'items-center');
+
+            // Render each root person and their descendants
             roots.forEach(root => {
-                const rootWrapper = document.createElement('div');
-                rootWrapper.classList.add('flex', 'justify-center', 'w-full');
-                renderTree(root, rootWrapper);
-                familyTreeContainer.appendChild(rootWrapper);
+                renderTree(root, treeWrapper);
             });
 
+            familyTreeContainer.appendChild(treeWrapper);
             loadingIndicator.classList.add('hidden');
-            applySearchHighlight();
         }
 
         // Pan and Zoom functionality
@@ -952,38 +956,8 @@
             });
         }
 
-        // Search functionality
-        function applySearchHighlight() {
-            const searchTerm = personSearchInput.value.toLowerCase().trim();
-            document.querySelectorAll('.person-card').forEach(card => {
-                card.classList.remove('highlight');
-            });
-
-            if (searchTerm.length > 0) {
-                let firstHighlighted = null;
-                document.querySelectorAll('.tree-node').forEach(node => {
-                    const person = allFamilyMembers.find(m => m.id === node.dataset.personId);
-                    if (person && person.fullName && person.fullName.toLowerCase().includes(searchTerm)) {
-                        const card = node.querySelector('.person-card');
-                        card.classList.add('highlight');
-                        if (!firstHighlighted) firstHighlighted = card;
-                    }
-                });
-                
-                // Scroll to the first highlighted element
-                if (firstHighlighted) {
-                    firstHighlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        }
-
         // Export tree as image
         function exportTreeAsImage() {
-            // Temporarily reset transform for accurate capture
-            const originalTransform = familyTreeContainer.style.transform;
-            familyTreeContainer.style.transform = 'none';
-            familyTreeContainer.style.justifyContent = 'flex-start';
-
             html2canvas(familyTreeContainer, {
                 useCORS: true,
                 scrollX: -window.scrollX,
@@ -999,10 +973,6 @@
             }).catch(error => {
                 console.error("Error exporting tree as image:", error);
                 showModal("حدث خطأ أثناء تصدير الشجرة كصورة: " + error.message);
-            }).finally(() => {
-                // Restore original transform and alignment
-                familyTreeContainer.style.transform = originalTransform;
-                familyTreeContainer.style.justifyContent = 'center';
             });
         }
 
@@ -1024,15 +994,14 @@
             });
         }
 
-        // Main DOMContentLoaded listener
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', async () => {
-            // Modal close buttons
-            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
+            // Modal event listeners
+            document.getElementById('closeMessageModalBtn').addEventListener('click', closeModal);
+            document.getElementById('confirmMessageModalBtn').addEventListener('click', closeModal);
 
-            // Event listeners for filters and search
+            // Filter buttons
             applyFiltersBtn.addEventListener('click', applyAllFilters);
-            
             clearFiltersBtn.addEventListener('click', () => {
                 familyFilterSelect.value = 'All';
                 genderFilterSelect.value = 'All';
@@ -1042,14 +1011,11 @@
                 applyAllFilters();
             });
             
-            personSearchInput.addEventListener('input', applySearchHighlight);
-            
+            // Export button
             exportTreeImageBtn.addEventListener('click', exportTreeAsImage);
 
-            // Setup Pan and Zoom
+            // Setup tree interactions
             setupPanZoom();
-            
-            // Setup scroll to top
             setupScrollToTop();
 
             // Fetch data and build the tree
@@ -1057,7 +1023,6 @@
             
             try {
                 await fetchAllFamilyMembersForTree();
-                // Apply filters after fetching data
                 applyAllFilters();
             } catch (error) {
                 console.error("Failed to load family tree data:", error);
