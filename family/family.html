@@ -583,11 +583,7 @@
                 </div>
             </div>
             
-            <!-- Debug Console -->
-            <div class="debug-console mt-6">
-                <h3><i class="fas fa-terminal mr-2"></i>سجل التشغيل</h3>
-                <div id="debugLogs"></div>
-            </div>
+           
         </div>
     </div>
 
@@ -623,7 +619,6 @@
         const personSearchInput = document.getElementById('personSearchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const exportTreeImageBtn = document.getElementById('exportTreeImageBtn');
-        const debugLogs = document.getElementById('debugLogs');
         const zoomInBtn = document.getElementById('zoomInBtn');
         const zoomOutBtn = document.getElementById('zoomOutBtn');
         const resetViewBtn = document.getElementById('resetViewBtn');
@@ -643,14 +638,7 @@
         let currentFilteredMembers = [];
         let highlightedPersonId = null;
 
-        // Function to add debug logs
-        function addDebugLog(message, type = 'log') {
-            const logElement = document.createElement('div');
-            logElement.classList.add(type);
-            logElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            debugLogs.appendChild(logElement);
-            debugLogs.scrollTop = debugLogs.scrollHeight;
-        }
+     
 
         // Function to show custom modal messages
         function showModal(message, subMessage = '', icon = 'info') {
@@ -664,7 +652,7 @@
                  'fa-info-circle text-blue-500') + ' text-3xl mb-3';
             
             document.getElementById('messageModal').style.display = 'flex';
-            addDebugLog(`عرض رسالة: ${message}`, 'log');
+           
         }
 
         // Function to close custom modal messages
@@ -699,7 +687,6 @@
         // Fetch all family members from Firebase
         async function fetchAllFamilyMembersForTree() {
             try {
-                addDebugLog('بدء جلب بيانات العائلة من Firebase...', 'log');
                 const q = collection(db, baseCollectionPath);
                 const querySnapshot = await getDocs(q);
                 
@@ -711,12 +698,10 @@
                 
                 // Log fetched data to console
                 console.log('تم جلب بيانات العائلة:', allFamilyMembers);
-                addDebugLog(`تم جلب ${allFamilyMembers.length} عضو من العائلة`, 'success');
                 
                 return allFamilyMembers;
             } catch (error) {
                 console.error("Error fetching family members:", error);
-                addDebugLog(`خطأ في جلب البيانات: ${error.message}`, 'error');
                 showModal("حدث خطأ في جلب بيانات العائلة", error.message, 'error');
                 return [];
             }
@@ -742,7 +727,6 @@
                 familyFilterSelect.appendChild(option);
             });
             
-            addDebugLog(`تم تحديث خيارات الفلتر بـ ${uniqueFamilyNames.size} عائلة`, 'log');
         }
 
         // Apply family filter
@@ -751,10 +735,8 @@
             
             if (filterValue === 'All') {
                 currentFilteredMembers = [...allFamilyMembers];
-                addDebugLog('تم تطبيق فلتر: الكل', 'log');
             } else {
                 currentFilteredMembers = allFamilyMembers.filter(member => member.familyName === filterValue);
-                addDebugLog(`تم تطبيق فلتر العائلة: ${filterValue} (${currentFilteredMembers.length} عضو)`, 'log');
             }
             
             buildAndDisplayFamilyTree();
@@ -780,7 +762,6 @@
             // Build parent-child relationships
             currentFilteredMembers.forEach(member => {
                 if (member.childrenIds && member.childrenIds.length > 0) {
-                    addDebugLog(`عضو ${member.fullName} لديه ${member.childrenIds.length} طفل`, 'log');
                     
                     member.childrenIds.forEach(childId => {
                         if (memberMap.has(childId)) {
@@ -789,10 +770,7 @@
                             memberMap.get(member.id).children.push(child);
                             // Set child's parent
                             child.parentId = member.id;
-                            addDebugLog(`تم ربط ${child.fullName} كطفل لـ ${member.fullName}`, 'success');
-                        } else {
-                            addDebugLog(`لم يتم العثور على الطفل ${childId} لـ ${member.fullName}`, 'warning');
-                        }
+                        } 
                     });
                 }
             });
@@ -829,11 +807,7 @@
                 return dateA - dateB;
             });
 
-            // Log roots
-            addDebugLog(`تم العثور على ${roots.length} جذر للشجرة`, 'log');
-            roots.forEach(root => {
-                addDebugLog(`جذر الشجرة: ${root.fullName} (${root.id})`, 'success');
-            });
+           
 
             return roots;
         }
@@ -947,10 +921,8 @@
             
             try {
                 const roots = buildFamilyTreeData();
-                addDebugLog(`بناء الشجرة مع ${roots.length} جذر`, 'log');
                 
                 if (roots.length === 0) {
-                    addDebugLog('لا توجد جذور للشجرة، عرض رسالة عدم وجود بيانات', 'error');
                     loadingIndicator.classList.add('hidden');
                     noTreeDataMessage.classList.remove('hidden');
                     return;
@@ -976,10 +948,8 @@
                     highlightPerson(highlightedPersonId);
                 }
                 
-                addDebugLog(`تم بناء الشجرة بنجاح مع ${roots.length} عائلة أساسية`, 'success');
             } catch (error) {
                 console.error("Error building tree:", error);
-                addDebugLog(`خطأ في بناء الشجرة: ${error.message}`, 'error');
                 showModal("حدث خطأ أثناء بناء الشجرة", error.message, 'error');
             } finally {
                 loadingIndicator.classList.add('hidden');
@@ -1018,7 +988,6 @@
                 });
                 
                 if (!found) {
-                    addDebugLog(`لم يتم العثور على شخص باسم: ${searchTerm}`, 'warning');
                     showModal("لم يتم العثور على شخص", "الرجاء التأكد من صحة الاسم المدخل", 'error');
                 }
             } else {
@@ -1129,11 +1098,9 @@
                 link.download = `شجرة_العائلة_${new Date().toLocaleDateString('ar-EG')}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
-                addDebugLog('تم تصدير الشجرة كصورة PNG بنجاح', 'success');
                 showModal("تم التصدير بنجاح", "تم حفظ صورة الشجرة في جهازك", 'success');
             }).catch(error => {
                 console.error("Error exporting tree as image:", error);
-                addDebugLog(`خطأ في تصدير الشجرة: ${error.message}`, 'error');
                 showModal("حدث خطأ أثناء التصدير", error.message, 'error');
             }).finally(() => {
                 // Restore original transform
@@ -1144,7 +1111,6 @@
         // Initialize the application
         document.addEventListener('DOMContentLoaded', async () => {
             // Initialize debug console
-            addDebugLog('تم تحميل صفحة شجرة العائلة', 'success');
             
             // Modal event listeners
             document.getElementById('closeMessageModalBtn').addEventListener('click', closeModal);
@@ -1176,11 +1142,9 @@
             // Fetch data and build the tree
             try {
                 loadingIndicator.classList.remove('hidden');
-                addDebugLog('بدء جلب بيانات العائلة من Firebase...', 'log');
                 await fetchAllFamilyMembersForTree();
                 
                 if (allFamilyMembers.length === 0) {
-                    addDebugLog('لم يتم العثور على بيانات العائلة', 'error');
                     loadingIndicator.classList.add('hidden');
                     noTreeDataMessage.classList.remove('hidden');
                     return;
@@ -1190,7 +1154,6 @@
                 applyFamilyFilter();
             } catch (error) {
                 console.error("Failed to load family tree data:", error);
-                addDebugLog(`فشل تحميل بيانات شجرة العائلة: ${error.message}`, 'error');
                 showModal("فشل تحميل بيانات شجرة العائلة", error.message, 'error');
                 loadingIndicator.classList.add('hidden');
                 noTreeDataMessage.classList.remove('hidden');
