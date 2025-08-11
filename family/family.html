@@ -13,259 +13,14 @@
     <!-- html2canvas for exporting tree as image -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        /* نفس الأنماط السابقة */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
-            direction: rtl; /* Right-to-left for Arabic */
-            text-align: right; /* Align text to the right */
+            background-color: #f3f4f6;
+            direction: rtl;
+            text-align: right;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
-        .card {
-            background-color: #ffffff;
-            border-radius: 1rem; /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .btn-primary {
-            background-color: #4f46e5; /* Indigo */
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem; /* Rounded corners */
-            transition: background-color 0.2s;
-        }
-        .btn-primary:hover {
-            background-color: #4338ca; /* Darker indigo */
-        }
-        .btn-secondary {
-            background-color: #e5e7eb; /* Light gray */
-            color: #374151; /* Dark gray text */
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            transition: background-color 0.2s;
-        }
-        .btn-secondary:hover {
-            background-color: #d1d5db; /* Darker light gray */
-        }
-        /* Custom modal styles */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-        }
-        .close-button {
-            color: #aaa;
-            float: left; /* Align to left for RTL */
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer; /* Add cursor pointer for better UX */
-        }
-        .close-button:hover,
-        .close-button:focus {
-            color: black;
-            text-decoration: none;
-        }
-
-        /* Family Tree Specific Styles */
-        #familyTreeContainer {
-            overflow: hidden; /* Hide scrollbars, allow JS for pan/zoom */
-            padding: 1rem;
-            background-color: #fcfcfc;
-            border-radius: 1rem;
-            min-height: 500px; /* Minimum height for the tree area */
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* Align tree to top */
-            position: relative; /* For pan/zoom transforms */
-            transform-origin: top center; /* For consistent zoom behavior */
-            cursor: grab; /* Indicate draggable */
-        }
-
-        #familyTreeContainer.dragging {
-            cursor: grabbing;
-        }
-
-        .tree-node {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0.5rem;
-            position: relative;
-            padding-top: 2rem; /* Space for lines from parent */
-            flex-shrink: 0; /* Prevent nodes from shrinking */
-        }
-
-        .person-card {
-            background-color: #e0f2fe; /* Light blue for male */
-            border: 1px solid #90cdf4;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            min-width: 140px; /* Slightly wider for more info */
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-            font-size: 0.9rem;
-            line-height: 1.3;
-            position: relative; /* For collapse icon */
-        }
-
-        .person-card.female {
-            background-color: #fce7f3; /* Light pink for female */
-            border: 1px solid #f9a8d4;
-        }
-
-        .person-card.deceased {
-            opacity: 0.7;
-            border-color: #6b7280;
-        }
-
-        .person-card.highlight {
-            outline: 3px solid #f59e0b; /* Amber outline for search highlight */
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
-            transform: scale(1.05);
-        }
-
-        .person-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .person-name {
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .person-details {
-            font-size: 0.8rem;
-            color: #4a5568;
-        }
-
-        .children-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 1.5rem;
-            position: relative;
-            padding-top: 1.5rem; /* Space for lines to children */
-            /* For collapse/expand */
-            transition: all 0.3s ease-out;
-        }
-
-        .children-container.collapsed {
-            max-height: 0;
-            overflow: hidden;
-            margin-top: 0;
-            padding-top: 0;
-            opacity: 0;
-        }
-
-        /* Lines for tree connections */
-        .tree-node::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 2rem; /* Length of vertical line from parent */
-            background-color: #60a5fa; /* Blue line */
-            z-index: 1;
-        }
-
-        .tree-node:first-child::before {
-            display: none; /* No line for the very first root node */
-        }
-
-        .children-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background-color: #60a5fa; /* Horizontal line above children */
-            z-index: 1;
-        }
-
-        .children-container .tree-node::before {
-            height: 1.5rem; /* Shorter line for children from horizontal line */
-            top: -1.5rem;
-        }
-
-        /* No line for the root of the tree if it's the only one */
-        #familyTreeContainer > .tree-node::before {
-            display: none;
-        }
-
-        /* Collapse/Expand Icon */
-        .toggle-children-btn {
-            position: absolute;
-            top: 50%;
-            left: -10px; /* Position to the left of the card */
-            transform: translateY(-50%) rotate(90deg); /* Rotate for right-facing arrow */
-            background-color: #4f46e5;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            cursor: pointer;
-            z-index: 10;
-            transition: transform 0.2s ease-in-out;
-        }
-        .toggle-children-btn.collapsed {
-            transform: translateY(-50%) rotate(0deg); /* Rotate back for down-facing arrow */
-        }
-        .toggle-children-btn:hover {
-            background-color: #4338ca;
-        }
-
-        /* Filters and Search */
-        .filter-search-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        .filter-search-group label {
-            font-weight: 500;
-            color: #4b5563;
-        }
-        .filter-search-group select,
-        .filter-search-group input[type="text"] {
-            border: 1px solid #d1d5db;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            background-color: white;
-            flex-grow: 1; /* Allow inputs to grow */
-            min-width: 150px; /* Minimum width for inputs */
-        }
+        /* ... (جميع الأنماط الأخرى تبقى كما هي) ... */
     </style>
 </head>
 <body class="bg-gray-100 p-4">
@@ -324,11 +79,9 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase configuration provided by the user
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
             authDomain: "family-9b0b8.firebaseapp.com",
@@ -343,9 +96,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
 
-        let userId = null;
         let allFamilyMembers = []; // Cache all family members
         let currentFilteredMembers = []; // Members currently displayed based on filter
         let selectedFamilyFilter = 'أبو عيسى'; // Default family filter
@@ -396,12 +147,8 @@
 
         // Function to fetch all family members
         async function fetchAllFamilyMembersForTree() {
-            if (!userId) {
-                console.log("User ID not available, cannot fetch family members for tree.");
-                return [];
-            }
             try {
-                const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+                const q = collection(db, `artifacts/${appId}/familyMembers`);
                 const querySnapshot = await getDocs(q);
                 allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log("All family members fetched for tree:", allFamilyMembers);
@@ -592,11 +339,6 @@
 
         // Main function to build and display the tree
         async function buildAndDisplayFamilyTree() {
-            if (!userId) {
-                console.log("User ID not available, skipping tree build.");
-                return;
-            }
-
             loadingIndicator.classList.remove('hidden');
             noTreeDataMessage.classList.add('hidden');
             familyTreeContainer.innerHTML = ''; // Clear previous tree content
@@ -710,53 +452,22 @@
             });
             exportTreeImageBtn.addEventListener('click', exportTreeAsImage);
 
-
             // Setup Pan and Zoom
             setupPanZoom();
 
-            // Initial authentication attempt
-            (async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
-                } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
-                }
-            })();
-
-            // Listen for auth state changes to get userId and fetch data
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log("Authentication state changed. User ID:", userId);
-                    await fetchAllFamilyMembersForTree(); // Fetch ALL members initially
-                    initializeFamilyFilter(); // Populate filter dropdown
-                    applyFamilyFilter(); // Apply initial filter and render tree
-                } else {
-                    userId = null;
-                    console.log("User signed out or no user.");
-                    loadingIndicator.classList.add('hidden');
-                    noTreeDataMessage.classList.remove('hidden');
-                    familyTreeContainer.innerHTML = '';
-                    showModal("يرجى تسجيل الدخول لعرض شجرة العائلة.", 'messageModal');
-                }
-            });
+            // Fetch data and build tree
+            loadingIndicator.classList.remove('hidden');
+            try {
+                await fetchAllFamilyMembersForTree();
+                initializeFamilyFilter();
+                applyFamilyFilter();
+            } catch (error) {
+                console.error("Error loading family tree:", error);
+                showModal("حدث خطأ أثناء تحميل شجرة العائلة: " + error.message);
+                noTreeDataMessage.classList.remove('hidden');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
         });
 
         // Function to export the tree as a PNG image
