@@ -878,15 +878,7 @@
                 personCard.appendChild(ageSpan);
             }
 
-            // Add Child button
-            const addChildBtn = document.createElement('button');
-            addChildBtn.classList.add('btn-primary', 'mt-2', 'px-2', 'py-1', 'text-xs', 'rounded-md');
-            addChildBtn.innerHTML = '<i class="fas fa-baby mr-1"></i> إضافة ابن/ابنة';
-            addChildBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                window.location.href = `add_edit_person.html?parentId=${person.id}&parentGender=${person.gender}`;
-            });
-            personCard.appendChild(addChildBtn);
+       
 
             // Collapse/Expand button if has children
             if (person.children && person.children.length > 0) {
