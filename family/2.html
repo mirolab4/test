@@ -1,1538 +1,1507 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة إحصائيات العائلة</title>
-    <!-- Tailwind CSS CDN -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>إضافة / تعديل شخص (بدون تسجيل دخول)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome CDN for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Inter Font -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
-    <!-- Chart.js for charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;600;700;800&display=swap">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
-            direction: rtl; /* Right-to-left for Arabic */
-            text-align: right; /* Align text to the right */
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            background-color: #f8fafc; 
+            direction: rtl; 
+            text-align: right; 
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem;
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 1.5rem; 
         }
-        .card {
-            background-color: #ffffff;
-            border-radius: 1rem; /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            position: relative; /* Needed for absolute positioning of loading overlay */
+        .card { 
+            background: #fff; 
+            border-radius: 1.5rem; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+            padding: 2rem; 
+            margin-bottom: 1.5rem; 
+            border: 1px solid #e2e8f0;
         }
-        .btn-primary {
-            background-color: #4f46e5; /* Indigo */
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem; /* Rounded corners */
-            transition: background-color 0.2s;
+        .btn-primary { 
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff; 
+            padding: 0.75rem 1.5rem; 
+            border-radius: 0.75rem; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
         }
         .btn-primary:hover {
-            background-color: #4338ca; /* Darker indigo */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(79, 70, 229, 0.3);
         }
-        .btn-secondary {
-            background-color: #e5e7eb; /* Light gray */
-            color: #374151; /* Dark gray text */
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            transition: background-color 0.2s;
+        .btn-secondary { 
+            background: #f1f5f9; 
+            color: #334155; 
+            padding: 0.75rem 1.5rem; 
+            border-radius: 0.75rem; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
         }
         .btn-secondary:hover {
-            background-color: #d1d5db; /* Darker light gray */
+            background: #e2e8f0;
         }
-        .stat-box {
-            background-color: #e0f2fe; /* Light blue */
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            cursor: pointer; /* Indicate clickable */
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .stat-box:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-        .stat-box .value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #2563eb; /* Blue */
-        }
-        .stat-box .label {
+        .input-field { 
+            border: 1px solid #cbd5e1; 
+            padding: 0.85rem 1.25rem; 
+            border-radius: 0.75rem; 
+            width: 100%; 
+            box-sizing: border-box; 
             font-size: 1rem;
-            color: #374151;
-            margin-top: 0.5rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
         }
-        .chart-container {
-            position: relative;
-            height: 400px; /* Fixed height for charts */
-            width: 100%;
+        .input-field:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+            background: #fff;
         }
-        /* Custom modal styles */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-            justify-content: center;
-            align-items: center;
+        .suggestions-list { 
+            position: absolute; 
+            background: #fff; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 0.75rem; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            width: 100%; 
+            z-index: 10; 
+            box-shadow: 0 10px 15px rgba(0,0,0,0.08);
+            margin-top: 0.25rem;
         }
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
+        .suggestions-list-item { 
+            padding: 0.75rem 1.25rem; 
+            cursor: pointer; 
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
         }
-        .close-button {
-            color: #aaa;
-            float: left; /* Align to left for RTL */
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer; /* Add cursor pointer for better UX */
+        .suggestions-list-item:hover {
+            background: #f1f5f9;
         }
-        .close-button:hover,
-        .close-button:focus {
-            color: black;
-            text-decoration: none;
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.5); 
+            justify-content: center; 
+            align-items: center; 
+            backdrop-filter: blur(2px);
         }
-
-        /* Modal for Chart Details */
-        #chartDetailsModal .modal-content {
-            max-width: 600px;
-            text-align: right;
+        .modal-content { 
+            background: #fff; 
+            padding: 2.5rem; 
+            border-radius: 1.5rem; 
+            width: 90%; 
+            max-width: 500px; 
+            text-align: center; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
-        #chartDetailsList li {
-            padding: 0.5rem 0;
-            border-bottom: 1px dashed #e5e7eb;
+        .close-button { 
+            color: #94a3b8; 
+            float: left; 
+            font-size: 28px; 
+            font-weight: bold; 
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        #chartDetailsList li:last-child {
-            border-bottom: none;
+        .close-button:hover {
+            color: #64748b;
         }
-        .person-link {
-            color: #4f46e5;
-            text-decoration: none;
+        .relation-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0.75rem 1rem; 
+            border-bottom: 1px dashed #e2e8f0;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .error-message { 
+            color: #ef4444; 
+            font-size: 0.875rem; 
+            margin-top: 0.25rem; 
+            text-align: right; 
             font-weight: 500;
         }
-        .person-link:hover {
-            text-decoration: underline;
+        .input-field.error { 
+            border-color: #ef4444; 
+            background: #fff5f5;
         }
-        .filter-group {
+        #loadingModal .modal-content { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 3rem; 
+        }
+        .spinner { 
+            border: 4px solid rgba(0,0,0,0.1); 
+            border-left-color: #4f46e5; 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            animation: spin 1s linear infinite; 
+            margin-bottom: 1rem; 
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        .section-title {
+            color: #4f46e5;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e0e7ff;
+            position: relative;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            right: 0;
+            width: 80px;
+            height: 2px;
+            background: #4f46e5;
+            border-radius: 10px;
+        }
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .form-icon {
+            color: #4f46e5;
+            margin-left: 0.5rem;
+            font-size: 1.1rem;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-alive {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-deceased {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .photo-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            cursor: pointer;
+            margin: 0 auto 1.5rem;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .photo-upload:hover {
+            border-color: #818cf8;
+            background: #e0e7ff;
+        }
+        .photo-upload img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .photo-upload i {
+            font-size: 2.5rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        .photo-upload span {
+            color: #64748b;
+            font-weight: 500;
+            text-align: center;
+        }
+        .flex-inputs {
+            display: flex;
+            gap: 1rem;
+        }
+        .flex-inputs > div {
+            flex: 1;
+        }
+        .toggle-container {
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border-radius: 0.75rem;
         }
-        .filter-group label {
-            font-weight: 500;
-            color: #4b5563;
+        .toggle-label {
+            font-weight: 600;
+            color: #334155;
         }
-        .filter-group select {
-            border: 1px solid #d1d5db;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            background-color: white;
-            cursor: pointer;
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
         }
-
-        /* Print specific styles */
-        @media print {
-            body {
-                background-color: #fff;
-                margin: 0;
-                padding: 0;
-            }
-            .container {
-                max-width: none;
-                margin: 0;
-                padding: 0;
-            }
-            .btn-primary, .btn-secondary, nav, .flex.flex-wrap.justify-end.gap-4.mt-6.mb-6, .filter-group {
-                display: none; /* Hide buttons, navigation, and filter when printing */
-            }
-            .card {
-                box-shadow: none;
-                border: 1px solid #eee;
-                margin-bottom: 1rem;
-                page-break-inside: avoid; /* Avoid breaking cards across pages */
-            }
-            .chart-container {
-                height: auto; /* Allow charts to scale naturally */
-                width: 100%;
-            }
-            canvas {
-                max-width: 100%;
-                height: auto !important; /* Override Chart.js inline styles */
-            }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
         }
-
-        /* Loading overlay */
-        .loading-overlay {
+        .slider {
             position: absolute;
+            cursor: pointer;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            border-radius: 1rem;
+            background-color: #cbd5e1;
+            transition: .4s;
+            border-radius: 34px;
         }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(79, 70, 229, 0.3);
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
             border-radius: 50%;
-            border-top-color: #4f46e5;
-            animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        input:checked + .slider {
+            background-color: #4f46e5;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .optional-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+        .manual-add-btn {
+            background: #e0f2fe;
+            color: #0ea5e9;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .manual-add-btn:hover {
+            background: #bae6fd;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 0.5rem;
+            color: #94a3b8;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: #334155;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 0.75rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            font-weight: normal;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
         }
     </style>
 </head>
-<body class="bg-gray-100 p-4">
+<body class="bg-gray-50 p-4">
 
-    <!-- Custom Message Modal -->
-    <div id="messageModal" class="modal">
-        <div class="modal-content">
-            <span id="closeMessageModalBtn" class="close-button">&times;</span>
-            <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-4"></p>
-            <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
-        </div>
+<!-- Message Modal -->
+<div id="messageModal" class="modal">
+  <div class="modal-content">
+    <span id="closeMessageModalBtn" class="close-button">&times;</span>
+    <p id="modalMessage" class="text-lg font-semibold text-gray-800 mb-6"></p>
+    <button id="confirmMessageModalBtn" class="btn-primary">حسناً</button>
+  </div>
+</div>
+
+<!-- Loading Modal -->
+<div id="loadingModal" class="modal">
+  <div class="modal-content">
+    <div class="spinner"></div>
+    <p class="text-lg font-semibold text-gray-800">جارٍ معالجة البيانات...</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="flex flex-col md:flex-row justify-between items-center mb-8 p-5 bg-white rounded-2xl shadow-md">
+    <div>
+      <h1 id="pageTitle" class="text-3xl font-bold text-gray-800 mb-2">إضافة شخص جديد</h1>
+      <p class="text-gray-600">املأ البيانات التالية لإضافة شخص جديد إلى شجرة العائلة</p>
     </div>
+    <nav class="flex flex-wrap gap-3 mt-4 md:mt-0">
+      <a href="index.html" class="btn-secondary"><i class="fas fa-list mr-2"></i>قائمة العائلة</a>
+      <a href="family_tree.html" class="btn-secondary"><i class="fas fa-tree mr-2"></i>شجرة العائلة</a>
+      <a href="add_edit_person.html" class="btn-primary"><i class="fas fa-user-plus mr-2"></i>إضافة شخص جديد</a>
+    </nav>
+  </div>
 
-    <!-- Modal for Chart Details (Drill-down) -->
-    <div id="chartDetailsModal" class="modal">
-        <div class="modal-content">
-            <span id="closeChartDetailsModalBtn" class="close-button">&times;</span>
-            <h3 id="chartDetailsTitle" class="text-2xl font-semibold text-gray-700 mb-4">تفاصيل الفئة</h3>
-            <ul id="chartDetailsList" class="list-disc pr-6 text-gray-700">
-                <!-- Details will be loaded here -->
-            </ul>
-        </div>
-    </div>
+  <div class="card">
+    <form id="personForm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+        <div>
+          <!-- الصورة الشخصية -->
+          <div class="mb-8 text-center">
+            <div class="photo-upload" id="photoUpload">
+              <i class="fas fa-camera"></i>
+              <span>إضافة صورة شخصية</span>
+              <img id="personPhoto" src="" alt="صورة الشخص">
+              <input type="file" id="photoInput" accept="image/*" class="hidden">
+            </div>
+          </div>
+          
+          <h3 class="section-title">المعلومات الشخصية</h3>
+          
+          <div class="mb-5">
+            <label for="firstNameInput" class="form-label">
+              <i class="fas fa-user-tag form-icon"></i> الاسم الأول:
+            </label>
+            <input type="text" id="firstNameInput" class="input-field" placeholder="أدخل الاسم الأول" required>
+            <p id="firstNameError" class="error-message hidden">الاسم الأول مطلوب.</p>
+          </div>
 
-    <div class="container">
-        <!-- Header and Navigation -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
-            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">لوحة إحصائيات العائلة</h1>
-           <nav class="flex flex-wrap gap-3">
-                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
-                <a href="events.html" class="btn-secondary">الأحداث</a>
-                <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
-                <a href="statistics.html" class="btn-primary nav-link" data-page="statistics.html" style="">الإحصائيات</a>            
-                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html">تصدير البيانات</a>
-                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
-            </nav>
-        </div>
+          <div class="flex-inputs">
+            <div class="mb-5">
+              <label for="fatherNameInput" class="form-label">
+                <i class="fas fa-male form-icon"></i> اسم الأب:
+              </label>
+              <input type="text" id="fatherNameInput" class="input-field" placeholder="ابحث أو أدخل اسم الأب">
+              <div id="fatherSuggestions" class="suggestions-list hidden"></div>
+              <input type="hidden" id="fatherIdInput">
+            </div>
 
-        <!-- Loading indicator -->
-        <div id="loadingIndicator" class="card relative">
-            <div class="loading-overlay">
-                <div class="spinner"></div>
-                <span class="text-lg font-semibold text-gray-700 mr-3">جاري تحميل البيانات...</span>
+            <div class="mb-5">
+              <label for="grandFatherNameInput" class="form-label">
+                <i class="fas fa-user-tie form-icon"></i> اسم الجد:
+                <span class="tooltip">
+                  <i class="fas fa-info-circle"></i>
+                  <span class="tooltiptext">سيتم حفظ الاسم الأول للجد فقط</span>
+                </span>
+              </label>
+              <input type="text" id="grandFatherNameInput" class="input-field" placeholder="اسم الجد الأول">
             </div>
-            
-            <!-- General Statistics -->
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">إحصائيات عامة</h2>
-            <div class="filter-group">
-                <label for="familyFilter">تحديد العائلة:</label>
-                <select id="familyFilter" class="input-field w-auto">
-                    <option value="All">الكل</option>
-                    <!-- Family names will be populated here by JavaScript -->
-                </select>
+          </div>
+
+          <div class="flex-inputs">
+            <div class="mb-5">
+              <label for="familyNameInput" class="form-label">
+                <i class="fas fa-users form-icon"></i> اسم العائلة:
+              </label>
+              <input type="text" id="familyNameInput" class="input-field" placeholder="اسم العائلة" required>
+              <p id="familyNameError" class="error-message hidden">اسم العائلة مطلوب.</p>
             </div>
-            <div id="statisticsContent" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                <div class="stat-box" id="statTotalMembers">
-                    <div id="totalMembers" class="value">0</div>
-                    <div class="label">إجمالي أفراد العائلة</div>
-                </div>
-                <div class="stat-box" id="statAliveMembers">
-                    <div id="aliveMembers" class="value">0</div>
-                    <div class="label">أفراد على قيد الحياة</div>
-                </div>
-                <div class="stat-box" id="statDeceasedMembers">
-                    <div id="deceasedMembers" class="value">0</div>
-                    <div class="label">أفراد متوفون</div>
-                </div>
-                <div class="stat-box"> <!-- Average age is not a list of people -->
-                    <div id="averageAge" class="value">0</div>
-                    <div class="label">متوسط العمر (الأحياء)</div>
-                </div>
-                <div class="stat-box"> <!-- Average age at death is not a list of people -->
-                    <div id="averageAgeAtDeath" class="value">0</div>
-                    <div class="label">متوسط العمر عند الوفاة</div>
-                </div>
-                <div class="stat-box" id="statUniqueFamilyNames">
-                    <div id="uniqueFamilyNames" class="value">0</div>
-                    <div class="label">عدد أسماء العائلات الفريدة</div>
-                </div>
-                <div class="stat-box" id="statLivingMales">
-                    <div id="livingMales" class="value">0</div>
-                    <div class="label">ذكور أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingFemales">
-                    <div id="livingFemales" class="value">0</div>
-                    <div class="label">إناث أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingMarried">
-                    <div id="livingMarried" class="value">0</div>
-                    <div class="label">متزوجون أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingEngaged">
-                    <div id="livingEngaged" class="value">0</div>
-                    <div class="label">مخطوبون أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingMarriedMales">
-                    <div id="livingMarriedMales" class="value">0</div>
-                    <div class="label">ذكور متزوجون أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingMarriedFemales">
-                    <div id="livingMarriedFemales" class="value">0</div>
-                    <div class="label">إناث متزوجات أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingSingleMales">
-                    <div id="livingSingleMales" class="value">0</div>
-                    <div class="label">ذكور عازبون أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingDivorcedMales">
-                    <div id="livingDivorcedMales" class="value">0</div>
-                    <div class="label">ذكور مطلقون أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingWidowedMales">
-                    <div id="livingWidowedMales" class="value">0</div>
-                    <div class="label">ذكور أرامل أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingSingleFemales">
-                    <div id="livingSingleFemales" class="value">0</div>
-                    <div class="label">إناث عازبات أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingDivorcedFemales">
-                    <div id="livingDivorcedFemales" class="value">0</div>
-                    <div class="label">إناث مطلقات أحياء</div>
-                </div>
-                <div class="stat-box" id="statLivingWidowedFemales">
-                    <div id="livingWidowedFemales" class="value">0</div>
-                    <div class="label">إناث أرامل أحياء</div>
-                </div>
-                <div class="stat-box" id="statMalesOver16">
-                    <div id="malesOver16" class="value">0</div>
-                    <div class="label">ذكور فوق 16 سنة (أحياء)</div>
-                </div>
-                <div class="stat-box" id="statFemalesOver16">
-                    <div id="femalesOver16" class="value">0</div>
-                    <div class="label">إناث فوق 16 سنة (أحياء)</div>
-                </div>
-                <div class="stat-box" id="statMalesUnder16">
-                    <div id="malesUnder16" class="value">0</div>
-                    <div class="label">ذكور أقل من 16 سنة (أحياء)</div>
-                </div>
-                <div class="stat-box" id="statFemalesUnder16">
-                    <div id="femalesUnder16" class="value">0</div>
-                    <div class="label">إناث أقل من 16 سنة (أحياء)</div>
-                </div>
-                <div class="stat-box"> <!-- Average children per parent is not a list of people -->
-                    <div id="avgChildrenPerParent" class="value">0</div>
-                    <div class="label">متوسط الأبناء لكل والد</div>
-                </div>
-                <div class="stat-box" id="statMembersWithoutChildren">
-                    <div id="membersWithoutChildren" class="value">0</div>
-                    <div class="label">أفراد بدون أبناء</div>
-                </div>
-                <div class="stat-box"> <!-- Profile completion is a percentage, not a list of people -->
-                    <div id="profileCompletion" class="value">0%</div>
-                    <div class="label">اكتمال الملفات الشخصية</div>
-                </div>
-                <div class="stat-box" id="statMissingBirthDate">
-                    <div id="missingBirthDate" class="value">0</div>
-                    <div class="label">أفراد بدون تاريخ ميلاد</div>
-                </div>
-                <div class="stat-box" id="statMissingGender">
-                    <div id="missingGender" class="value">0</div>
-                    <div class="label">أفراد بدون جنس</div>
-                </div>
-                <div class="stat-box" id="statMissingFamilyName">
-                    <div id="missingFamilyName" class="value">0</div>
-                    <div class="label">أفراد بدون اسم عائلة</div>
-                </div>
-                <div class="stat-box"> <!-- Average age is not a list of people -->
-                    <div id="avgMaleMarriageAge" class="value">0</div>
-                    <div class="label">متوسط عمر الزواج (ذكور)</div>
-                </div>
-                <div class="stat-box"> <!-- Average age is not a list of people -->
-                    <div id="avgFemaleMarriageAge" class="value">0</div>
-                    <div class="label">متوسط عمر الزواج (إناث)</div>
-                </div>
-                <div class="stat-box"> <!-- Average age is not a list of people -->
-                    <div id="avgMaleEngagementAge" class="value">0</div>
-                    <div class="label">متوسط عمر الخطوبة (ذكور)</div>
-                </div>
-                <div class="stat-box"> <!-- Average age is not a list of people -->
-                    <div id="avgFemaleEngagementAge" class="value">0</div>
-                    <div class="label">متوسط عمر الخطوبة (إناث)</div>
-                </div>
+
+            <div class="mb-5 input-group">
+              <label for="motherNameInput" class="form-label">
+                <i class="fas fa-female form-icon"></i> اسم الأم:
+              </label>
+              <input type="text" id="motherNameInput" class="input-field" placeholder="ابحث أو أدخل اسم الأم">
+              <div id="motherSuggestions" class="suggestions-list hidden"></div>
+              <input type="hidden" id="motherIdInput">
             </div>
+          </div>
+
+          <div class="flex-inputs">
+            <div class="mb-5">
+              <label for="idNumberInput" class="form-label">
+                <i class="fas fa-id-card form-icon"></i> رقم الهوية:
+              </label>
+              <input type="text" id="idNumberInput" class="input-field" placeholder="رقم الهوية">
+              <p id="idNumberError" class="error-message hidden">رقم الهوية موجود بالفعل.</p>
+            </div>
+
+            <div class="mb-5">
+              <label for="phoneNumberInput" class="form-label">
+                <i class="fas fa-phone form-icon"></i> رقم الجوال:
+              </label>
+              <input type="text" id="phoneNumberInput" class="input-field" placeholder="رقم الجوال">
+            </div>
+          </div>
+
+          <div class="flex-inputs">
+            <div class="mb-5">
+              <label for="birthDateInput" class="form-label">
+                <i class="fas fa-calendar-alt form-icon"></i> تاريخ الميلاد:
+              </label>
+              <input type="date" id="birthDateInput" class="input-field" required>
+              <p id="birthDateError" class="error-message hidden">تاريخ الميلاد مطلوب.</p>
+            </div>
+
+            <div class="mb-5">
+              <label class="form-label">
+                <i class="fas fa-venus-mars form-icon"></i> الجنس:
+              </label>
+              <div class="flex gap-4 mt-2">
+                <label class="inline-flex items-center">
+                  <input type="radio" name="gender" value="Male" id="genderMale" class="form-radio h-5 w-5 text-indigo-600" required>
+                  <span class="mr-2 text-gray-700">ذكر</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="radio" name="gender" value="Female" id="genderFemale" class="form-radio h-5 w-5 text-indigo-600" required>
+                  <span class="mr-2 text-gray-700">أنثى</span>
+                </label>
+              </div>
+              <p id="genderError" class="error-message hidden">الجنس مطلوب.</p>
+            </div>
+          </div>
+
+          <div class="toggle-container">
+            <label class="toggle-label">الحالة:</label>
+            <div class="flex items-center gap-3">
+              <span class="status-badge status-alive" id="aliveStatus">
+                <i class="fas fa-heartbeat mr-1"></i> على قيد الحياة
+              </span>
+              <label class="switch">
+                <input type="checkbox" id="isAliveInput" checked>
+                <span class="slider"></span>
+              </label>
+              <span class="status-badge status-deceased hidden" id="deceasedStatus">
+                <i class="fas fa-skull mr-1"></i> متوفى
+              </span>
+            </div>
+          </div>
+
+          <div class="mb-5 hidden" id="deathDateContainer">
+            <label for="deathDateInput" class="form-label">
+              <i class="fas fa-skull-crossbones form-icon"></i> تاريخ الوفاة:
+            </label>
+            <input type="date" id="deathDateInput" class="input-field">
+            <p id="deathDateError" class="error-message hidden">تاريخ الوفاة مطلوب إذا كان الشخص متوفى.</p>
+          </div>
+
+          <div class="mb-5">
+            <label for="notesInput" class="form-label">
+              <i class="fas fa-sticky-note form-icon"></i> ملاحظات:
+            </label>
+            <textarea id="notesInput" class="input-field" rows="4" placeholder="ملاحظات إضافية..."></textarea>
+          </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex flex-wrap justify-end gap-4 mt-6 mb-6">
-            <button id="exportCsvBtn" class="btn-primary">تصدير البيانات (CSV)</button>
-            <button id="exportChartsBtn" class="btn-primary">تصدير المخططات (PNG)</button>
-            <button id="printPageBtn" class="btn-secondary">طباعة الصفحة</button>
+        <div>
+          <h3 class="section-title">الحالة الاجتماعية والعلاقات</h3>
+          
+          <div class="mb-5">
+            <label for="maritalStatusInput" class="form-label">
+              <i class="fas fa-ring form-icon"></i> الحالة الاجتماعية:
+            </label>
+            <select id="maritalStatusInput" class="input-field" required>
+              <option value="">اختر الحالة</option>
+              <option value="Single">أعزب</option>
+              <option value="Engaged">مخطوب</option>
+              <option value="Married">متزوج</option>
+              <option value="Divorced">مطلق</option>
+              <option value="Widowed">أرمل</option>
+            </select>
+            <p id="maritalStatusError" class="error-message hidden">الحالة الاجتماعية مطلوبة.</p>
+          </div>
+
+          <div class="flex-inputs">
+            <div class="mb-5 hidden" id="marriageDateContainer">
+              <label for="marriageDateInput" class="form-label">
+                <i class="fas fa-calendar-check form-icon"></i> تاريخ الزواج:
+                <span class="optional-badge">اختياري</span>
+              </label>
+              <input type="date" id="marriageDateInput" class="input-field">
+            </div>
+
+            <div class="mb-5 hidden" id="engagementDateContainer">
+              <label for="engagementDateInput" class="form-label">
+                <i class="fas fa-heart form-icon"></i> تاريخ الخطوبة:
+                <span class="optional-badge">اختياري</span>
+              </label>
+              <input type="date" id="engagementDateInput" class="input-field">
+            </div>
+          </div>
+
+          <div id="spousesSection" class="mb-6">
+            <h4 class="text-lg font-medium text-gray-700 mb-3">
+              <i class="fas fa-user-friends text-indigo-500 mr-2"></i>
+              الأزواج/الزوجات:
+              <span class="optional-badge">اختياري</span>
+            </h4>
+            <div id="spousesList" class="bg-gray-50 p-4 rounded-xl mb-4">
+              <p id="noSpousesMessage" class="text-gray-600 text-center py-3">لا يوجد أزواج/زوجات مضافون بعد.</p>
+            </div>
+
+            <div class="mb-4 input-group">
+              <label for="addSpouseInput" class="form-label">
+                <i class="fas fa-plus-circle form-icon"></i> إضافة زوج/زوجة:
+              </label>
+              <input type="text" id="addSpouseInput" class="input-field" placeholder="ابحث أو أدخل اسم الزوج/الزوجة">
+              <div id="addSpouseSuggestions" class="suggestions-list hidden"></div>
+              <input type="hidden" id="addSpouseIdInput">
+              <div class="flex gap-3 mt-3">
+                <button type="button" id="addSpouseBtn" class="btn-secondary flex-1">
+                  <i class="fas fa-search mr-2"></i>إضافة من القائمة
+                </button>
+                <button type="button" id="addManualSpouseBtn" class="manual-add-btn">
+                  <i class="fas fa-plus"></i> إضافة يدوي
+                </button>
+              </div>
+            </div>
+            <p id="spouseGenderError" class="error-message hidden">جنس الزوج/الزوجة غير متوافق مع جنس الشخص الحالي.</p>
+          </div>
+
+          <h3 class="section-title mt-8">الأبناء</h3>
+          <div id="childrenList" class="bg-gray-50 p-4 rounded-xl mb-4">
+            <p class="text-gray-600 text-center py-3" id="noChildrenMessage">لا يوجد أبناء مضافون بعد.</p>
+          </div>
+
+          <div class="mb-6 input-group">
+            <label for="addChildInput" class="form-label">
+              <i class="fas fa-child form-icon"></i> إضافة ابن/ابنة:
+            </label>
+            <input type="text" id="addChildInput" class="input-field" placeholder="ابحث أو أدخل اسم الابن/الابنة">
+            <div id="childrenSuggestions" class="suggestions-list hidden"></div>
+            <input type="hidden" id="addChildIdInput">
+            <div class="flex gap-3 mt-3">
+              <button type="button" id="addChildBtn" class="btn-secondary flex-1">
+                <i class="fas fa-search mr-2"></i>إضافة من القائمة
+              </button>
+              <button type="button" id="addManualChildBtn" class="manual-add-btn">
+                <i class="fas fa-plus"></i> إضافة يدوي
+              </button>
+            </div>
+          </div>
+
+          <h3 class="section-title mt-8">روابط إضافية</h3>
+          <div class="mb-5">
+            <label for="facebookLinkInput" class="form-label">
+              <i class="fab fa-facebook text-blue-600 mr-2"></i> رابط فيسبوك:
+              <span class="optional-badge">اختياري</span>
+            </label>
+            <input type="url" id="facebookLinkInput" class="input-field" placeholder="https://facebook.com/username">
+          </div>
+          <div class="mb-5">
+            <label for="linkedinLinkInput" class="form-label">
+              <i class="fab fa-linkedin text-blue-500 mr-2"></i> رابط لينكدإن:
+              <span class="optional-badge">اختياري</span>
+            </label>
+            <input type="url" id="linkedinLinkInput" class="input-field" placeholder="https://linkedin.com/in/username">
+          </div>
+          <div class="mb-5">
+            <label for="websiteLinkInput" class="form-label">
+              <i class="fas fa-globe text-indigo-500 mr-2"></i> موقع شخصي:
+              <span class="optional-badge">اختياري</span>
+            </label>
+            <input type="url" id="websiteLinkInput" class="input-field" placeholder="https://example.com">
+          </div>
         </div>
+      </div>
 
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الجنس</h2>
-                <div class="chart-container">
-                    <canvas id="genderChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الحالة الاجتماعية (جميع الأفراد)</h2>
-                <div class="chart-container">
-                    <canvas id="maritalStatusChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الحالة الاجتماعية (الأفراد الأحياء)</h2>
-                <div class="chart-container">
-                    <canvas id="maritalStatusAliveChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع الأعمار (الأحياء)</h2>
-                <div class="chart-container">
-                    <canvas id="ageDistributionChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع أعياد الميلاد حسب الشهر</h2>
-                <div class="chart-container">
-                    <canvas id="birthMonthChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">توزيع أسماء العائلات</h2>
-                <div class="chart-container">
-                    <canvas id="familyNameChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الحالة الاجتماعية للذكور (الأحياء)</h2>
-                <div class="chart-container">
-                    <canvas id="maleMaritalStatusChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الحالة الاجتماعية للإناث (الأحياء)</h2>
-                <div class="chart-container">
-                    <canvas id="femaleMaritalStatusChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">المواليد حسب السنة</h2>
-                <div class="chart-container">
-                    <canvas id="birthsPerYearChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الوفيات حسب السنة</h2>
-                <div class="chart-container">
-                    <canvas id="deathsPerYearChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">الزيجات والخطوبات حسب السنة</h2>
-                <div class="chart-container">
-                    <canvas id="marriagesEngagementsPerYearChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أكثر الأشخاص أبناءً</h2>
-                <div id="mostChildrenList" class="p-4">
-                    <p class="text-gray-600">جاري التحميل...</p>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أكبر 5 أفراد سناً (الأحياء)</h2>
-                <div id="oldestMembersList" class="p-4">
-                    <p class="text-gray-600">جاري التحميل...</p>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أصغر 5 أفراد سناً (الأحياء)</h2>
-                <div id="youngestMembersList" class="p-4">
-                    <p class="text-gray-600">جاري التحميل...</p>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أعلى 5 عائلات فرعية من حيث العدد</h2>
-                <div id="topSubFamiliesList" class="p-4">
-                    <p class="text-gray-600">جاري التحميل...</p>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">أسماء الأبناء الأكثر شيوعاً</h2>
-                <div id="mostCommonChildrenNamesList" class="p-4">
-                    <p class="text-gray-600">جاري التحميل...</p>
-                </div>
-            </div>
-        </div>
+      <div class="flex flex-col sm:flex-row justify-end gap-4 mt-8 pt-6 border-t border-gray-100">
+        <button type="button" class="btn-secondary" id="cancelBtn">
+          <i class="fas fa-times mr-2"></i>إلغاء
+        </button>
+        <button type="button" class="btn-primary" id="saveAndAddAnotherBtn">
+          <i class="fas fa-save mr-2"></i>حفظ وإضافة آخر
+        </button>
+        <button type="submit" class="btn-primary" id="savePersonBtn">
+          <i class="fas fa-check mr-2"></i>حفظ البيانات
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    </div>
+<!-- Firebase SDK (Firestore only, no Auth) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, query, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+    authDomain: "family-9b0b8.firebaseapp.com",
+    databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+    projectId: "family-9b0b8",
+    storageBucket: "family-9b0b8.firebasestorage.app",
+    messagingSenderId: "409089079475",
+    appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+    measurementId: "G-X5LDQB1WC9"
+  };
 
-        // Firebase configuration (replace with your actual config)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
-            authDomain: "family-9b0b8.firebaseapp.com",
-            databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
-            projectId: "family-9b0b8",
-            storageBucket: "family-9b0b8.firebasestorage.app",
-            messagingSenderId: "409089079475",
-            appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
-            measurementId: "G-X5LDQB1WC9"
-        };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+  // appId constant
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        let allFamilyMembers = []; // Stores all members fetched from Firestore
-        let filteredFamilyMembers = []; // Stores members filtered by the selected family name
-        let selectedFamilyFilter = 'أبو عيسى'; // Default family filter
+  // Public Firestore path
+  const baseCollectionPath = `artifacts/${appId}/familyMembers`;
 
-        // Get app ID from environment or use a default
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  // globals
+  let editingPersonId = null;
+  let allFamilyMembers = [];
+  let originalPersonData = null;
+  let hasUnsavedChanges = false;
+  let currentChildren = new Map();
+  let currentSpouses = new Map();
 
-        // Chart instances
-        let genderChartInstance;
-        let maritalStatusChartInstance;
-        let maritalStatusAliveChartInstance;
-        let ageDistributionChartInstance;
-        let birthMonthChartInstance;
-        let familyNameChartInstance;
-        let maleMaritalStatusChartInstance;
-        let femaleMaritalStatusChartInstance;
-        let birthsPerYearChartInstance;
-        let deathsPerYearChartInstance;
-        let marriagesEngagementsPerYearChartInstance;
+  // DOM references
+  let pageTitle, personForm, firstNameInput, firstNameError, fatherNameInput, fatherSuggestions, fatherIdInput, grandFatherNameInput;
+  let familyNameInput, familyNameError, motherNameInput, motherSuggestions, motherIdInput, idNumberInput, idNumberError;
+  let phoneNumberInput, birthDateInput, birthDateError, genderMale, genderFemale, genderError, isAliveInput, deathDateContainer, deathDateInput, deathDateError;
+  let aliveStatus, deceasedStatus;
+  let maritalStatusInput, maritalStatusError, marriageDateContainer, marriageDateInput, engagementDateContainer, engagementDateInput;
+  let spousesSection, spousesListDiv, noSpousesMessage, addSpouseInput, addSpouseSuggestions, addSpouseIdInput, addSpouseBtn, spouseError, spouseGenderError;
+  let childrenListDiv, noChildrenMessage, addChildInput, childrenSuggestions, addChildIdInput, addChildBtn, savePersonBtn, saveAndAddAnotherBtn, cancelBtn;
+  let facebookLinkInput, linkedinLinkInput, websiteLinkInput, notesInput, photoUpload, photoInput, personPhoto;
+  let addManualSpouseBtn, addManualChildBtn;
 
-        // Modal for chart details
-        const chartDetailsModal = document.getElementById('chartDetailsModal');
-        const chartDetailsTitle = document.getElementById('chartDetailsTitle');
-        const chartDetailsList = document.getElementById('chartDetailsList');
-        const familyFilterSelect = document.getElementById('familyFilter'); // New: Family Filter Select element
-        const loadingIndicator = document.getElementById('loadingIndicator');
+  // Modal helpers
+  const showModal = (msg) => { 
+    document.getElementById('modalMessage').textContent = msg; 
+    document.getElementById('messageModal').style.display = 'flex'; 
+  };
+  const closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
+  const showLoadingModal = () => { document.getElementById('loadingModal').style.display = 'flex'; };
+  const hideLoadingModal = () => { document.getElementById('loadingModal').style.display = 'none'; };
 
-        // Function to show custom modal messages
-        function showModal(message) {
-            document.getElementById('modalMessage').textContent = message;
-            document.getElementById('messageModal').style.display = 'flex';
-        }
+  // Fetch all family members (for suggestions & caching)
+  async function fetchAllFamilyMembers() {
+    try {
+      const q = collection(db, baseCollectionPath);
+      const snapshot = await getDocs(q);
+      allFamilyMembers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log("cached all family members:", allFamilyMembers.length);
+    } catch (err) {
+      console.error("fetchAllFamilyMembers error:", err);
+      showModal("خطأ أثناء جلب بيانات العائلة: " + (err.message || err));
+    }
+  }
 
-        // Function to close custom modal messages
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+  // Handle suggestions input (reusable)
+  function handleRelatedPersonInput(inputElement, suggestionsElement, hiddenIdElement, relationType) {
+    if (!inputElement) return;
+    
+    inputElement.addEventListener('input', () => {
+      hasUnsavedChanges = true;
+      if (suggestionsElement) { suggestionsElement.innerHTML = ''; suggestionsElement.classList.add('hidden'); }
+      if (hiddenIdElement) hiddenIdElement.value = '';
 
-        // Function to calculate age from birth date (returns formatted string)
-        function calculateAge(birthDate) {
-            if (!birthDate || !birthDate.toDate) return null;
-            const today = new Date();
-            const birth = birthDate.toDate();
-            let age = today.getFullYear() - birth.getFullYear();
-            const m = today.getMonth() - birth.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-                age--;
-            }
-            return age; // Return raw years for internal calculation
-        }
+      const searchText = inputElement.value.trim().toLowerCase();
+      if (searchText.length < 2) return;
 
-        // Function to calculate age in years (returns number)
-        function calculateAgeInYears(birthDate) {
-            if (!birthDate || !birthDate.toDate) return null;
-            const today = new Date();
-            const birth = birthDate.toDate();
-            let age = today.getFullYear() - birth.getFullYear();
-            const m = today.getMonth() - birth.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-                age--;
-            }
-            return age;
-        }
+      let filtered = allFamilyMembers.filter(p => p.fullName && p.fullName.toLowerCase().includes(searchText) && p.id !== editingPersonId);
 
-        // Function to calculate age at death
-        function calculateAgeAtDeath(birthDate, deathDate) {
-            if (!birthDate || !deathDate || !birthDate.toDate || !deathDate.toDate) return null;
-            const birth = birthDate.toDate();
-            const death = deathDate.toDate();
-            let age = death.getFullYear() - birth.getFullYear();
-            const m = death.getMonth() - birth.getMonth();
-            if (m < 0 || (m === 0 && death.getDate() < birth.getDate())) {
-                age--;
-            }
-            return age;
-        }
+      if (relationType === 'mother') filtered = filtered.filter(p => p.gender === 'Female');
+      if (relationType === 'father') filtered = filtered.filter(p => p.gender === 'Male');
+      if (relationType === 'spouse') {
+        const curGender = document.querySelector('input[name="gender"]:checked')?.value;
+        if (curGender === 'Male') filtered = filtered.filter(p => p.gender === 'Female');
+        if (curGender === 'Female') filtered = filtered.filter(p => p.gender === 'Male');
+      }
 
-        // Function to fetch all family members (initial fetch, no filtering)
-        async function fetchAllFamilyMembers() {
-            try {
-                // Show loading indicator
-                loadingIndicator.querySelector('.loading-overlay').style.display = 'flex';
-                
-                // Fetch data directly without authentication
-                const q = collection(db, `artifacts/${appId}/familyMembers`);
-                const querySnapshot = await getDocs(q);
-                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("All family members fetched:", allFamilyMembers);
-                
-                // Hide loading indicator
-                loadingIndicator.querySelector('.loading-overlay').style.display = 'none';
-                
-                initializeFamilyFilterAndRender(); // Initialize filter and render after fetching all data
-            } catch (error) {
-                console.error("Error fetching all family members:", error);
-                showModal("حدث خطأ أثناء جلب بيانات العائلة للإحصائيات: " + error.message);
-                
-                // Hide loading indicator on error too
-                loadingIndicator.querySelector('.loading-overlay').style.display = 'none';
-            }
-        }
-
-        // Function to populate the family filter dropdown and set default
-        function initializeFamilyFilterAndRender() {
-            const uniqueFamilyNames = new Set(allFamilyMembers.map(p => p.familyName).filter(name => name && name.trim() !== ''));
-            
-            // Clear existing options except "الكل"
-            familyFilterSelect.innerHTML = '<option value="All">الكل</option>';
-
-            // Add unique family names
-            uniqueFamilyNames.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                familyFilterSelect.appendChild(option);
-            });
-
-            // Set default selection
-            if (uniqueFamilyNames.has('أبو عيسى')) {
-                familyFilterSelect.value = 'أبو عيسى';
-                selectedFamilyFilter = 'أبو عيسى';
+      if (filtered.length && suggestionsElement) {
+        suggestionsElement.classList.remove('hidden');
+        filtered.forEach(person => {
+          const div = document.createElement('div');
+          div.className = 'suggestions-list-item';
+          div.textContent = person.fullName || (person.firstName || '');
+          div.addEventListener('click', async () => {
+            if (relationType === 'father') {
+              inputElement.value = person.firstName || person.fullName;
+              // Extract grandfather's first name only
+              if (person.fatherName) {
+                const grandFatherFirstName = person.fatherName.split(' ')[0];
+                grandFatherNameInput.value = grandFatherFirstName;
+              }
             } else {
-                familyFilterSelect.value = 'All';
-                selectedFamilyFilter = 'All';
+              inputElement.value = person.fullName || person.firstName;
             }
             
-            applyFamilyFilterAndRender(); // Apply initial filter and render
-        }
+            if (hiddenIdElement) hiddenIdElement.value = person.id;
+            suggestionsElement.classList.add('hidden');
 
-        // Function to apply the selected family filter and re-render statistics
-        function applyFamilyFilterAndRender() {
-            const filterValue = familyFilterSelect.value;
-            selectedFamilyFilter = filterValue;
-
-            if (filterValue === 'All') {
-                filteredFamilyMembers = [...allFamilyMembers];
-            } else {
-                filteredFamilyMembers = allFamilyMembers.filter(p => p.familyName === filterValue);
+            // auto-fill family name when selecting parent
+            if ((relationType === 'father' || relationType === 'mother') && person.familyName) {
+              familyNameInput.value = person.familyName;
             }
-            console.log("Filtered members:", filteredFamilyMembers);
-            renderStatistics(); // Render statistics with the filtered data
-        }
 
-
-        // Function to handle stat box click for drill-down
-        function handleStatBoxClick(categoryLabel, filterFunction) {
-            chartDetailsTitle.textContent = `الأفراد في فئة: ${categoryLabel}`;
-            chartDetailsList.innerHTML = '';
-
-            const filteredPeople = filteredFamilyMembers.filter(filterFunction); // Use filteredFamilyMembers
-
-            if (filteredPeople.length > 0) {
-                filteredPeople.forEach(person => {
-                    const li = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = `profile.html?id=${person.id}`;
-                    link.classList.add('person-link');
-                    link.textContent = person.fullName;
-                    li.appendChild(link);
-                    chartDetailsList.appendChild(li);
+            // father special logic to auto-fill mother (father's spouse)
+            if (relationType === 'father') {
+              if (person.spouseIds && person.spouseIds.length) {
+                const potentialMotherId = person.spouseIds.find(sId => {
+                  const s = allFamilyMembers.find(m => m.id === sId);
+                  return s && s.gender === 'Female';
                 });
-            } else {
-                const li = document.createElement('li');
-                li.textContent = 'لا يوجد أفراد في هذه الفئة.';
-                chartDetailsList.appendChild(li);
-            }
-            chartDetailsModal.style.display = 'flex';
-        }
-
-
-        // Function to render all statistics
-        function renderStatistics() {
-            // Reset previous charts if they exist
-            if (genderChartInstance) genderChartInstance.destroy();
-            if (maritalStatusChartInstance) maritalStatusChartInstance.destroy();
-            if (maritalStatusAliveChartInstance) maritalStatusAliveChartInstance.destroy();
-            if (ageDistributionChartInstance) ageDistributionChartInstance.destroy();
-            if (birthMonthChartInstance) birthMonthChartInstance.destroy();
-            if (familyNameChartInstance) familyNameChartInstance.destroy();
-            if (maleMaritalStatusChartInstance) maleMaritalStatusChartInstance.destroy();
-            if (femaleMaritalStatusChartInstance) femaleMaritalStatusChartInstance.destroy();
-            if (birthsPerYearChartInstance) birthsPerYearChartInstance.destroy();
-            if (deathsPerYearChartInstance) deathsPerYearChartInstance.destroy();
-            if (marriagesEngagementsPerYearChartInstance) marriagesEngagementsPerYearChartInstance.destroy();
-
-            // 1. General Statistics (using filteredFamilyMembers)
-            const totalMembers = filteredFamilyMembers.length;
-            const aliveMembersArray = filteredFamilyMembers.filter(p => p.isAlive !== false);
-            const aliveMembers = aliveMembersArray.length;
-            const deceasedMembersArray = filteredFamilyMembers.filter(p => p.isAlive === false);
-            const deceasedMembers = deceasedMembersArray.length;
-
-            const ages = aliveMembersArray.filter(p => p.birthDate).map(p => calculateAgeInYears(p.birthDate)).filter(age => age !== null);
-            const averageAge = ages.length > 0 ? (ages.reduce((sum, age) => sum + age, 0) / ages.length).toFixed(1) : 0;
-
-            const agesAtDeath = deceasedMembersArray.filter(p => p.birthDate && p.deathDate).map(p => calculateAgeAtDeath(p.birthDate, p.deathDate)).filter(age => age !== null);
-            const averageAgeAtDeath = agesAtDeath.length > 0 ? (agesAtDeath.reduce((sum, age) => sum + age, 0) / agesAtDeath.length).toFixed(1) : 0;
-
-            // For unique family names, we still use allFamilyMembers to count unique names across the entire dataset
-            // but the stat box itself will be clickable to show members of the *filtered* family.
-            const uniqueFamilyNamesCount = new Set(allFamilyMembers.map(p => p.familyName).filter(name => name && name.trim() !== '')).size;
-
-
-            // New General Statistics Calculations (for living members only, using filteredFamilyMembers)
-            const livingMales = aliveMembersArray.filter(p => p.gender === 'Male').length;
-            const livingFemales = aliveMembersArray.filter(p => p.gender === 'Female').length;
-            const livingMarried = aliveMembersArray.filter(p => p.maritalStatus === 'Married').length;
-            const livingEngaged = aliveMembersArray.filter(p => p.maritalStatus === 'Engaged').length; // Assuming 'Engaged' is a status
-            const livingMarriedMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Married').length;
-            const livingMarriedFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Married').length;
-            const livingSingleMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Single').length;
-            const livingDivorcedMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Divorced').length;
-            const livingWidowedMales = aliveMembersArray.filter(p => p.gender === 'Male' && p.maritalStatus === 'Widowed').length;
-            const livingSingleFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Single').length;
-            const livingDivorcedFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Divorced').length;
-            const livingWidowedFemales = aliveMembersArray.filter(p => p.gender === 'Female' && p.maritalStatus === 'Widowed').length;
-
-
-            const malesOver16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAgeInYears(p.birthDate) >= 16).length;
-            const femalesOver16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAgeInYears(p.birthDate) >= 16).length;
-            const malesUnder16 = aliveMembersArray.filter(p => p.gender === 'Male' && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null).length;
-            const femalesUnder16 = aliveMembersArray.filter(p => p.gender === 'Female' && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null).length;
-
-            const parentsWithChildren = filteredFamilyMembers.filter(p => p.childrenIds && p.childrenIds.length > 0);
-            const totalChildrenCount = parentsWithChildren.reduce((sum, p) => sum + p.childrenIds.length, 0);
-            const avgChildrenPerParent = parentsWithChildren.length > 0 ? (totalChildrenCount / parentsWithChildren.length).toFixed(2) : 0;
-            const membersWithoutChildren = filteredFamilyMembers.filter(p => !p.childrenIds || p.childrenIds.length === 0).length;
-
-            // Data Quality & Completion Stats
-            let totalCompletionScore = 0;
-            let missingBirthDateCount = 0;
-            let missingGenderCount = 0;
-            let missingFamilyNameCount = 0;
-
-            filteredFamilyMembers.forEach(person => {
-                let score = 0;
-                let totalFields = 0;
-                if (person.firstName) { score++; totalFields++; } else { totalFields++; }
-                if (person.familyName) { score++; totalFields++; } else { missingFamilyNameCount++; totalFields++; } // New stat
-                if (person.gender) { score++; totalFields++; } else { missingGenderCount++; totalFields++; }
-                if (person.birthDate) { score++; totalFields++; } else { missingBirthDateCount++; totalFields++; }
-                if (person.idNumber) { score++; totalFields++; }
-                if (person.phoneNumber) { score++; totalFields++; }
-                if (person.maritalStatus) { score++; totalFields++; }
-                // Consider other important fields for completion score
-                totalCompletionScore += (totalFields > 0 ? (score / totalFields) : 0);
-            });
-            const profileCompletionPercentage = totalMembers > 0 ? ((totalCompletionScore / totalMembers) * 100).toFixed(1) : 0;
-
-            // Average Age at Marriage/Engagement
-            const maleMarriedAges = filteredFamilyMembers.filter(p => p.gender === 'Male' && p.maritalStatus === 'Married' && p.birthDate && p.marriageDate)
-                .map(p => calculateAgeAtDeath(p.birthDate, p.marriageDate)).filter(age => age !== null);
-            const avgMaleMarriageAge = maleMarriedAges.length > 0 ? (maleMarriedAges.reduce((sum, age) => sum + age, 0) / maleMarriedAges.length).toFixed(1) : 0;
-
-            const femaleMarriedAges = filteredFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Married' && p.birthDate && p.marriageDate)
-                .map(p => calculateAgeAtDeath(p.birthDate, p.marriageDate)).filter(age => age !== null);
-            const avgFemaleMarriageAge = femaleMarriedAges.length > 0 ? (femaleMarriedAges.reduce((sum, age) => sum + age, 0) / femaleMarriedAges.length).toFixed(1) : 0;
-
-            const maleEngagedAges = filteredFamilyMembers.filter(p => p.gender === 'Male' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
-                .map(p => calculateAgeAtDeath(p.birthDate, p.engagementDate)).filter(age => age !== null);
-            const avgMaleEngagementAge = maleEngagedAges.length > 0 ? (maleEngagedAges.reduce((sum, age) => sum + age, 0) / maleEngagedAges.length).toFixed(1) : 0;
-
-            const femaleEngagedAges = filteredFamilyMembers.filter(p => p.gender === 'Female' && p.maritalStatus === 'Engaged' && p.birthDate && p.engagementDate)
-                .map(p => calculateAgeAtDeath(p.birthDate, p.engagementDate)).filter(age => age !== null);
-            const avgFemaleEngagementAge = femaleEngagedAges.length > 0 ? (femaleEngagedAges.reduce((sum, age) => sum + age, 0) / femaleEngagedAges.length).toFixed(1) : 0;
-
-
-            document.getElementById('totalMembers').textContent = totalMembers;
-            document.getElementById('aliveMembers').textContent = aliveMembers;
-            document.getElementById('deceasedMembers').textContent = deceasedMembers;
-            document.getElementById('averageAge').textContent = averageAge;
-            document.getElementById('averageAgeAtDeath').textContent = averageAgeAtDeath;
-            document.getElementById('uniqueFamilyNames').textContent = uniqueFamilyNamesCount; // Still show total unique names
-            document.getElementById('livingMales').textContent = livingMales;
-            document.getElementById('livingFemales').textContent = livingFemales;
-            document.getElementById('livingMarried').textContent = livingMarried;
-            document.getElementById('livingEngaged').textContent = livingEngaged;
-            document.getElementById('livingMarriedMales').textContent = livingMarriedMales;
-            document.getElementById('livingMarriedFemales').textContent = livingMarriedFemales;
-            document.getElementById('livingSingleMales').textContent = livingSingleMales;
-            document.getElementById('livingDivorcedMales').textContent = livingDivorcedMales;
-            document.getElementById('livingWidowedMales').textContent = livingWidowedMales;
-            document.getElementById('livingSingleFemales').textContent = livingSingleFemales;
-            document.getElementById('livingDivorcedFemales').textContent = livingDivorcedFemales;
-            document.getElementById('livingWidowedFemales').textContent = livingWidowedFemales;
-            document.getElementById('malesOver16').textContent = malesOver16;
-            document.getElementById('femalesOver16').textContent = femalesOver16;
-            document.getElementById('malesUnder16').textContent = malesUnder16;
-            document.getElementById('femalesUnder16').textContent = femalesUnder16;
-            document.getElementById('avgChildrenPerParent').textContent = avgChildrenPerParent;
-            document.getElementById('membersWithoutChildren').textContent = membersWithoutChildren;
-            document.getElementById('profileCompletion').textContent = `${profileCompletionPercentage}%`;
-            document.getElementById('missingBirthDate').textContent = missingBirthDateCount;
-            document.getElementById('missingGender').textContent = missingGenderCount;
-            document.getElementById('missingFamilyName').textContent = missingFamilyNameCount; // Update new stat
-            document.getElementById('avgMaleMarriageAge').textContent = avgMaleMarriageAge;
-            document.getElementById('avgFemaleMarriageAge').textContent = avgFemaleMarriageAge;
-            document.getElementById('avgMaleEngagementAge').textContent = avgMaleEngagementAge;
-            document.getElementById('avgFemaleEngagementAge').textContent = avgFemaleEngagementAge;
-
-
-            // Chart Colors Palette (extended for more variety)
-            const chartColors = [
-                '#4f46e5', '#ec4899', '#22c55e', '#f59e0b', '#ef4444', '#6b7280', '#3b82f6', '#14b8a6', '#a855f7', '#eab308',
-                '#f43f5e', '#84cc16', '#06b6d4', '#d946ef', '#fbbf24', '#c084fc', '#f87171', '#34d399', '#a78bfa', '#fcd34d'
-            ];
-
-            // Function to handle chart click for drill-down
-            function handleChartClick(event, elements, chartData, chartType, labelKey, filterKey) {
-                if (elements.length > 0) {
-                    const firstElement = elements[0];
-                    const label = chartData.labels[firstElement.index];
-                    chartDetailsTitle.textContent = `الأفراد في فئة: ${label}`;
-                    chartDetailsList.innerHTML = '';
-
-                    let filteredPeopleForChartClick = [];
-                    if (chartType === 'pie') {
-                        // For pie charts, filter based on the label directly
-                        if (labelKey === 'gender') {
-                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => (p.gender || 'غير محدد') === label);
-                        } else if (labelKey === 'maritalStatus') {
-                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => (p.maritalStatus || 'غير محدد') === label);
-                        } else if (labelKey === 'maritalStatusAlive') {
-                            filteredPeopleForChartClick = aliveMembersArray.filter(p => (p.maritalStatus || 'غير محدد') === label);
-                        }
-                    } else if (chartType === 'bar') {
-                        // For bar charts, filter based on label (year, month, age group, family name)
-                        if (labelKey === 'ageGroup') {
-                            const [minAge, maxAge] = label.split('-').map(Number);
-                            if (label.includes('+')) { // Handle '81+' case
-                                filteredPeopleForChartClick = aliveMembersArray.filter(p => calculateAgeInYears(p.birthDate) >= minAge);
-                            } else {
-                                filteredPeopleForChartClick = aliveMembersArray.filter(p => {
-                                    const age = calculateAgeInYears(p.birthDate);
-                                    return age >= minAge && age <= maxAge;
-                                });
-                            }
-                        } else if (labelKey === 'birthMonth') {
-                            const monthIndex = monthNames.indexOf(label);
-                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.birthDate && p.birthDate.toDate().getMonth() === monthIndex);
-                        } else if (labelKey === 'familyName') {
-                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => (p.familyName || 'غير محدد') === label);
-                        } else if (labelKey === 'birthYear') {
-                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.birthDate && p.birthDate.toDate().getFullYear().toString() === label);
-                        } else if (labelKey === 'deathYear') {
-                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.deathDate && p.deathDate.toDate().getFullYear().toString() === label);
-                        } else if (labelKey === 'maritalStatusGender') {
-                            // This case is for male/female marital status charts
-                            const gender = filterKey; // 'Male' or 'Female'
-                            const status = label;
-                            filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.gender === gender && (p.maritalStatus || 'غير محدد') === status && p.isAlive !== false);
-                        } else if (labelKey === 'marriageEngagementYear') {
-                            const year = parseInt(label);
-                            const datasetIndex = firstElement.datasetIndex; // 0 for marriages, 1 for engagements
-                            if (datasetIndex === 0) { // Marriages
-                                filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.maritalStatus === 'Married' && p.marriageDate && p.marriageDate.toDate().getFullYear() === year);
-                            } else if (datasetIndex === 1) { // Engagements
-                                filteredPeopleForChartClick = filteredFamilyMembers.filter(p => p.maritalStatus === 'Engaged' && p.engagementDate && p.engagementDate.toDate().getFullYear() === year);
-                            }
-                        }
-                    }
-
-
-                    if (filteredPeopleForChartClick.length > 0) {
-                        filteredPeopleForChartClick.forEach(person => {
-                            const li = document.createElement('li');
-                            const link = document.createElement('a');
-                            link.href = `profile.html?id=${person.id}`;
-                            link.classList.add('person-link');
-                            link.textContent = person.fullName;
-                            li.appendChild(link);
-                            chartDetailsList.appendChild(li);
-                        });
-                    } else {
-                        const li = document.createElement('li');
-                        li.textContent = 'لا يوجد أفراد في هذه الفئة.';
-                        chartDetailsList.appendChild(li);
-                    }
-
-                    chartDetailsModal.style.display = 'flex';
+                if (potentialMotherId) {
+                  const m = allFamilyMembers.find(mm => mm.id === potentialMotherId);
+                  motherNameInput.value = m ? (m.fullName || '') : '';
+                  motherIdInput.value = m ? m.id : '';
                 }
+              }
             }
-
-
-            // Helper function for creating pie charts with click handler
-            function createPieChart(ctx, data, labels, title, labelKey, filterKey = null) {
-                return new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: chartColors.slice(0, labels.length),
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    font: {
-                                        family: 'Inter'
-                                    }
-                                }
-                            },
-                            title: {
-                                display: false,
-                                text: title
-                            }
-                        },
-                        onClick: (event, elements) => handleChartClick(event, elements, { labels, data }, 'pie', labelKey, filterKey)
-                    }
-                });
-            }
-
-            // Helper function for creating bar charts with click handler
-            function createBarChart(ctx, data, labels, title, color, labelKey, filterKey = null) {
-                return new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: title,
-                            data: data,
-                            backgroundColor: color,
-                            borderColor: color,
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            title: {
-                                display: false,
-                                text: title
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0,
-                                    font: {
-                                        family: 'Inter'
-                                    }
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    font: {
-                                        family: 'Inter'
-                                    }
-                                }
-                            }
-                        },
-                        onClick: (event, elements) => handleChartClick(event, elements, { labels, data }, 'bar', labelKey, filterKey)
-                    }
-                });
-            }
-
-
-            // 2. Gender Distribution Chart
-            const genderData = filteredFamilyMembers.reduce((acc, person) => {
-                const gender = person.gender || 'غير محدد';
-                acc[gender] = (acc[gender] || 0) + 1;
-                return acc;
-            }, {});
-            genderChartInstance = createPieChart(
-                document.getElementById('genderChart').getContext('2d'),
-                Object.values(genderData),
-                Object.keys(genderData),
-                'توزيع الجنس',
-                'gender'
-            );
-
-            // 3. Marital Status Distribution Chart (All Members)
-            const maritalStatusData = filteredFamilyMembers.reduce((acc, person) => {
-                const status = person.maritalStatus || 'غير محدد';
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-            }, {});
-            maritalStatusChartInstance = createPieChart(
-                document.getElementById('maritalStatusChart').getContext('2d'),
-                Object.values(maritalStatusData),
-                Object.keys(maritalStatusData),
-                'توزيع الحالة الاجتماعية (جميع الأفراد)',
-                'maritalStatus'
-            );
-
-            // 3a. Marital Status Distribution Chart (Alive Members Only)
-            const maritalStatusAliveData = aliveMembersArray.reduce((acc, person) => {
-                const status = person.maritalStatus || 'غير محدد';
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-            }, {});
-            maritalStatusAliveChartInstance = createPieChart(
-                document.getElementById('maritalStatusAliveChart').getContext('2d'),
-                Object.values(maritalStatusAliveData),
-                Object.keys(maritalStatusAliveData),
-                'توزيع الحالة الاجتماعية (الأفراد الأحياء)',
-                'maritalStatusAlive'
-            );
-
-
-            // 4. Age Distribution Chart (Bar Chart)
-            const ageGroups = {
-                '0-10': 0, '11-20': 0, '21-30': 0, '31-40': 0, '41-50': 0,
-                '51-60': 0, '61-70': 0, '71-80': 0, '81+': 0
-            };
-            ages.forEach(age => {
-                if (age >= 0 && age <= 10) ageGroups['0-10']++;
-                else if (age >= 11 && age <= 20) ageGroups['11-20']++;
-                else if (age >= 21 && age <= 30) ageGroups['21-30']++;
-                else if (age >= 31 && age <= 40) ageGroups['31-40']++;
-                else if (age >= 41 && age <= 50) ageGroups['41-50']++;
-                else if (age >= 51 && age <= 60) ageGroups['51-60']++;
-                else if (age >= 61 && age <= 70) ageGroups['61-70']++;
-                else if (age >= 71 && age <= 80) ageGroups['71-80']++;
-                else if (age >= 81) ageGroups['81+']++;
-            });
-            ageDistributionChartInstance = createBarChart(
-                document.getElementById('ageDistributionChart').getContext('2d'),
-                Object.values(ageGroups),
-                Object.keys(ageGroups),
-                'عدد الأفراد',
-                '#4f46e5',
-                'ageGroup'
-            );
-
-            // 6. Birth Month Distribution Chart
-            const birthMonthData = new Array(12).fill(0); // 0-indexed for months
-            const monthNames = [
-                'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-                'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
-            ];
-            filteredFamilyMembers.filter(p => p.birthDate).forEach(person => {
-                const month = person.birthDate.toDate().getMonth();
-                birthMonthData[month]++;
-            });
-            birthMonthChartInstance = createBarChart(
-                document.getElementById('birthMonthChart').getContext('2d'),
-                birthMonthData,
-                monthNames,
-                'عدد أعياد الميلاد',
-                '#14b8a6',
-                'birthMonth'
-            );
-
-            // 7. Family Name Distribution Chart (This chart will always show the selected family name if not "All")
-            const familyNameDataCounts = filteredFamilyMembers.reduce((acc, person) => {
-                const familyName = person.familyName || 'غير محدد';
-                acc[familyName] = (acc[familyName] || 0) + 1;
-                return acc;
-            }, {});
-            familyNameChartInstance = createBarChart(
-                document.getElementById('familyNameChart').getContext('2d'),
-                Object.values(familyNameDataCounts),
-                Object.keys(familyNameDataCounts),
-                'عدد الأفراد',
-                '#a855f7',
-                'familyName'
-            );
-
-            // Marital Status Breakdown by Gender (Bar Charts)
-            const maleMembers = filteredFamilyMembers.filter(p => p.gender === 'Male' && p.isAlive !== false);
-            const femaleMembers = filteredFamilyMembers.filter(p => p.gender === 'Female' && p.isAlive !== false);
-
-            const maleMaritalStatusData = maleMembers.reduce((acc, person) => {
-                const status = person.maritalStatus || 'غير محدد';
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-            }, {});
-            maleMaritalStatusChartInstance = createBarChart(
-                document.getElementById('maleMaritalStatusChart').getContext('2d'),
-                Object.values(maleMaritalStatusData),
-                Object.keys(maleMaritalStatusData),
-                'عدد الذكور',
-                '#3b82f6', // Blue
-                'maritalStatusGender',
-                'Male'
-            );
-
-            const femaleMaritalStatusData = femaleMembers.reduce((acc, person) => {
-                const status = person.maritalStatus || 'غير محدد';
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-            }, {});
-            femaleMaritalStatusChartInstance = createBarChart(
-                document.getElementById('femaleMaritalStatusChart').getContext('2d'),
-                Object.values(femaleMaritalStatusData),
-                Object.keys(femaleMaritalStatusData),
-                'عدد الإناث',
-                '#f43f5e', // Rose
-                'maritalStatusGender',
-                'Female'
-            );
-
-            // NEW: Births Per Year Chart
-            const birthsPerYear = {};
-            filteredFamilyMembers.filter(p => p.birthDate).forEach(person => {
-                const year = person.birthDate.toDate().getFullYear();
-                birthsPerYear[year] = (birthsPerYear[year] || 0) + 1;
-            });
-            const sortedBirthYears = Object.keys(birthsPerYear).sort();
-            const birthsData = sortedBirthYears.map(year => birthsPerYear[year]);
-            birthsPerYearChartInstance = createBarChart(
-                document.getElementById('birthsPerYearChart').getContext('2d'),
-                birthsData,
-                sortedBirthYears,
-                'عدد المواليد',
-                '#22c55e', // Green
-                'birthYear'
-            );
-
-            // NEW: Deaths Per Year Chart
-            const deathsPerYear = {};
-            filteredFamilyMembers.filter(p => p.deathDate).forEach(person => {
-                const year = person.deathDate.toDate().getFullYear();
-                deathsPerYear[year] = (deathsPerYear[year] || 0) + 1;
-            });
-            const sortedDeathYears = Object.keys(deathsPerYear).sort();
-            const deathsData = sortedDeathYears.map(year => deathsPerYear[year]);
-            deathsPerYearChartInstance = createBarChart(
-                document.getElementById('deathsPerYearChart').getContext('2d'),
-                deathsData,
-                sortedDeathYears,
-                'عدد الوفيات',
-                '#6b7280', // Gray
-                'deathYear'
-            );
-
-            // NEW: Marriages and Engagements Per Year Chart
-            const marriagesPerYear = {};
-            const engagementsPerYear = {};
-            const allEventYears = new Set();
-
-            filteredFamilyMembers.filter(p => p.maritalStatus === 'Married' && p.marriageDate).forEach(person => {
-                const year = person.marriageDate.toDate().getFullYear();
-                marriagesPerYear[year] = (marriagesPerYear[year] || 0) + 1;
-                allEventYears.add(year);
-            });
-            filteredFamilyMembers.filter(p => p.maritalStatus === 'Engaged' && p.engagementDate).forEach(person => {
-                const year = person.engagementDate.toDate().getFullYear();
-                engagementsPerYear[year] = (engagementsPerYear[year] || 0) + 1;
-                allEventYears.add(year);
-            });
-
-            const sortedEventYears = Array.from(allEventYears).sort();
-            const marriagesDataForChart = sortedEventYears.map(year => marriagesPerYear[year] || 0);
-            const engagementsDataForChart = sortedEventYears.map(year => engagementsPerYear[year] || 0);
-
-            const marriagesEngagementsCtx = document.getElementById('marriagesEngagementsPerYearChart').getContext('2d');
-            marriagesEngagementsPerYearChartInstance = new Chart(marriagesEngagementsCtx, {
-                type: 'bar',
-                data: {
-                    labels: sortedEventYears,
-                    datasets: [
-                        {
-                            label: 'عدد الزيجات',
-                            data: marriagesDataForChart,
-                            backgroundColor: '#f59e0b', // Amber for marriages
-                            borderColor: '#d97706',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'عدد الخطوبات',
-                            data: engagementsDataForChart,
-                            backgroundColor: '#3b82f6', // Blue for engagements
-                            borderColor: '#2563eb',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                font: {
-                                    family: 'Inter'
-                                }
-                            }
-                        },
-                        title: {
-                            display: false,
-                            text: 'الزيجات والخطوبات حسب السنة'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0,
-                                font: {
-                                    family: 'Inter'
-                                }
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                font: {
-                                    family: 'Inter'
-                                }
-                            }
-                        }
-                    },
-                    onClick: (event, elements) => handleChartClick(event, elements, { labels: sortedEventYears, data: [marriagesDataForChart, engagementsDataForChart] }, 'bar', 'marriageEngagementYear')
-                }
-            });
-
-
-            // 5. Most Children List
-            const childrenCounts = new Map(); // Map to store personId -> count of children
-            filteredFamilyMembers.forEach(person => {
-                if (person.childrenIds && person.childrenIds.length > 0) {
-                    childrenCounts.set(person.id, person.childrenIds.length);
-                }
-            });
-
-            // Convert map to array, sort by children count descending
-            const sortedByChildren = Array.from(childrenCounts.entries())
-                .map(([personId, count]) => {
-                    const person = filteredFamilyMembers.find(p => p.id === personId); // Find in filtered members
-                    return { name: person ? person.fullName : 'غير معروف', count: count, id: person ? person.id : null };
-                })
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 5); // Get top 5
-
-            const mostChildrenListDiv = document.getElementById('mostChildrenList');
-            mostChildrenListDiv.innerHTML = ''; // Clear previous content
-
-            if (sortedByChildren.length === 0) {
-                mostChildrenListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن الأبناء.</p>';
-            } else {
-                const ul = document.createElement('ul');
-                ul.classList.add('list-disc', 'pr-6', 'text-gray-700'); // pr-6 for RTL list bullet
-                sortedByChildren.forEach(item => {
-                    const li = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = `profile.html?id=${item.id}`;
-                    link.classList.add('person-link');
-                    link.textContent = `${item.name}: ${item.count} أبناء`;
-                    li.appendChild(link);
-                    ul.appendChild(li);
-                });
-                mostChildrenListDiv.appendChild(ul);
-            }
-
-            // 8. Oldest Members List
-            const oldestMembersListDiv = document.getElementById('oldestMembersList');
-            oldestMembersListDiv.innerHTML = '';
-            const sortedByAgeDesc = aliveMembersArray
-                .filter(p => p.birthDate)
-                .map(p => ({ ...p, age: calculateAgeInYears(p.birthDate) }))
-                .sort((a, b) => b.age - a.age)
-                .slice(0, 5);
-
-            if (sortedByAgeDesc.length === 0) {
-                oldestMembersListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات كافية.</p>';
-            } else {
-                const ul = document.createElement('ul');
-                ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
-                sortedByAgeDesc.forEach(person => {
-                    const li = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = `profile.html?id=${person.id}`;
-                    link.classList.add('person-link');
-                    link.textContent = `${person.fullName}: ${person.age} سنة`;
-                    li.appendChild(link);
-                    ul.appendChild(li);
-                });
-                oldestMembersListDiv.appendChild(ul);
-            }
-
-            // 9. Youngest Members List
-            const youngestMembersListDiv = document.getElementById('youngestMembersList');
-            youngestMembersListDiv.innerHTML = '';
-            const sortedByAgeAsc = aliveMembersArray
-                .filter(p => p.birthDate)
-                .map(p => ({ ...p, age: calculateAgeInYears(p.birthDate) }))
-                .sort((a, b) => a.age - b.age)
-                .slice(0, 5);
-
-            if (sortedByAgeAsc.length === 0) {
-                youngestMembersListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات كافية.</p>';
-            } else {
-                const ul = document.createElement('ul');
-                ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
-                sortedByAgeAsc.forEach(person => {
-                    const li = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = `profile.html?id=${person.id}`;
-                    link.classList.add('person-link');
-                    link.textContent = `${person.fullName}: ${person.age} سنة`;
-                    li.appendChild(link);
-                    ul.appendChild(li);
-                });
-                youngestMembersListDiv.appendChild(ul);
-            }
-
-            // NEW: Top Sub-Families List
-            // This list should reflect the *overall* top sub-families, not just the filtered one.
-            // So, we use allFamilyMembers here.
-            const allFamilyNameCounts = allFamilyMembers.reduce((acc, person) => {
-                const familyName = person.familyName || 'غير محدد';
-                acc[familyName] = (acc[familyName] || 0) + 1;
-                return acc;
-            }, {});
-
-            const sortedFamilyNames = Object.entries(allFamilyNameCounts)
-                .sort(([, countA], [, countB]) => countB - countA)
-                .slice(0, 5); // Get top 5
-
-            const topSubFamiliesListDiv = document.getElementById('topSubFamiliesList');
-            topSubFamiliesListDiv.innerHTML = '';
-
-            if (sortedFamilyNames.length === 0) {
-                topSubFamiliesListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء العائلات.</p>';
-            } else {
-                const ul = document.createElement('ul');
-                ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
-                sortedFamilyNames.forEach(([name, count]) => {
-                    const li = document.createElement('li');
-                    li.textContent = `${name}: ${count} أفراد`;
-                    ul.appendChild(li);
-                });
-                topSubFamiliesListDiv.appendChild(ul);
-            }
-
-            // NEW: Most Common Children Names List
-            const childrenFirstNames = [];
-            filteredFamilyMembers.forEach(person => { // Use filteredFamilyMembers for this list
-                if (person.childrenIds && person.childrenIds.length > 0) {
-                    person.childrenIds.forEach(childId => {
-                        const child = filteredFamilyMembers.find(p => p.id === childId); // Find in filtered members
-                        if (child && child.firstName) {
-                            childrenFirstNames.push(child.firstName);
-                        }
-                    });
-                }
-            });
-
-            const firstNameCounts = childrenFirstNames.reduce((acc, name) => {
-                acc[name] = (acc[name] || 0) + 1;
-                return acc;
-            }, {});
-
-            const sortedCommonNames = Object.entries(firstNameCounts)
-                .sort(([, countA], [, countB]) => countB - countA)
-                .slice(0, 5); // Get top 5
-
-            const mostCommonChildrenNamesListDiv = document.getElementById('mostCommonChildrenNamesList');
-            mostCommonChildrenNamesListDiv.innerHTML = '';
-
-            if (sortedCommonNames.length === 0) {
-                mostCommonChildrenNamesListDiv.innerHTML = '<p class="text-gray-600">لا توجد بيانات عن أسماء الأبناء.</p>';
-            } else {
-                const ul = document.createElement('ul');
-                ul.classList.add('list-disc', 'pr-6', 'text-gray-700');
-                sortedCommonNames.forEach(([name, count]) => {
-                    const li = document.createElement('li');
-                    li.textContent = `${name}: ${count} مرات`;
-                    ul.appendChild(li);
-                });
-                mostCommonChildrenNamesListDiv.appendChild(ul);
-            }
-        }
-
-        // Function to export all family members data to CSV
-        function exportFamilyDataToCsv() {
-            if (allFamilyMembers.length === 0) {
-                showModal("لا توجد بيانات لتصديرها.");
-                return;
-            }
-
-            // Define CSV headers (customize as needed)
-            const headers = [
-                "ID", "الاسم الكامل", "الاسم الأول", "اسم الأب", "اسم الجد", "اسم العائلة",
-                "اسم الأم", "رقم الهوية", "رقم الجوال", "الجنس", "تاريخ الميلاد", "على قيد الحياة",
-                "تاريخ الوفاة", "الحالة الاجتماعية", "اسم الزوج/الزوجة", "تاريخ الزواج", "تاريخ الخطوبة",
-                "معرف الأب", "معرف الأم", "معرف الزوج/الزوجة", "معرفات الأبناء"
-            ];
-
-            const rows = allFamilyMembers.map(person => {
-                return [
-                    `"${person.id || ''}"`,
-                    `"${person.fullName || ''}"`,
-                    `"${person.firstName || ''}"`,
-                    `"${person.fatherName || ''}"`,
-                    `"${person.grandFatherName || ''}"`,
-                    `"${person.familyName || ''}"`,
-                    `"${person.motherName || ''}"`,
-                    `"${person.idNumber || ''}"`,
-                    `"${person.phoneNumber || ''}"`,
-                    `"${person.gender || ''}"`,
-                    `"${person.birthDate ? person.birthDate.toDate().toLocaleDateString('ar-EG') : ''}"`,
-                    `"${person.isAlive ? 'نعم' : 'لا'}"`,
-                    `"${person.deathDate ? person.deathDate.toDate().toLocaleDateString('ar-EG') : ''}"`,
-                    `"${person.maritalStatus || ''}"`,
-                    `"${person.spouseName || ''}"`,
-                    `"${person.marriageDate ? person.marriageDate.toDate().toLocaleDateString('ar-EG') : ''}"`,
-                    `"${person.engagementDate ? person.engagementDate.toDate().toLocaleDateString('ar-EG') : ''}"`,
-                    `"${person.fatherId || ''}"`,
-                    `"${person.motherId || ''}"`,
-                    `"${person.spouseId || ''}"`,
-                    `"${(person.childrenIds && person.childrenIds.length > 0) ? person.childrenIds.join(';') : ''}"`
-                ].join(',');
-            });
-
-            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(','), ...rows].join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "family_data.csv");
-            document.body.appendChild(link); // Required for Firefox
-            link.click();
-            document.body.removeChild(link); // Clean up
-            showModal("تم تصدير بيانات العائلة بنجاح كملف CSV.");
-        }
-
-        // Function to export all charts as PNGs
-        function exportAllChartsAsPng() {
-            const chartCanvases = document.querySelectorAll('.chart-container canvas');
-            if (chartCanvases.length === 0) {
-                showModal("لا توجد مخططات لتصديرها.");
-                return;
-            }
-
-            chartCanvases.forEach((canvas, index) => {
-                const chartId = canvas.id;
-                const chartInstance = Chart.getChart(chartId); // Get the Chart.js instance by ID
-
-                if (chartInstance) {
-                    const img = chartInstance.toBase64Image();
-                    const link = document.createElement('a');
-                    link.href = img;
-                    link.download = `${chartId}_chart.png`;
-                    document.body.appendChild(link); // Required for Firefox
-                    link.click();
-                    document.body.removeChild(link); // Clean up
-                } else {
-                    console.warn(`Could not find Chart.js instance for canvas ID: ${chartId}`);
-                }
-            });
-            showModal("تم تصدير المخططات بنجاح كصور PNG.");
-        }
-
-        // Function to print the entire page
-        function printPage() {
-            window.print();
-        }
-
-        // Main DOMContentLoaded listener
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Modal close buttons
-            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-            document.getElementById('closeChartDetailsModalBtn').addEventListener('click', () => closeModal('chartDetailsModal'));
-
-
-            // Export buttons event listeners
-            document.getElementById('exportCsvBtn').addEventListener('click', exportFamilyDataToCsv);
-            document.getElementById('exportChartsBtn').addEventListener('click', exportAllChartsAsPng);
-            document.getElementById('printPageBtn').addEventListener('click', printPage); // New print button listener
-
-            // Add event listener for family filter dropdown
-            familyFilterSelect.addEventListener('change', applyFamilyFilterAndRender);
-
-            // Add event listeners for stat boxes
-            document.getElementById('statTotalMembers').addEventListener('click', () => handleStatBoxClick('إجمالي أفراد العائلة', p => true));
-            document.getElementById('statAliveMembers').addEventListener('click', () => handleStatBoxClick('أفراد على قيد الحياة', p => p.isAlive !== false));
-            document.getElementById('statDeceasedMembers').addEventListener('click', () => handleStatBoxClick('أفراد متوفون', p => p.isAlive === false));
-            document.getElementById('statUniqueFamilyNames').addEventListener('click', () => handleStatBoxClick('أسماء العائلات الفريدة', p => p.familyName && p.familyName.trim() !== '')); // This might show duplicates if not handled carefully, but for now, it lists all with a family name.
-            document.getElementById('statLivingMales').addEventListener('click', () => handleStatBoxClick('ذكور أحياء', p => p.gender === 'Male' && p.isAlive !== false));
-            document.getElementById('statLivingFemales').addEventListener('click', () => handleStatBoxClick('إناث أحياء', p => p.gender === 'Female' && p.isAlive !== false));
-            document.getElementById('statLivingMarried').addEventListener('click', () => handleStatBoxClick('متزوجون أحياء', p => p.maritalStatus === 'Married' && p.isAlive !== false));
-            document.getElementById('statLivingEngaged').addEventListener('click', () => handleStatBoxClick('مخطوبون أحياء', p => p.maritalStatus === 'Engaged' && p.isAlive !== false));
-            document.getElementById('statLivingMarriedMales').addEventListener('click', () => handleStatBoxClick('ذكور متزوجون أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Married' && p.isAlive !== false));
-            document.getElementById('statLivingMarriedFemales').addEventListener('click', () => handleStatBoxClick('إناث متزوجات أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Married' && p.isAlive !== false));
-            document.getElementById('statLivingSingleMales').addEventListener('click', () => handleStatBoxClick('ذكور عازبون أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Single' && p.isAlive !== false));
-            document.getElementById('statLivingDivorcedMales').addEventListener('click', () => handleStatBoxClick('ذكور مطلقون أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Divorced' && p.isAlive !== false));
-            document.getElementById('statLivingWidowedMales').addEventListener('click', () => handleStatBoxClick('ذكور أرامل أحياء', p => p.gender === 'Male' && p.maritalStatus === 'Widowed' && p.isAlive !== false));
-            document.getElementById('statLivingSingleFemales').addEventListener('click', () => handleStatBoxClick('إناث عازبات أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Single' && p.isAlive !== false));
-            document.getElementById('statLivingDivorcedFemales').addEventListener('click', () => handleStatBoxClick('إناث مطلقات أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Divorced' && p.isAlive !== false));
-            document.getElementById('statLivingWidowedFemales').addEventListener('click', () => handleStatBoxClick('إناث أرامل أحياء', p => p.gender === 'Female' && p.maritalStatus === 'Widowed' && p.isAlive !== false));
-            document.getElementById('statMalesOver16').addEventListener('click', () => handleStatBoxClick('ذكور فوق 16 سنة (أحياء)', p => p.gender === 'Male' && p.isAlive !== false && calculateAgeInYears(p.birthDate) >= 16));
-            document.getElementById('statFemalesOver16').addEventListener('click', () => handleStatBoxClick('إناث فوق 16 سنة (أحياء)', p => p.gender === 'Female' && p.isAlive !== false && calculateAgeInYears(p.birthDate) >= 16));
-            document.getElementById('statMalesUnder16').addEventListener('click', () => handleStatBoxClick('ذكور أقل من 16 سنة (أحياء)', p => p.gender === 'Male' && p.isAlive !== false && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null));
-            document.getElementById('statFemalesUnder16').addEventListener('click', () => handleStatBoxClick('إناث أقل من 16 سنة (أحياء)', p => p.gender === 'Female' && p.isAlive !== false && calculateAgeInYears(p.birthDate) < 16 && calculateAgeInYears(p.birthDate) !== null));
-            document.getElementById('statMembersWithoutChildren').addEventListener('click', () => handleStatBoxClick('أفراد بدون أبناء', p => !p.childrenIds || p.childrenIds.length === 0));
-            document.getElementById('statMissingBirthDate').addEventListener('click', () => handleStatBoxClick('أفراد بدون تاريخ ميلاد', p => !p.birthDate));
-            document.getElementById('statMissingGender').addEventListener('click', () => handleStatBoxClick('أفراد بدون جنس', p => !p.gender));
-            document.getElementById('statMissingFamilyName').addEventListener('click', () => handleStatBoxClick('أفراد بدون اسم عائلة', p => !p.familyName || p.familyName.trim() === ''));
-
-            // Fetch data immediately on page load
-            await fetchAllFamilyMembers();
+          });
+          suggestionsElement.appendChild(div);
         });
-    </script>
+      }
+    });
+
+    // hide on click outside
+    document.addEventListener('click', (ev) => {
+      if (suggestionsElement && !inputElement.parentNode.contains(ev.target)) suggestionsElement.classList.add('hidden');
+    });
+  }
+
+  // Render children and spouses lists
+  function renderChildrenList() {
+    childrenListDiv.innerHTML = '';
+    if (currentChildren.size === 0) { 
+      noChildrenMessage.classList.remove('hidden'); 
+      return; 
+    }
+    noChildrenMessage.classList.add('hidden');
+    
+    const arr = Array.from(currentChildren.values()).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    arr.forEach(child => {
+      const div = document.createElement('div'); 
+      div.className='relation-item';
+      
+      const span = document.createElement('span'); 
+      span.textContent = child.name;
+      span.className = child.isManual ? 'italic text-gray-600' : '';
+      
+      const btn = document.createElement('button'); 
+      btn.type='button'; 
+      btn.className='btn-secondary px-3 py-1 text-sm'; 
+      btn.innerHTML = '<i class="fas fa-times"></i>';
+      btn.title = 'إزالة';
+      btn.addEventListener('click', ()=>{ 
+        currentChildren.delete(child.id); 
+        renderChildrenList(); 
+        hasUnsavedChanges=true; 
+      });
+      
+      div.appendChild(span); 
+      div.appendChild(btn); 
+      childrenListDiv.appendChild(div);
+    });
+  }
+  
+  function renderSpousesList() {
+    spousesListDiv.innerHTML = '';
+    if (currentSpouses.size === 0) { 
+      noSpousesMessage.classList.remove('hidden'); 
+      return; 
+    }
+    noSpousesMessage.classList.add('hidden');
+    
+    const arr = Array.from(currentSpouses.values()).sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+    arr.forEach(sp => {
+      const div = document.createElement('div'); 
+      div.className='relation-item';
+      
+      const span = document.createElement('span'); 
+      span.textContent = sp.name;
+      span.className = sp.isManual ? 'italic text-gray-600' : '';
+      
+      const btn = document.createElement('button'); 
+      btn.type='button'; 
+      btn.className='btn-secondary px-3 py-1 text-sm'; 
+      btn.innerHTML = '<i class="fas fa-times"></i>';
+      btn.title = 'إزالة';
+      btn.addEventListener('click', ()=>{ 
+        currentSpouses.delete(sp.id); 
+        renderSpousesList(); 
+        hasUnsavedChanges=true; 
+      });
+      
+      div.appendChild(span); 
+      div.appendChild(btn); 
+      spousesListDiv.appendChild(div);
+    });
+  }
+
+  // Load person data for edit
+  async function loadPersonData(personId) {
+    try {
+      const docRef = doc(db, baseCollectionPath, personId);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) { 
+        showModal("لم يتم العثور على بيانات لهذا الشخص."); 
+        editingPersonId = null; 
+        pageTitle.textContent='إضافة شخص جديد'; 
+        return; 
+      }
+      
+      const data = docSnap.data();
+      originalPersonData = { ...data, id: docSnap.id };
+      
+      // populate fields
+      firstNameInput.value = data.firstName || '';
+      fatherNameInput.value = data.fatherName || '';
+      fatherIdInput.value = data.fatherId || '';
+      grandFatherNameInput.value = data.grandFatherName || '';
+      familyNameInput.value = data.familyName || '';
+      motherNameInput.value = data.motherName || '';
+      motherIdInput.value = data.motherId || '';
+      idNumberInput.value = data.idNumber || '';
+      phoneNumberInput.value = data.phoneNumber || '';
+      birthDateInput.value = data.birthDate ? data.birthDate.toDate().toISOString().split('T')[0] : '';
+      
+      if (data.gender === 'Male') genderMale.checked = true; 
+      else if (data.gender === 'Female') genderFemale.checked = true;
+      
+      isAliveInput.checked = data.isAlive !== false;
+      updateLifeStatus();
+      
+      deathDateInput.value = data.deathDate ? data.deathDate.toDate().toISOString().split('T')[0] : '';
+      maritalStatusInput.value = data.maritalStatus || '';
+      marriageDateInput.value = data.marriageDate ? data.marriageDate.toDate().toISOString().split('T')[0] : '';
+      engagementDateInput.value = data.engagementDate ? data.engagementDate.toDate().toISOString().split('T')[0] : '';
+      
+      // spouses
+      currentSpouses.clear();
+      if (data.spouseIds && data.spouseIds.length) {
+        data.spouseIds.forEach(sId => {
+          const s = allFamilyMembers.find(m => m.id === sId);
+          if (s) currentSpouses.set(sId, { id: sId, name: s.fullName || (s.firstName || ''), isManual: false });
+        });
+      }
+      if (data.manualSpouseNames && data.manualSpouseNames.length) {
+        data.manualSpouseNames.forEach(name => currentSpouses.set(`manual-${crypto.randomUUID()}`, { 
+          id: `manual-${crypto.randomUUID()}`, 
+          name, 
+          isManual: true 
+        }));
+      }
+      renderSpousesList();
+      updateMaritalStatusUI();
+
+      // children
+      currentChildren.clear();
+      if (data.childrenIds && data.childrenIds.length) {
+        data.childrenIds.forEach(cId => {
+          const ch = allFamilyMembers.find(m => m.id === cId);
+          if (ch) currentChildren.set(cId, { id: cId, name: ch.fullName || (ch.firstName || ''), isManual: false });
+        });
+      }
+      if (data.manualChildNames && data.manualChildNames.length) {
+        data.manualChildNames.forEach(name => currentChildren.set(`manual-${crypto.randomUUID()}`, { 
+          id: `manual-${crypto.randomUUID()}`, 
+          name, 
+          isManual: true 
+        }));
+      }
+      renderChildrenList();
+
+      facebookLinkInput.value = data.facebookLink || '';
+      linkedinLinkInput.value = data.linkedinLink || '';
+      websiteLinkInput.value = data.websiteLink || '';
+      notesInput.value = data.notes || '';
+
+      hasUnsavedChanges = false;
+      pageTitle.textContent = 'تعديل شخص';
+      savePersonBtn.textContent = 'تحديث البيانات';
+    } catch (err) {
+      console.error("loadPersonData error:", err);
+      showModal("خطأ أثناء تحميل بيانات الشخص: " + (err.message || err));
+    }
+  }
+
+  // Update UI based on life status
+  function updateLifeStatus() {
+    const isAlive = isAliveInput.checked;
+    
+    if (isAlive) {
+      aliveStatus.classList.remove('hidden');
+      deceasedStatus.classList.add('hidden');
+      deathDateContainer.classList.add('hidden');
+      deathDateInput.value = '';
+    } else {
+      aliveStatus.classList.add('hidden');
+      deceasedStatus.classList.remove('hidden');
+      deathDateContainer.classList.remove('hidden');
+    }
+  }
+  
+  // Update UI based on marital status
+  function updateMaritalStatusUI() {
+    const status = maritalStatusInput.value;
+    
+    // Show/hide marriage date
+    marriageDateContainer.classList.toggle('hidden', status !== 'Married');
+    
+    // Show/hide engagement date
+    engagementDateContainer.classList.toggle('hidden', status !== 'Engaged');
+    
+    // Show/hide spouses section for married or engaged
+    spousesSection.classList.toggle('hidden', status !== 'Married' && status !== 'Engaged');
+    
+    if (status !== 'Married' && status !== 'Engaged') {
+      marriageDateInput.value = '';
+      engagementDateInput.value = '';
+    }
+  }
+
+  // Validation (duplicate checks against baseCollectionPath)
+  async function validateForm(personData, isNewPerson) {
+    let isValid = true;
+    document.querySelectorAll('.error-message').forEach(e => e.classList.add('hidden'));
+    document.querySelectorAll('.input-field').forEach(e => e.classList.remove('error'));
+    document.querySelectorAll('input[name="gender"]').forEach(e => e.classList.remove('error'));
+
+    // Required fields validation
+    if (!firstNameInput.value.trim()) { 
+      firstNameError.classList.remove('hidden'); 
+      firstNameInput.classList.add('error'); 
+      isValid = false; 
+    }
+    
+    if (!familyNameInput.value.trim()) { 
+      familyNameError.classList.remove('hidden'); 
+      familyNameInput.classList.add('error'); 
+      isValid = false; 
+    }
+    
+    if (!birthDateInput.value) { 
+      birthDateError.classList.remove('hidden'); 
+      birthDateInput.classList.add('error'); 
+      isValid = false; 
+    }
+    
+    const selectedGender = document.querySelector('input[name="gender"]:checked');
+    if (!selectedGender) { 
+      genderError.classList.remove('hidden'); 
+      genderMale.classList.add('error'); 
+      genderFemale.classList.add('error'); 
+      isValid = false; 
+    }
+    
+    if (!isAliveInput.checked && !deathDateInput.value.trim()) { 
+      deathDateError.classList.remove('hidden'); 
+      deathDateInput.classList.add('error'); 
+      isValid = false; 
+    }
+    
+    if (!maritalStatusInput.value) { 
+      maritalStatusError.classList.remove('hidden'); 
+      maritalStatusInput.classList.add('error'); 
+      isValid = false; 
+    }
+
+    // Remove spouse requirement
+    spouseError.classList.add('hidden');
+    addSpouseInput.classList.remove('error');
+
+    // duplicate checks in collection
+    try {
+      const qFullName = query(collection(db, baseCollectionPath), where("fullName", "==", personData.fullName));
+      const qIdNumber = query(collection(db, baseCollectionPath), where("idNumber", "==", personData.idNumber || ""));
+      const [fullNameSnap, idNumberSnap] = await Promise.all([ getDocs(qFullName), getDocs(qIdNumber) ]);
+
+      const fullNameDuplicates = fullNameSnap.docs.filter(d => d.id !== editingPersonId);
+      if (fullNameDuplicates.length > 0) { 
+        showModal("شخص بنفس الاسم الكامل موجود بالفعل."); 
+        firstNameInput.classList.add('error'); 
+        familyNameInput.classList.add('error'); 
+        isValid = false; 
+      }
+
+      if (personData.idNumber && personData.idNumber.trim()) {
+        const idNumberDuplicates = idNumberSnap.docs.filter(d => d.id !== editingPersonId);
+        if (idNumberDuplicates.length > 0) { 
+          showModal("شخص بنفس رقم الهوية موجود بالفعل."); 
+          idNumberInput.classList.add('error'); 
+          idNumberError.classList.remove('hidden'); 
+          isValid = false; 
+        }
+      }
+    } catch (err) {
+      console.error("validateForm duplicates error:", err);
+      showModal("تحذير: تعذر التحقق من التكرارات. تأكد من اتصال الإنترنت وصلاحيات Firestore.");
+    }
+
+    return isValid;
+  }
+
+  // Reset form
+  function resetForm() {
+    personForm.reset();
+    editingPersonId = null;
+    pageTitle.textContent = 'إضافة شخص جديد';
+    savePersonBtn.textContent = 'حفظ البيانات';
+    isAliveInput.checked = true;
+    updateLifeStatus();
+    maritalStatusInput.value = '';
+    updateMaritalStatusUI();
+    currentChildren.clear(); 
+    currentSpouses.clear();
+    renderChildrenList(); 
+    renderSpousesList();
+    originalPersonData = null;
+    hasUnsavedChanges = false;
+    document.querySelectorAll('.error-message').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.input-field').forEach(el => el.classList.remove('error'));
+    personPhoto.style.display = 'none';
+    photoUpload.querySelector('i').style.display = 'block';
+    photoUpload.querySelector('span').style.display = 'block';
+  }
+
+  // Save or update person
+  async function savePerson(redirectToProfile = true) {
+    showLoadingModal();
+    try {
+      // compose data
+      const personData = {
+        firstName: firstNameInput.value.trim(),
+        fatherName: fatherNameInput.value.trim(),
+        fatherId: fatherIdInput.value.trim() || null,
+        grandFatherName: grandFatherNameInput.value.trim(),
+        familyName: familyNameInput.value.trim(),
+        motherName: motherNameInput.value.trim(),
+        motherId: motherIdInput.value.trim() || null,
+        idNumber: idNumberInput.value.trim() || null,
+        phoneNumber: phoneNumberInput.value.trim() || null,
+        birthDate: birthDateInput.value ? Timestamp.fromDate(new Date(birthDateInput.value)) : null,
+        gender: document.querySelector('input[name="gender"]:checked')?.value || null,
+        isAlive: isAliveInput.checked,
+        deathDate: (isAliveInput.checked || !deathDateInput.value) ? null : Timestamp.fromDate(new Date(deathDateInput.value)),
+        maritalStatus: maritalStatusInput.value || null,
+        marriageDate: maritalStatusInput.value === 'Married' && marriageDateInput.value ? Timestamp.fromDate(new Date(marriageDateInput.value)) : null,
+        engagementDate: maritalStatusInput.value === 'Engaged' && engagementDateInput.value ? Timestamp.fromDate(new Date(engagementDateInput.value)) : null,
+        spouseIds: [],
+        manualSpouseNames: [],
+        childrenIds: [],
+        manualChildNames: [],
+        facebookLink: facebookLinkInput.value.trim() || null,
+        linkedinLink: linkedinLinkInput.value.trim() || null,
+        websiteLink: websiteLinkInput.value.trim() || null,
+        notes: notesInput.value.trim() || null
+      };
+
+      // Process spouses
+      currentSpouses.forEach(s => {
+        if (s.isManual) {
+          personData.manualSpouseNames.push(s.name);
+        } else {
+          personData.spouseIds.push(s.id);
+        }
+      });
+
+      // Process children
+      currentChildren.forEach(c => {
+        if (c.isManual) {
+          personData.manualChildNames.push(c.name);
+        } else {
+          personData.childrenIds.push(c.id);
+        }
+      });
+
+      personData.fullName = `${personData.firstName} ${personData.fatherName} ${personData.grandFatherName} ${personData.familyName}`.trim().replace(/\s+/g,' ');
+
+      const isNew = !editingPersonId;
+      if (!(await validateForm(personData, isNew))) { 
+        hideLoadingModal(); 
+        showModal("الرجاء تصحيح الأخطاء قبل الحفظ."); 
+        return; 
+      }
+
+      let savedPersonId = editingPersonId;
+
+      if (editingPersonId) {
+        // update
+        const docRef = doc(db, baseCollectionPath, editingPersonId);
+        await setDoc(docRef, personData, { merge: true });
+        showModal("تم تحديث بيانات الشخص بنجاح!");
+      } else {
+        // add
+        const collRef = collection(db, baseCollectionPath);
+        const newDoc = await addDoc(collRef, personData);
+        savedPersonId = newDoc.id;
+        showModal("تم إضافة شخص جديد بنجاح!");
+      }
+
+      // update father's childrenIds
+      if (personData.fatherId && savedPersonId) {
+        try {
+          const fatherRef = doc(db, baseCollectionPath, personData.fatherId);
+          const fatherSnap = await getDoc(fatherRef);
+          if (fatherSnap.exists()) {
+            const fatherData = fatherSnap.data();
+            const setKids = new Set(fatherData.childrenIds || []);
+            setKids.add(savedPersonId);
+            await setDoc(fatherRef, { childrenIds: Array.from(setKids) }, { merge: true });
+          }
+        } catch (err) { console.warn("update father children error:", err); }
+      }
+
+      // keep spouse bidirectional for linked spouses
+      try {
+        const newLinked = new Set(personData.spouseIds || []);
+        const oldLinked = new Set(originalPersonData?.spouseIds || []);
+        // add
+        for (const sId of newLinked) {
+          if (!oldLinked.has(sId)) {
+            const sRef = doc(db, baseCollectionPath, sId);
+            const sSnap = await getDoc(sRef);
+            if (sSnap.exists()) {
+              const sData = sSnap.data();
+              const sSet = new Set(sData.spouseIds || []);
+              sSet.add(savedPersonId);
+              await setDoc(sRef, { spouseIds: Array.from(sSet) }, { merge: true });
+            }
+          }
+        }
+        // remove
+        for (const sId of oldLinked) {
+          if (!newLinked.has(sId)) {
+            const sRef = doc(db, baseCollectionPath, sId);
+            const sSnap = await getDoc(sRef);
+            if (sSnap.exists()) {
+              const sData = sSnap.data();
+              const sSet = new Set(sData.spouseIds || []);
+              sSet.delete(savedPersonId);
+              await setDoc(sRef, { spouseIds: Array.from(sSet) }, { merge: true });
+            }
+          }
+        }
+      } catch (err) { console.warn("spouse bidirectional update error:", err); }
+
+      hasUnsavedChanges = false;
+
+      if (redirectToProfile) {
+        setTimeout(() => { window.location.href = `profile.html?id=${savedPersonId}`; }, 1200);
+      } else {
+        await fetchAllFamilyMembers();
+        resetForm();
+      }
+    } catch (err) {
+      console.error("savePerson error:", err);
+      showModal("حدث خطأ أثناء حفظ البيانات: " + (err.message || err));
+    } finally {
+      hideLoadingModal();
+    }
+  }
+
+  // Before unload warning
+  window.onbeforeunload = (e) => {
+    if (hasUnsavedChanges) { 
+      e.preventDefault(); 
+      e.returnValue = ''; 
+      return 'لديك تغييرات غير محفوظة.'; 
+    }
+  };
+
+  // DOM ready
+  document.addEventListener('DOMContentLoaded', async () => {
+    // assign DOM
+    pageTitle = document.getElementById('pageTitle');
+    personForm = document.getElementById('personForm');
+    firstNameInput = document.getElementById('firstNameInput'); 
+    firstNameError = document.getElementById('firstNameError');
+    fatherNameInput = document.getElementById('fatherNameInput'); 
+    fatherSuggestions = document.getElementById('fatherSuggestions'); 
+    fatherIdInput = document.getElementById('fatherIdInput');
+    grandFatherNameInput = document.getElementById('grandFatherNameInput');
+    familyNameInput = document.getElementById('familyNameInput'); 
+    familyNameError = document.getElementById('familyNameError');
+    motherNameInput = document.getElementById('motherNameInput'); 
+    motherSuggestions = document.getElementById('motherSuggestions'); 
+    motherIdInput = document.getElementById('motherIdInput');
+    idNumberInput = document.getElementById('idNumberInput'); 
+    idNumberError = document.getElementById('idNumberError');
+    phoneNumberInput = document.getElementById('phoneNumberInput'); 
+    birthDateInput = document.getElementById('birthDateInput'); 
+    birthDateError = document.getElementById('birthDateError');
+    genderMale = document.getElementById('genderMale'); 
+    genderFemale = document.getElementById('genderFemale'); 
+    genderError = document.getElementById('genderError');
+    isAliveInput = document.getElementById('isAliveInput'); 
+    deathDateContainer = document.getElementById('deathDateContainer'); 
+    deathDateInput = document.getElementById('deathDateInput'); 
+    deathDateError = document.getElementById('deathDateError');
+    aliveStatus = document.getElementById('aliveStatus');
+    deceasedStatus = document.getElementById('deceasedStatus');
+    maritalStatusInput = document.getElementById('maritalStatusInput'); 
+    maritalStatusError = document.getElementById('maritalStatusError');
+    marriageDateContainer = document.getElementById('marriageDateContainer'); 
+    marriageDateInput = document.getElementById('marriageDateInput');
+    engagementDateContainer = document.getElementById('engagementDateContainer'); 
+    engagementDateInput = document.getElementById('engagementDateInput');
+
+    spousesSection = document.getElementById('spousesSection'); 
+    spousesListDiv = document.getElementById('spousesList'); 
+    noSpousesMessage = document.getElementById('noSpousesMessage');
+    addSpouseInput = document.getElementById('addSpouseInput'); 
+    addSpouseSuggestions = document.getElementById('addSpouseSuggestions'); 
+    addSpouseIdInput = document.getElementById('addSpouseIdInput'); 
+    addSpouseBtn = document.getElementById('addSpouseBtn');
+    spouseError = document.getElementById('spouseError'); 
+    spouseGenderError = document.getElementById('spouseGenderError');
+
+    childrenListDiv = document.getElementById('childrenList'); 
+    noChildrenMessage = document.getElementById('noChildrenMessage');
+    addChildInput = document.getElementById('addChildInput'); 
+    childrenSuggestions = document.getElementById('childrenSuggestions'); 
+    addChildIdInput = document.getElementById('addChildIdInput'); 
+    addChildBtn = document.getElementById('addChildBtn');
+
+    savePersonBtn = document.getElementById('savePersonBtn'); 
+    saveAndAddAnotherBtn = document.getElementById('saveAndAddAnotherBtn'); 
+    cancelBtn = document.getElementById('cancelBtn');
+    facebookLinkInput = document.getElementById('facebookLinkInput'); 
+    linkedinLinkInput = document.getElementById('linkedinLinkInput'); 
+    websiteLinkInput = document.getElementById('websiteLinkInput'); 
+    notesInput = document.getElementById('notesInput');
+    
+    photoUpload = document.getElementById('photoUpload');
+    photoInput = document.getElementById('photoInput');
+    personPhoto = document.getElementById('personPhoto');
+    
+    addManualSpouseBtn = document.getElementById('addManualSpouseBtn');
+    addManualChildBtn = document.getElementById('addManualChildBtn');
+
+    // modal handlers
+    document.getElementById('closeMessageModalBtn').addEventListener('click', ()=> closeModal('messageModal'));
+    document.getElementById('confirmMessageModalBtn').addEventListener('click', ()=> closeModal('messageModal'));
+
+    // read URL param for edit mode
+    const urlParams = new URLSearchParams(window.location.search);
+    editingPersonId = urlParams.get('id');
+
+    if (editingPersonId) { 
+      pageTitle.textContent = 'تعديل شخص'; 
+      savePersonBtn.textContent = 'تحديث البيانات'; 
+    } else { 
+      pageTitle.textContent = 'إضافة شخص جديد'; 
+      savePersonBtn.textContent = 'حفظ البيانات'; 
+      isAliveInput.checked = true; 
+      updateLifeStatus();
+      updateMaritalStatusUI();
+    }
+
+    // initial data load (no auth required)
+    await fetchAllFamilyMembers();
+
+    if (editingPersonId) await loadPersonData(editingPersonId);
+
+    // attach handlers for suggestions
+    handleRelatedPersonInput(firstNameInput, null, null, 'self');
+    handleRelatedPersonInput(fatherNameInput, fatherSuggestions, fatherIdInput, 'father');
+    handleRelatedPersonInput(motherNameInput, motherSuggestions, motherIdInput, 'mother');
+    handleRelatedPersonInput(addSpouseInput, addSpouseSuggestions, addSpouseIdInput, 'spouse');
+    handleRelatedPersonInput(addChildInput, childrenSuggestions, addChildIdInput, 'child');
+
+    // event listeners
+    isAliveInput.addEventListener('change', () => { 
+      updateLifeStatus(); 
+      hasUnsavedChanges = true; 
+    });
+    
+    maritalStatusInput.addEventListener('change', () => {
+      updateMaritalStatusUI();
+      hasUnsavedChanges = true;
+    });
+
+    personForm.addEventListener('input', () => hasUnsavedChanges = true);
+
+    savePersonBtn.addEventListener('click', async (e) => { 
+      e.preventDefault(); 
+      await savePerson(true); 
+    });
+    
+    saveAndAddAnotherBtn.addEventListener('click', async (e) => { 
+      e.preventDefault(); 
+      await savePerson(false); 
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      if (hasUnsavedChanges) {
+        showModal("لديك تغييرات غير محفوظة. هل تريد الإلغاء فعلاً؟");
+        document.getElementById('confirmMessageModalBtn').onclick = () => { 
+          closeModal('messageModal'); 
+          hasUnsavedChanges = false; 
+          if (editingPersonId) window.location.href = `profile.html?id=${editingPersonId}`; 
+          else window.location.href = 'index.html'; 
+        };
+      } else {
+        if (editingPersonId) window.location.href = `profile.html?id=${editingPersonId}`; 
+        else window.location.href = 'index.html';
+      }
+    });
+
+    addChildBtn.addEventListener('click', () => {
+      const childId = addChildIdInput.value; 
+      const childName = addChildInput.value.trim();
+      
+      if (childId && childName) {
+        if (!currentChildren.has(childId)) { 
+          currentChildren.set(childId, { id: childId, name: childName, isManual: false }); 
+          addChildInput.value = ''; 
+          addChildIdInput.value = ''; 
+          childrenSuggestions.classList.add('hidden'); 
+          renderChildrenList(); 
+          hasUnsavedChanges = true; 
+        } else {
+          showModal("هذا الابن/الابنة مضاف بالفعل.");
+        }
+      } else {
+        showModal("يرجى اختيار ابن/ابنة من الاقتراحات.");
+      }
+    });
+
+    addManualChildBtn.addEventListener('click', () => {
+      const childName = addChildInput.value.trim();
+      
+      if (childName) {
+        const entryId = `manual-${crypto.randomUUID()}`;
+        currentChildren.set(entryId, { 
+          id: entryId, 
+          name: childName, 
+          isManual: true 
+        });
+        addChildInput.value = '';
+        addChildIdInput.value = '';
+        childrenSuggestions.classList.add('hidden');
+        renderChildrenList();
+        hasUnsavedChanges = true;
+      } else {
+        showModal("يرجى إدخال اسم الابن/الابنة.");
+      }
+    });
+
+    addSpouseBtn.addEventListener('click', () => {
+      const spouseId = addSpouseIdInput.value; 
+      const spouseName = addSpouseInput.value.trim();
+      
+      if (!spouseName) { 
+        showModal("يرجى إدخال اسم الزوج/الزوجة."); 
+        return; 
+      }
+      
+      if (spouseId) {
+        const currentGender = document.querySelector('input[name="gender"]:checked')?.value;
+        const spousePerson = allFamilyMembers.find(m => m.id === spouseId);
+        if (currentGender && spousePerson && currentGender === spousePerson.gender) { 
+          spouseGenderError.classList.remove('hidden'); 
+          showModal("لا يمكن إضافة زوج/زوجة من نفس الجنس."); 
+          return; 
+        } else {
+          spouseGenderError.classList.add('hidden');
+        }
+      }
+      
+      const isManual = !spouseId;
+      const entryId = isManual ? `manual-${crypto.randomUUID()}` : spouseId;
+      
+      if (!currentSpouses.has(entryId)) { 
+        currentSpouses.set(entryId, { 
+          id: entryId, 
+          name: spouseName, 
+          isManual 
+        }); 
+        addSpouseInput.value = ''; 
+        addSpouseIdInput.value = ''; 
+        addSpouseSuggestions.classList.add('hidden'); 
+        renderSpousesList(); 
+        hasUnsavedChanges = true; 
+      } else {
+        showModal("هذا الزوج/الزوجة مضاف بالفعل.");
+      }
+    });
+
+    addManualSpouseBtn.addEventListener('click', () => {
+      const spouseName = addSpouseInput.value.trim();
+      
+      if (spouseName) {
+        const entryId = `manual-${crypto.randomUUID()}`;
+        currentSpouses.set(entryId, { 
+          id: entryId, 
+          name: spouseName, 
+          isManual: true 
+        });
+        addSpouseInput.value = '';
+        addSpouseIdInput.value = '';
+        addSpouseSuggestions.classList.add('hidden');
+        renderSpousesList();
+        hasUnsavedChanges = true;
+      } else {
+        showModal("يرجى إدخال اسم الزوج/الزوجة.");
+      }
+    });
+
+    // Photo upload handling
+    photoUpload.addEventListener('click', () => {
+      photoInput.click();
+    });
+    
+    photoInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          personPhoto.src = event.target.result;
+          personPhoto.style.display = 'block';
+          photoUpload.querySelector('i').style.display = 'none';
+          photoUpload.querySelector('span').style.display = 'none';
+          hasUnsavedChanges = true;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+
+  }); // DOMContentLoaded end
+</script>
 </body>
 </html>
