@@ -28,6 +28,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            position: relative; /* For loading overlay */
         }
         .btn-primary {
             background-color: #4f46e5; /* Indigo */
@@ -152,6 +153,33 @@
         .suggestions-list-item:last-child {
             border-bottom: none;
         }
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 1rem;
+            flex-direction: column;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(79, 70, 229, 0.3);
+            border-radius: 50%;
+            border-top-color: #4f46e5;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-4">
@@ -209,13 +237,12 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">أحداث العائلة</h1>
             <nav class="flex flex-wrap gap-3">
-       <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
                 <a href="events.html" class="btn-primary">الأحداث</a>
                 <a href="family_tree.html" class="btn-secondary">شجرة العائلة</a>
-    <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="">الإحصائيات</a>            
-    
-    <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html">تصدير البيانات</a>
-    <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+                <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="">الإحصائيات</a>            
+                <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html">تصدير البيانات</a>
+                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
             </nav>
         </div>
 
@@ -231,9 +258,14 @@
         </div>
 
         <!-- Events List -->
-        <div class="card">
+        <div class="card relative">
+            <!-- Loading overlay -->
+            <div id="loadingOverlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <span class="text-lg font-semibold text-gray-700">جاري تحميل الأحداث...</span>
+            </div>
+            
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">الأحداث القادمة</h2>
-            <div id="loadingIndicator" class="text-center text-gray-600 text-lg mb-4 hidden">جاري تحميل الأحداث...</div>
             <div id="noEventsMessage" class="text-center text-gray-600 text-lg mb-4 hidden">لا توجد أحداث قادمة.</div>
             <div id="eventsList">
                 <!-- Events will be loaded here by JavaScript -->
@@ -244,8 +276,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase configuration provided by the user
         const firebaseConfig = {
@@ -262,9 +293,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
 
-        let userId = null;
         let allFamilyMembers = []; // Cache all family members
         let allEvents = []; // Combined list of all generated and custom events
 
@@ -272,14 +301,14 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // DOM Elements
-        const loadingIndicator = document.getElementById('loadingIndicator');
+        const loadingOverlay = document.getElementById('loadingOverlay');
         const noEventsMessage = document.getElementById('noEventsMessage');
         const eventsListDiv = document.getElementById('eventsList');
         const addEventModal = document.getElementById('addEventModal');
         const customEventForm = document.getElementById('customEventForm');
         const eventTitleInput = document.getElementById('eventTitleInput');
         const eventDateInput = document.getElementById('eventDateInput');
-        const eventTypeSelect = document.getElementById('eventTypeSelect'); // New: Event Type Select
+        const eventTypeSelect = document.getElementById('eventTypeSelect');
         const eventPersonNameInput = document.getElementById('eventPersonNameInput');
         const eventPersonSuggestions = document.getElementById('eventPersonSuggestions');
         const eventPersonIdInput = document.getElementById('eventPersonIdInput');
@@ -301,12 +330,8 @@
 
         // Function to fetch all family members for event generation and suggestions
         async function fetchAllFamilyMembersForEvents() {
-            if (!userId) {
-                console.log("User ID not available, cannot fetch all family members for events.");
-                return;
-            }
             try {
-                const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+                const q = collection(db, `artifacts/${appId}/familyMembers`);
                 const querySnapshot = await getDocs(q);
                 allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log("All family members cached for events:", allFamilyMembers);
@@ -394,7 +419,7 @@
                     });
                 }
 
-                // Marriage Anniversary (assuming marriageDate field exists in person data)
+                // Marriage Anniversary
                 if (person.maritalStatus === 'Married' && person.marriageDate && person.marriageDate.toDate) {
                     const marriage = person.marriageDate.toDate();
                     let nextMarriageAnniversary = new Date(currentYear, marriage.getMonth(), marriage.getDate());
@@ -422,9 +447,7 @@
                     });
                 }
 
-                // Engagement Anniversary (assuming engagementDate field exists in person data)
-                // Note: 'Engaged' marital status is not standard in the provided add_edit_person.html,
-                // but if added, this logic would apply.
+                // Engagement Anniversary
                 if (person.maritalStatus === 'Engaged' && person.engagementDate && person.engagementDate.toDate) {
                     const engagement = person.engagementDate.toDate();
                     let nextEngagementAnniversary = new Date(currentYear, engagement.getMonth(), engagement.getDate());
@@ -457,12 +480,8 @@
 
         // Function to fetch custom events from Firestore
         async function fetchCustomEvents() {
-            if (!userId) {
-                console.log("User ID not available, cannot fetch custom events.");
-                return [];
-            }
             try {
-                const q = collection(db, `artifacts/${appId}/users/${userId}/events`);
+                const q = collection(db, `artifacts/${appId}/events`);
                 const querySnapshot = await getDocs(q);
                 return querySnapshot.docs.map(doc => {
                     const data = doc.data();
@@ -484,26 +503,27 @@
 
         // Main function to fetch and combine all events
         async function fetchAndDisplayAllEvents() {
-            if (!userId) {
-                console.log("User ID not available, skipping event fetch.");
-                return;
-            }
-
-            loadingIndicator.classList.remove('hidden');
+            loadingOverlay.classList.remove('hidden');
             noEventsMessage.classList.add('hidden');
             eventsListDiv.innerHTML = '';
 
-            await fetchAllFamilyMembersForEvents(); // Ensure family members are cached
-            const generatedEvents = generateRecurringEvents();
-            const customEvents = await fetchCustomEvents();
+            try {
+                await fetchAllFamilyMembersForEvents(); // Ensure family members are cached
+                const generatedEvents = generateRecurringEvents();
+                const customEvents = await fetchCustomEvents();
 
-            allEvents = [...generatedEvents, ...customEvents];
+                allEvents = [...generatedEvents, ...customEvents];
 
-            // Sort events by date
-            allEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+                // Sort events by date
+                allEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-            loadingIndicator.classList.add('hidden');
-            displayEvents(allEvents); // Display all events by default
+                displayEvents(allEvents); // Display all events by default
+            } catch (error) {
+                console.error("Error fetching events:", error);
+                showModal("حدث خطأ أثناء جلب الأحداث: " + error.message);
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
         }
 
         // Function to filter and display events
@@ -637,11 +657,6 @@
         customEventForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!userId) {
-                showModal("يرجى تسجيل الدخول لإضافة الأحداث.");
-                return;
-            }
-
             const title = eventTitleInput.value.trim();
             const date = eventDateInput.value;
             const type = eventTypeSelect.value; // Get selected event type
@@ -654,7 +669,7 @@
             }
 
             try {
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/events`), {
+                await addDoc(collection(db, `artifacts/${appId}/events`), {
                     title: title,
                     date: Timestamp.fromDate(new Date(date)),
                     type: type, // Save the selected type
@@ -688,54 +703,15 @@
                 eventTitleInput.focus(); // Focus on first input
             });
 
-            // Initial authentication attempt
-            (async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
-                } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
-                }
-            })();
-
-            // Listen for auth state changes to get userId and fetch data
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log("Authentication state changed. User ID:", userId);
-                    await fetchAndDisplayAllEvents(); // Fetch and display all events after authentication
-                    handleEventPersonInput(); // Enable person search in add event modal
-                } else {
-                    userId = null;
-                    console.log("User signed out or no user.");
-                    loadingIndicator.classList.add('hidden');
-                    noEventsMessage.classList.remove('hidden');
-                    eventsListDiv.innerHTML = '';
-                    showModal("يرجى تسجيل الدخول لعرض الأحداث.", 'messageModal');
-                }
-            });
-
             // Filter button event listeners
             filter7DaysBtn.addEventListener('click', () => filterEventsByPeriod('7days'));
             filterMonthBtn.addEventListener('click', () => filterEventsByPeriod('month'));
             filterYearBtn.addEventListener('click', () => filterEventsByPeriod('year'));
             filterAllBtn.addEventListener('click', () => filterEventsByPeriod('all'));
+
+            // Fetch data immediately
+            await fetchAndDisplayAllEvents();
+            handleEventPersonInput(); // Enable person search in add event modal
         });
     </script>
 </body>
