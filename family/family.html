@@ -598,6 +598,11 @@
         let translateY = 0;
         let scale = 1;
 
+        // Define variables to store family data
+        let allFamilyMembers = [];
+        const familyNames = new Set();
+        let currentFilteredMembers = [];
+
         // Function to show custom modal messages
         function showModal(message, modalId = 'messageModal') {
             document.getElementById('modalMessage').textContent = message;
@@ -623,132 +628,6 @@
             return years;
         }
 
-
-
-    // أضف هذه المتغيرات بعد تعريف عناصر DOM
-    let allFamilyMembers = [];
-    const familyNames = new Set();
-    let currentFilteredMembers = [];
-
-    // تعديل دالة fetchAllFamilyMembersForTree
-    async function fetchAllFamilyMembersForTree() {
-        try {
-            const q = collection(db, baseCollectionPath);
-            const querySnapshot = await getDocs(q);
-            
-            // تحديث المتغير allFamilyMembers مباشرة
-            allFamilyMembers = querySnapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                ...doc.data(),
-                // إضافة خاصية childrenIds إذا لم تكن موجودة
-                childrenIds: doc.data().childrenIds || []
-            }));
-            
-            // تحديث أسماء العائلات
-            familyNames.clear();
-            allFamilyMembers.forEach(member => {
-                if (member.familyName) {
-                    familyNames.add(member.familyName);
-                }
-            });
-            
-            updateFamilyFilterOptions();
-            return allFamilyMembers;
-        } catch (error) {
-            console.error("Error fetching family members:", error);
-            showModal("حدث خطأ في جلب بيانات العائلة: " + error.message);
-            return [];
-        }
-    }
-
-    // تعديل دالة buildFamilyTreeData
-    function buildFamilyTreeData(members) {
-        const memberMap = new Map();
-        
-        // إنشاء العقد الأساسية
-        members.forEach(member => {
-            memberMap.set(member.id, {
-                ...member,
-                children: []
-            });
-        });
-        
-        // بناء العلاقات بين الآباء والأبناء
-        members.forEach(member => {
-            if (member.parentId) {
-                const parent = memberMap.get(member.parentId);
-                if (parent) {
-                    parent.children.push(memberMap.get(member.id));
-                }
-            }
-        });
-        
-        // إيجاد الجذور (الأشخاص بدون أب)
-        const roots = [];
-        memberMap.forEach(member => {
-            if (!member.parentId) {
-                roots.push(member);
-            }
-        });
-
-        return roots;
-    }
-
-    // تعديل دالة renderTree لمعالجة الحالات الفارغة
-    function renderTree(person, parentElement) {
-        if (!person) return;
-
-        const node = renderPersonNode(person);
-        parentElement.appendChild(node);
-
-        if (person.children && person.children.length > 0) {
-            const childrenContainer = document.createElement('div');
-            childrenContainer.classList.add('children-container');
-            
-            person.children.forEach(child => {
-                renderTree(child, childrenContainer);
-            });
-            
-            node.appendChild(childrenContainer);
-        }
-    }
-
-    // تعديل الدالة الرئيسية لبناء الشجرة
-    async function buildAndDisplayFamilyTree() {
-        loadingIndicator.classList.remove('hidden');
-        noTreeDataMessage.classList.add('hidden');
-        familyTreeContainer.innerHTML = '';
-        
-        try {
-            // تطبيق الفلاتر
-            applyAllFilters();
-            
-            // بناء هيكل البيانات
-            const roots = buildFamilyTreeData(currentFilteredMembers);
-            
-            if (roots.length === 0) {
-                loadingIndicator.classList.add('hidden');
-                noTreeDataMessage.classList.remove('hidden');
-                return;
-            }
-            
-            // عرض الشجرة
-            roots.forEach(root => {
-                const rootWrapper = document.createElement('div');
-                rootWrapper.classList.add('flex', 'justify-center', 'w-full');
-                renderTree(root, rootWrapper);
-                familyTreeContainer.appendChild(rootWrapper);
-            });
-        } catch (error) {
-            console.error("Error building tree:", error);
-            showModal("حدث خطأ أثناء بناء الشجرة: " + error.message);
-        } finally {
-            loadingIndicator.classList.add('hidden');
-        }
-    }
-
-   
-        
         // Function to format age display
         function formatAgeDisplay(age) {
             if (age === null) return 'غير محدد';
@@ -760,7 +639,13 @@
             try {
                 const q = collection(db, baseCollectionPath);
                 const querySnapshot = await getDocs(q);
-                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Update allFamilyMembers variable
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(),
+                    childrenIds: doc.data().childrenIds || [] // Ensure childrenIds exists
+                }));
                 
                 // Collect unique family names
                 familyNames.clear();
@@ -1172,6 +1057,7 @@
             
             try {
                 await fetchAllFamilyMembersForTree();
+                // Apply filters after fetching data
                 applyAllFilters();
             } catch (error) {
                 console.error("Failed to load family tree data:", error);
