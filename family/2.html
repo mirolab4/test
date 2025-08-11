@@ -730,7 +730,7 @@
     }
   }
 
-  // Handle suggestions input (reusable)
+  // Handle suggestions input
   function handleRelatedPersonInput(inputElement, suggestionsElement, hiddenIdElement, relationType) {
     if (!inputElement) return;
     
@@ -761,7 +761,7 @@
           div.addEventListener('click', async () => {
             if (relationType === 'father') {
               inputElement.value = person.firstName || person.fullName;
-              // Extract grandfather's first name only
+              // استخراج الاسم الأول للجد فقط
               if (person.fatherName) {
                 const grandFatherFirstName = person.fatherName.split(' ')[0];
                 grandFatherNameInput.value = grandFatherFirstName;
@@ -773,12 +773,12 @@
             if (hiddenIdElement) hiddenIdElement.value = person.id;
             suggestionsElement.classList.add('hidden');
 
-            // auto-fill family name when selecting parent
+            // تعبئة اسم العائلة تلقائياً
             if ((relationType === 'father' || relationType === 'mother') && person.familyName) {
               familyNameInput.value = person.familyName;
             }
 
-            // father special logic to auto-fill mother (father's spouse)
+            // إضافة زوجة الأب تلقائياً
             if (relationType === 'father') {
               if (person.spouseIds && person.spouseIds.length) {
                 const potentialMotherId = person.spouseIds.find(sId => {
@@ -798,12 +798,11 @@
       }
     });
 
-    // hide on click outside
+    // إخفاء القائمة عند النقر خارجها
     document.addEventListener('click', (ev) => {
       if (suggestionsElement && !inputElement.parentNode.contains(ev.target)) suggestionsElement.classList.add('hidden');
     });
   }
-
   // Render children and spouses lists
   function renderChildrenList() {
     childrenListDiv.innerHTML = '';
@@ -960,19 +959,20 @@
     }
   }
 
+ 
   // Update UI based on life status
   function updateLifeStatus() {
     const isAlive = isAliveInput.checked;
     
     if (isAlive) {
-      aliveStatus.classList.remove('hidden');
-      deceasedStatus.classList.add('hidden');
-      deathDateContainer.classList.add('hidden');
-      deathDateInput.value = '';
+      if (aliveStatus) aliveStatus.classList.remove('hidden');
+      if (deceasedStatus) deceasedStatus.classList.add('hidden');
+      if (deathDateContainer) deathDateContainer.classList.add('hidden');
+      if (deathDateInput) deathDateInput.value = '';
     } else {
-      aliveStatus.classList.add('hidden');
-      deceasedStatus.classList.remove('hidden');
-      deathDateContainer.classList.remove('hidden');
+      if (aliveStatus) aliveStatus.classList.add('hidden');
+      if (deceasedStatus) deceasedStatus.classList.remove('hidden');
+      if (deathDateContainer) deathDateContainer.classList.remove('hidden');
     }
   }
   
@@ -980,72 +980,86 @@
   function updateMaritalStatusUI() {
     const status = maritalStatusInput.value;
     
-    // Show/hide marriage date
-    marriageDateContainer.classList.toggle('hidden', status !== 'Married');
+    // إظهار/إخفاء تاريخ الزواج
+    if (marriageDateContainer) {
+      marriageDateContainer.classList.toggle('hidden', status !== 'Married');
+    }
     
-    // Show/hide engagement date
-    engagementDateContainer.classList.toggle('hidden', status !== 'Engaged');
+    // إظهار/إخفاء تاريخ الخطوبة
+    if (engagementDateContainer) {
+      engagementDateContainer.classList.toggle('hidden', status !== 'Engaged');
+    }
     
-    // Show/hide spouses section for married or engaged
-    spousesSection.classList.toggle('hidden', status !== 'Married' && status !== 'Engaged');
+    // إظهار/إخفاء قسم الأزواج
+    if (spousesSection) {
+      spousesSection.classList.toggle('hidden', status !== 'Married' && status !== 'Engaged');
+    }
     
     if (status !== 'Married' && status !== 'Engaged') {
-      marriageDateInput.value = '';
-      engagementDateInput.value = '';
+      if (marriageDateInput) marriageDateInput.value = '';
+      if (engagementDateInput) engagementDateInput.value = '';
     }
   }
 
-  // Validation (duplicate checks against baseCollectionPath)
+  // Validation
   async function validateForm(personData, isNewPerson) {
     let isValid = true;
-    document.querySelectorAll('.error-message').forEach(e => e.classList.add('hidden'));
-    document.querySelectorAll('.input-field').forEach(e => e.classList.remove('error'));
-    document.querySelectorAll('input[name="gender"]').forEach(e => e.classList.remove('error'));
+    // إخفاء جميع رسائل الخطأ
+    document.querySelectorAll('.error-message').forEach(e => {
+      if (e) e.classList.add('hidden');
+    });
+    // إزالة حالة الخطأ من الحقول
+    document.querySelectorAll('.input-field').forEach(e => {
+      if (e) e.classList.remove('error');
+    });
+    // إزالة حالة الخطأ من أزرار الجنس
+    if (genderMale) genderMale.classList.remove('error');
+    if (genderFemale) genderFemale.classList.remove('error');
 
-    // Required fields validation
+    // التحقق من الحقول المطلوبة
     if (!firstNameInput.value.trim()) { 
-      firstNameError.classList.remove('hidden'); 
-      firstNameInput.classList.add('error'); 
+      if (firstNameError) firstNameError.classList.remove('hidden'); 
+      if (firstNameInput) firstNameInput.classList.add('error'); 
       isValid = false; 
     }
     
     if (!familyNameInput.value.trim()) { 
-      familyNameError.classList.remove('hidden'); 
-      familyNameInput.classList.add('error'); 
+      if (familyNameError) familyNameError.classList.remove('hidden'); 
+      if (familyNameInput) familyNameInput.classList.add('error'); 
       isValid = false; 
     }
     
     if (!birthDateInput.value) { 
-      birthDateError.classList.remove('hidden'); 
-      birthDateInput.classList.add('error'); 
+      if (birthDateError) birthDateError.classList.remove('hidden'); 
+      if (birthDateInput) birthDateInput.classList.add('error'); 
       isValid = false; 
     }
     
     const selectedGender = document.querySelector('input[name="gender"]:checked');
     if (!selectedGender) { 
-      genderError.classList.remove('hidden'); 
-      genderMale.classList.add('error'); 
-      genderFemale.classList.add('error'); 
+      if (genderError) genderError.classList.remove('hidden'); 
+      if (genderMale) genderMale.classList.add('error'); 
+      if (genderFemale) genderFemale.classList.add('error'); 
       isValid = false; 
     }
     
-    if (!isAliveInput.checked && !deathDateInput.value.trim()) { 
-      deathDateError.classList.remove('hidden'); 
-      deathDateInput.classList.add('error'); 
-      isValid = false; 
+    if (!isAliveInput.checked) {
+      if ((!deathDateInput || !deathDateInput.value.trim())) { 
+        if (deathDateError) deathDateError.classList.remove('hidden'); 
+        if (deathDateInput) deathDateInput.classList.add('error'); 
+        isValid = false; 
+      }
     }
     
     if (!maritalStatusInput.value) { 
-      maritalStatusError.classList.remove('hidden'); 
-      maritalStatusInput.classList.add('error'); 
+      if (maritalStatusError) maritalStatusError.classList.remove('hidden'); 
+      if (maritalStatusInput) maritalStatusInput.classList.add('error'); 
       isValid = false; 
     }
 
-    // Remove spouse requirement
-    spouseError.classList.add('hidden');
-    addSpouseInput.classList.remove('error');
+    // لم نعد نطلب زوج/زوجة للحالة الاجتماعية
 
-    // duplicate checks in collection
+    // التحقق من التكرارات
     try {
       const qFullName = query(collection(db, baseCollectionPath), where("fullName", "==", personData.fullName));
       const qIdNumber = query(collection(db, baseCollectionPath), where("idNumber", "==", personData.idNumber || ""));
@@ -1054,8 +1068,8 @@
       const fullNameDuplicates = fullNameSnap.docs.filter(d => d.id !== editingPersonId);
       if (fullNameDuplicates.length > 0) { 
         showModal("شخص بنفس الاسم الكامل موجود بالفعل."); 
-        firstNameInput.classList.add('error'); 
-        familyNameInput.classList.add('error'); 
+        if (firstNameInput) firstNameInput.classList.add('error'); 
+        if (familyNameInput) familyNameInput.classList.add('error'); 
         isValid = false; 
       }
 
@@ -1063,8 +1077,8 @@
         const idNumberDuplicates = idNumberSnap.docs.filter(d => d.id !== editingPersonId);
         if (idNumberDuplicates.length > 0) { 
           showModal("شخص بنفس رقم الهوية موجود بالفعل."); 
-          idNumberInput.classList.add('error'); 
-          idNumberError.classList.remove('hidden'); 
+          if (idNumberInput) idNumberInput.classList.add('error'); 
+          if (idNumberError) idNumberError.classList.remove('hidden'); 
           isValid = false; 
         }
       }
@@ -1075,7 +1089,6 @@
 
     return isValid;
   }
-
   // Reset form
   function resetForm() {
     personForm.reset();
