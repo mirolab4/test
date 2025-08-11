@@ -425,8 +425,19 @@
     import { getFirestore, collection, onSnapshot, doc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Global variables for Firebase configuration from the Canvas environment
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    // Use the user-provided firebase config
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
+        authDomain: "family-9b0b8.firebaseapp.com",
+        databaseURL: "https://family-9b0b8-default-rtdb.firebaseio.com",
+        projectId: "family-9b0b8",
+        storageBucket: "family-9b0b8.firebasestorage.app",
+        messagingSenderId: "409089079475",
+        appId: "1:409089079475:web:93f8be81e247ecfe2758c6",
+        measurementId: "G-X5LDQB1WC9"
+    };
+
+    const appId = firebaseConfig.projectId;
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
     // Firebase services
@@ -470,7 +481,6 @@
     }
 
     // Event listeners for modals
-    // تم حذف السطر الذي يسبب الخطأ لأن الزر غير موجود في HTML
     confirmMessageModalBtn.addEventListener('click', () => closeModal('messageModal'));
     
     // Pan and Zoom setup
@@ -482,8 +492,8 @@
             familyTreeContainer.classList.add('dragging');
         });
         familyTreeContainer.addEventListener('mouseup', () => {
-            isDragging = false;
-            familyTreeContainer.classList.remove('dragging');
+        isDragging = false;
+        familyTreeContainer.classList.remove('dragging');
         });
         familyTreeContainer.addEventListener('mouseleave', () => {
             isDragging = false;
@@ -797,6 +807,7 @@
 
         } catch (error) {
             console.error("Initialization error:", error);
+            // قد تظهر رسالة الخطأ هنا
             showModal("فشل تهيئة التطبيق: " + error.message);
         }
     }
