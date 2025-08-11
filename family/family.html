@@ -450,7 +450,6 @@
     const exportTreeImageBtn = document.getElementById('exportTreeImageBtn');
     const messageModal = document.getElementById('messageModal');
     const modalMessage = document.getElementById('modalMessage');
-    const closeMessageModalBtn = document.getElementById('closeMessageModalBtn');
     const confirmMessageModalBtn = document.getElementById('confirmMessageModalBtn');
 
     let currentTreeData = {}; // Filtered tree data for display
@@ -471,15 +470,15 @@
     }
 
     // Event listeners for modals
-    closeMessageModalBtn.addEventListener('click', () => closeModal('messageModal'));
+    // تم حذف السطر الذي يسبب الخطأ لأن الزر غير موجود في HTML
     confirmMessageModalBtn.addEventListener('click', () => closeModal('messageModal'));
     
     // Pan and Zoom setup
     function setupPanZoom() {
         familyTreeContainer.addEventListener('mousedown', (e) => {
             isDragging = true;
-            startPanX = e.clientX - panZoom.x;
-            startPanY = e.clientY - panZoom.y;
+            startPanX = e.clientX - familyTreeContainer.getBoundingClientRect().left;
+            startPanY = e.clientY - familyTreeContainer.getBoundingClientRect().top;
             familyTreeContainer.classList.add('dragging');
         });
         familyTreeContainer.addEventListener('mouseup', () => {
@@ -493,9 +492,11 @@
         familyTreeContainer.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
-            panZoom.x = e.clientX - startPanX;
-            panZoom.y = e.clientY - startPanY;
-            familyTreeContainer.style.transform = `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})`;
+            const dx = e.clientX - startPanX;
+            const dy = e.clientY - startPanY;
+            familyTreeContainer.style.transform = `translate(${dx}px, ${dy}px) scale(${panZoom.scale})`;
+            panZoom.x = dx;
+            panZoom.y = dy;
         });
         familyTreeContainer.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -547,8 +548,8 @@
             const personAge = calculateAge(person.birthDate);
             const matchesFamily = familyFilter === 'All' || person.familyName === familyFilter;
             const matchesGender = genderFilter === 'All' || person.gender === genderFilter;
-            const matchesAge = personAge >= minAge && personAge <= maxAge;
-            const matchesSearch = searchQuery === '' || (person.firstName + ' ' + person.fatherName + ' ' + person.grandFatherName + ' ' + person.familyName).toLowerCase().includes(searchQuery);
+            const matchesAge = (personAge === null) ? true : (personAge >= minAge && personAge <= maxAge);
+            const matchesSearch = searchQuery === '' || (person.firstName + ' ' + (person.fatherName || '') + ' ' + (person.grandFatherName || '') + ' ' + (person.familyName || '')).toLowerCase().includes(searchQuery);
             
             return matchesFamily && matchesGender && matchesAge && matchesSearch;
         });
@@ -556,6 +557,9 @@
         // Rebuild the tree with filtered data
         if (filteredMembers.length > 0) {
             noTreeDataMessage.classList.add('hidden');
+            // Re-center the tree before building
+            panZoom = { x: 0, y: 0, scale: 1 };
+            familyTreeContainer.style.transform = `translate(${panZoom.x}px, ${panZoom.y}px) scale(${panZoom.scale})`;
             buildTreeStructure(filteredMembers);
             renderTree(familyTreeRoot);
             applySearchHighlight();
@@ -587,6 +591,7 @@
 
     // Function to build the tree data structure from flat list
     function buildTreeStructure(members) {
+        familyTreeContainer.innerHTML = '';
         treeData = {};
         members.forEach(member => {
             const spouseIds = member.spouses ? Object.keys(member.spouses) : [];
@@ -602,10 +607,21 @@
         // Find the root of the tree (a person with no father, or the oldest person if no single root is found)
         const roots = members.filter(member => !member.fatherId && !member.motherId);
         if (roots.length > 0) {
-            familyTreeRoot = treeData[roots[0].id];
+            // Find the root with the oldest birth date among all members
+            const oldestRoot = roots.sort((a,b) => {
+                if (!a.birthDate) return 1;
+                if (!b.birthDate) return -1;
+                return new Date(a.birthDate) - new Date(b.birthDate);
+            })[0];
+            familyTreeRoot = treeData[oldestRoot.id];
         } else if (members.length > 0) {
-            // If no clear root, pick the oldest person
-            familyTreeRoot = treeData[members.sort((a,b) => new Date(a.birthDate) - new Date(b.birthDate))[0].id];
+            // If no clear root, pick the oldest person from all members
+            const oldestPerson = members.sort((a,b) => {
+                if (!a.birthDate) return 1;
+                if (!b.birthDate) return -1;
+                return new Date(a.birthDate) - new Date(b.birthDate);
+            })[0];
+            familyTreeRoot = treeData[oldestPerson.id];
         } else {
             familyTreeRoot = null;
         }
@@ -646,6 +662,9 @@
                     <div class="person-name">${spouse.firstName} ${spouse.familyName}</div>
                     <div class="person-details">${spouse.fatherName ? `ابن ${spouse.fatherName}` : ''}</div>
                 `;
+                spouseCard.addEventListener('click', () => {
+                    window.location.href = `add_edit_person.html?id=${spouse.id}`;
+                });
                 spouseContainer.appendChild(spouseCard);
             });
             nodeEl.appendChild(spouseContainer);
