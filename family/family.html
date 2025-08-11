@@ -253,6 +253,33 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .debug-console {
+            background-color: #1e293b;
+            color: #cbd5e1;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        .debug-console h3 {
+            color: #f8fafc;
+            border-bottom: 1px solid #475569;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .debug-console .log {
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+        .debug-console .error {
+            color: #f87171;
+        }
+        .debug-console .success {
+            color: #4ade80;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-4">
@@ -314,6 +341,12 @@
                     <!-- Family tree will be rendered here by JavaScript -->
                 </div>
             </div>
+            
+            <!-- Debug Console -->
+            <div class="debug-console mt-6">
+                <h3>سجل التشغيل</h3>
+                <div id="debugLogs"></div>
+            </div>
         </div>
     </div>
 
@@ -349,6 +382,7 @@
         const personSearchInput = document.getElementById('personSearchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const exportTreeImageBtn = document.getElementById('exportTreeImageBtn');
+        const debugLogs = document.getElementById('debugLogs');
 
         // Pan and Zoom variables
         let isDragging = false;
@@ -361,10 +395,20 @@
         let allFamilyMembers = [];
         let currentFilteredMembers = [];
 
+        // Function to add debug logs
+        function addDebugLog(message, type = 'log') {
+            const logElement = document.createElement('div');
+            logElement.classList.add(type);
+            logElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugLogs.appendChild(logElement);
+            debugLogs.scrollTop = debugLogs.scrollHeight; // Auto-scroll to bottom
+        }
+
         // Function to show custom modal messages
         function showModal(message) {
             document.getElementById('modalMessage').textContent = message;
             document.getElementById('messageModal').style.display = 'flex';
+            addDebugLog(`عرض رسالة: ${message}`, 'log');
         }
 
         // Function to close custom modal messages
@@ -389,6 +433,7 @@
         // Fetch all family members from Firebase
         async function fetchAllFamilyMembersForTree() {
             try {
+                addDebugLog('بدء جلب بيانات العائلة من Firebase...', 'log');
                 const q = collection(db, baseCollectionPath);
                 const querySnapshot = await getDocs(q);
                 
@@ -398,9 +443,14 @@
                     childrenIds: doc.data().childrenIds || []
                 }));
                 
+                // Log fetched data to console
+                console.log('تم جلب بيانات العائلة:', allFamilyMembers);
+                addDebugLog(`تم جلب ${allFamilyMembers.length} عضو من العائلة`, 'success');
+                
                 return allFamilyMembers;
             } catch (error) {
                 console.error("Error fetching family members:", error);
+                addDebugLog(`خطأ في جلب البيانات: ${error.message}`, 'error');
                 showModal("حدث خطأ في جلب بيانات العائلة: " + error.message);
                 return [];
             }
@@ -425,6 +475,8 @@
                 option.textContent = name;
                 familyFilterSelect.appendChild(option);
             });
+            
+            addDebugLog(`تم تحديث خيارات الفلتر بـ ${uniqueFamilyNames.size} عائلة`, 'log');
         }
 
         // Apply family filter
@@ -433,8 +485,10 @@
             
             if (filterValue === 'All') {
                 currentFilteredMembers = [...allFamilyMembers];
+                addDebugLog('تم تطبيق فلتر: الكل', 'log');
             } else {
                 currentFilteredMembers = allFamilyMembers.filter(member => member.familyName === filterValue);
+                addDebugLog(`تم تطبيق فلتر العائلة: ${filterValue} (${currentFilteredMembers.length} عضو)`, 'log');
             }
             
             buildAndDisplayFamilyTree();
@@ -455,12 +509,17 @@
             // Build parent-child relationships
             currentFilteredMembers.forEach(member => {
                 if (member.childrenIds && member.childrenIds.length > 0) {
+                    addDebugLog(`عضو ${member.fullName} لديه ${member.childrenIds.length} طفل`, 'log');
+                    
                     member.childrenIds.forEach(childId => {
                         if (memberMap.has(childId)) {
                             const child = memberMap.get(childId);
                             // Set parent-child relationship
                             child.parentId = member.id;
                             memberMap.get(member.id).children.push(child);
+                            addDebugLog(`تم ربط ${child.fullName} كطفل لـ ${member.fullName}`, 'success');
+                        } else {
+                            addDebugLog(`لم يتم العثور على الطفل ${childId} لـ ${member.fullName}`, 'error');
                         }
                     });
                 }
@@ -474,11 +533,10 @@
                 }
             });
 
-            // Sort roots by birth date (oldest first)
-            roots.sort((a, b) => {
-                const dateA = a.birthDate?.toDate()?.getTime() || 0;
-                const dateB = b.birthDate?.toDate()?.getTime() || 0;
-                return dateA - dateB;
+            // Log roots
+            addDebugLog(`تم العثور على ${roots.length} جذر للشجرة`, 'log');
+            roots.forEach(root => {
+                addDebugLog(`جذر الشجرة: ${root.fullName} (${root.id})`, 'success');
             });
 
             return roots;
@@ -596,8 +654,10 @@
             
             try {
                 const roots = buildFamilyTreeData();
+                addDebugLog(`بناء الشجرة مع ${roots.length} جذر`, 'log');
                 
                 if (roots.length === 0) {
+                    addDebugLog('لا توجد جذور للشجرة، عرض رسالة عدم وجود بيانات', 'error');
                     loadingIndicator.classList.add('hidden');
                     noTreeDataMessage.classList.remove('hidden');
                     return;
@@ -620,8 +680,11 @@
                 translateY = 0;
                 scale = 1;
                 familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                
+                addDebugLog(`تم بناء الشجرة بنجاح مع ${roots.length} عائلة أساسية`, 'success');
             } catch (error) {
                 console.error("Error building tree:", error);
+                addDebugLog(`خطأ في بناء الشجرة: ${error.message}`, 'error');
                 showModal("حدث خطأ أثناء بناء الشجرة: " + error.message);
             } finally {
                 loadingIndicator.classList.add('hidden');
@@ -640,7 +703,7 @@
                     const personId = node.dataset.personId;
                     const person = allFamilyMembers.find(m => m.id === personId);
                     if (person && person.fullName && person.fullName.toLowerCase().includes(searchTerm)) {
-                        node.querySelector('.person-card').classList.add('highlight');
+                        node.querySelector('.person-card').classlassList.add('highlight');
                     }
                 });
             }
@@ -712,9 +775,11 @@
                 link.download = 'family_tree.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+                addDebugLog('تم تصدير الشجرة كصورة PNG بنجاح', 'success');
                 showModal("تم تصدير الشجرة بنجاح كصورة PNG.");
             }).catch(error => {
                 console.error("Error exporting tree as image:", error);
+                addDebugLog(`خطأ في تصدير الشجرة: ${error.message}`, 'error');
                 showModal("حدث خطأ أثناء تصدير الشجرة كصورة: " + error.message);
             }).finally(() => {
                 // Restore original transform
@@ -724,6 +789,9 @@
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize debug console
+            addDebugLog('تم تحميل صفحة شجرة العائلة', 'success');
+            
             // Modal event listeners
             document.getElementById('closeMessageModalBtn').addEventListener('click', closeModal);
             document.getElementById('confirmMessageModalBtn').addEventListener('click', closeModal);
@@ -743,11 +811,21 @@
             // Fetch data and build the tree
             try {
                 loadingIndicator.classList.remove('hidden');
+                addDebugLog('بدء جلب بيانات العائلة من Firebase...', 'log');
                 await fetchAllFamilyMembersForTree();
+                
+                if (allFamilyMembers.length === 0) {
+                    addDebugLog('لم يتم العثور على بيانات العائلة', 'error');
+                    loadingIndicator.classList.add('hidden');
+                    noTreeDataMessage.classList.remove('hidden');
+                    return;
+                }
+                
                 updateFamilyFilterOptions();
                 applyFamilyFilter();
             } catch (error) {
                 console.error("Failed to load family tree data:", error);
+                addDebugLog(`فشل تحميل بيانات شجرة العائلة: ${error.message}`, 'error');
                 showModal("فشل تحميل بيانات شجرة العائلة: " + error.message);
                 loadingIndicator.classList.add('hidden');
                 noTreeDataMessage.classList.remove('hidden');
