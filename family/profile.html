@@ -217,10 +217,8 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, deleteDoc, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
 
         // Firebase configuration provided by the user
         const firebaseConfig = {
@@ -237,9 +235,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
 
-        let userId = null;
         let currentPersonId = null; // ID of the person whose profile is being viewed
         let currentPersonData = null; // Store current person's data
 
@@ -289,11 +285,6 @@
 
         // Function to fetch and display person data
         async function fetchAndDisplayPerson(personId) {
-            if (!userId) {
-                console.log("User ID not available yet. Cannot fetch person data.");
-                return;
-            }
-
             const loadingIndicator = document.getElementById('loadingIndicator');
             const personDetailsCard = document.getElementById('personDetailsCard');
             const personContent = document.getElementById('personContent');
@@ -305,7 +296,8 @@
             noPersonMessage.classList.add('hidden');
 
             try {
-                const docRef = doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, personId);
+                // Use appId only without user ID
+                const docRef = doc(db, `artifacts/${appId}/familyMembers`, personId);
                 onSnapshot(docRef, async (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
@@ -332,7 +324,6 @@
 
                         document.getElementById('ageCategory').textContent = isAbove16(currentPersonData.birthDate) ? 'فوق 16 سنة' : 'أقل من 16 سنة';
 
-                        // --- START MODIFIED LOGIC FOR RELATED NAMES ---
                         // Helper to set text or link for related names
                         const setRelationDisplay = async (nameElementId, idKey, nameKey) => {
                             const element = document.getElementById(nameElementId);
@@ -343,7 +334,7 @@
 
                             if (currentPersonData[idKey]) {
                                 // If ID exists, try to fetch and create a link
-                                const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
+                                const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/familyMembers`, currentPersonData[idKey]));
                                 if (relatedDoc.exists()) {
                                     const relatedData = relatedDoc.data();
                                     const link = document.createElement('a');
@@ -365,14 +356,12 @@
                         await setRelationDisplay('fatherName', 'fatherId', 'fatherName');
                         await setRelationDisplay('grandFatherName', 'grandFatherId', 'grandFatherName');
                         await setRelationDisplay('motherName', 'motherId', 'motherName');
-                        // --- END MODIFIED LOGIC FOR RELATED NAMES ---
-
 
                         // Handle Spouse name (clickable link)
                         const spouseNameElement = document.getElementById('spouseName');
                         if (spouseNameElement) {
                             if (currentPersonData.maritalStatus === 'Married' && currentPersonData.spouseId) {
-                                const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData.spouseId));
+                                const spouseDoc = await getDoc(doc(db, `artifacts/${appId}/familyMembers`, currentPersonData.spouseId));
                                 if (spouseDoc.exists()) {
                                     const spouseData = spouseDoc.data();
                                     const spouseLink = document.createElement('a');
@@ -391,7 +380,6 @@
                             }
                         }
 
-
                         // Handle Children list
                         const childrenListDiv = document.getElementById('childrenList');
                         const noChildrenMessage = document.getElementById('noChildrenMessage');
@@ -401,7 +389,7 @@
 
                             if (currentPersonData.childrenIds && currentPersonData.childrenIds.length > 0) {
                                 for (const childId of currentPersonData.childrenIds) {
-                                    const childDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, childId));
+                                    const childDoc = await getDoc(doc(db, `artifacts/${appId}/familyMembers`, childId));
                                     if (childDoc.exists()) {
                                         const childData = childDoc.data();
                                         const childDiv = document.createElement('div');
@@ -432,7 +420,6 @@
                             }
                         }
 
-
                         loadingIndicator.classList.add('hidden');
                         personContent.classList.remove('hidden');
                     } else {
@@ -457,35 +444,9 @@
             }
         }
 
-        // Helper function to display related person's name as a clickable link (kept for consistency but logic moved)
-        // This function is now less critical as the main logic is in fetchAndDisplayPerson
-        async function displayRelation(idKey, nameElementId) {
-            const element = document.getElementById(nameElementId);
-            if (!element) {
-                console.error(`Element with ID '${nameElementId}' not found.`);
-                return;
-            }
-
-            // This function is now mainly a fallback or for specific cases
-            // The primary logic for displaying related names is now within fetchAndDisplayPerson
-            element.textContent = currentPersonData[nameElementId.replace('Name', '')] || 'غير متوفر'; // Display direct name
-            if (currentPersonData[idKey]) {
-                const relatedDoc = await getDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonData[idKey]));
-                if (relatedDoc.exists()) {
-                    const relatedData = relatedDoc.data();
-                    const link = document.createElement('a');
-                    link.href = `profile.html?id=${currentPersonData[idKey]}`;
-                    link.classList.add('relation-link');
-                    link.textContent = relatedData.fullName || 'غير محدد';
-                    element.innerHTML = ''; // Clear previous content
-                    element.appendChild(link);
-                }
-            }
-        }
-
         // Function to handle person deletion
         async function deletePerson() {
-            if (!currentPersonId || !userId) {
+            if (!currentPersonId) {
                 showModal("لا يمكن حذف شخص غير محدد.");
                 return;
             }
@@ -497,7 +458,7 @@
             document.getElementById('confirmDeleteBtn').onclick = async () => {
                 closeModal('confirmDeleteModal');
                 try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/familyMembers`, currentPersonId));
+                    await deleteDoc(doc(db, `artifacts/${appId}/familyMembers`, currentPersonId));
                     showModal("تم حذف الشخص بنجاح!", 'messageModal');
                     // Redirect back to the main list after a short delay
                     setTimeout(() => {
@@ -513,7 +474,6 @@
                 closeModal('confirmDeleteModal');
             };
         }
-
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
@@ -534,47 +494,8 @@
                 return;
             }
 
-            // Initial authentication attempt
-            (async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
-                } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
-                }
-            })();
-
-            // Listen for auth state changes to get userId and fetch data
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log("Authentication state changed. User ID:", userId);
-                    fetchAndDisplayPerson(currentPersonId); // Fetch and display data after authentication
-                } else {
-                    userId = null;
-                    console.log("User signed out or no user.");
-                    document.getElementById('loadingIndicator').classList.add('hidden');
-                    document.getElementById('noPersonMessage').classList.remove('hidden');
-                    document.getElementById('personContent').classList.add('hidden');
-                    showModal("يرجى تسجيل الدخول لعرض تفاصيل الشخص.", 'messageModal');
-                }
-            });
+            // Fetch and display person data immediately
+            fetchAndDisplayPerson(currentPersonId);
 
             // Edit and Delete buttons
             document.getElementById('editPersonBtn').addEventListener('click', () => {
