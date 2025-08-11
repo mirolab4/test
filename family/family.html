@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شجرة العائلة - النسخة المحسنة</title>
+    <title>شجرة العائلة - تصميم متطور</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
@@ -20,6 +20,7 @@
             --female: #fce7f3;
             --male: #e0f2fe;
             --deceased: #9ca3af;
+            --arrow-color: #4b5563;
         }
         
         body {
@@ -217,6 +218,7 @@
             opacity: 0;
             transform: translateY(-10px);
         }
+        /* خطوط الأسهم الجديدة */
         .tree-node::before {
             content: '';
             position: absolute;
@@ -225,10 +227,24 @@
             transform: translateX(-50%);
             width: 3px;
             height: 3rem;
-            background: linear-gradient(to bottom, #60a5fa, #3b82f6);
+            background: linear-gradient(to bottom, var(--arrow-color), var(--arrow-color));
             z-index: 1;
         }
-        .tree-node:first-child::before {
+        .tree-node::after {
+            content: '';
+            position: absolute;
+            top: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid var(--arrow-color);
+            z-index: 1;
+        }
+        .tree-node:first-child::before,
+        .tree-node:first-child::after {
             display: none;
         }
         .children-container::before {
@@ -238,14 +254,18 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(to right, #60a5fa, #3b82f6);
+            background: linear-gradient(to right, var(--arrow-color), var(--arrow-color));
             z-index: 1;
         }
         .children-container .tree-node::before {
             height: 2rem;
             top: -2rem;
         }
-        #familyTreeContainer > .tree-node::before {
+        .children-container .tree-node::after {
+            top: 1.5rem;
+        }
+        #familyTreeContainer > .tree-node::before,
+        #familyTreeContainer > .tree-node::after {
             display: none;
         }
         .toggle-children-btn {
@@ -430,12 +450,6 @@
             align-items: center;
             gap: 0.5rem;
         }
-        .no-children-msg {
-            font-size: 0.85rem;
-            color: #64748b;
-            margin-top: 0.5rem;
-            font-style: italic;
-        }
         .generation-label {
             position: absolute;
             top: -25px;
@@ -449,6 +463,19 @@
             font-weight: 600;
             z-index: 5;
             white-space: nowrap;
+        }
+        .spouse-connection {
+            display: flex;
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        .spouse-line {
+            height: 2px;
+            background-color: var(--arrow-color);
+            min-width: 40px;
+            margin: 0 10px;
+            position: relative;
+            top: 50%;
         }
     </style>
 </head>
@@ -472,7 +499,7 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-5 bg-white rounded-2xl shadow-lg">
             <div class="flex items-center gap-3 mb-4 md:mb-0">
                 <i class="fas fa-tree text-3xl text-emerald-600"></i>
-                <h1 class="text-3xl font-bold text-gray-800">شجرة العائلة المحسنة</h1>
+                <h1 class="text-3xl font-bold text-gray-800">شجرة العائلة - تصميم الأسهم</h1>
             </div>
             <nav class="flex flex-wrap gap-3 justify-center">
                 <a href="index.html" class="btn-secondary"><i class="fas fa-list mr-2"></i>قائمة العائلة</a>
@@ -509,7 +536,7 @@
                 </select>
                 
                 <label for="personSearchInput"><i class="fas fa-search mr-2"></i>البحث عن شخص:</label>
-                <input type="text" id="personSearchInput" placeholder="اكتب الاسم الكامل..." class="w-auto">
+                <input type="text" id="personSearchInput" placeholder="اكتب الاسم الأول..." class="w-auto">
                 
                 <button id="clearSearchBtn" class="btn-secondary px-4 py-2 rounded-lg">
                     <i class="fas fa-times mr-2"></i>مسح البحث
@@ -647,12 +674,12 @@
 
         // Function to calculate age from birth date
         function calculateAge(birthDate) {
-            if (!birthDate || !birthDate.toDate) return 'غير محدد';
+            if (!birthDate || !birthDate.toDate) return '';
             const today = new Date();
             const birth = birthDate.toDate();
             
             // If deceased, calculate age at death
-            if (birth > today) return 'تاريخ غير صحيح';
+            if (birth > today) return '';
 
             let years = today.getFullYear() - birth.getFullYear();
             const m = today.getMonth() - birth.getMonth();
@@ -660,7 +687,13 @@
             if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
                 years--;
             }
-            return `${years} سنة`;
+            return `${years}`;
+        }
+
+        // Function to get first name
+        function getFirstName(fullName) {
+            if (!fullName) return 'غير محدد';
+            return fullName.split(' ')[0];
         }
 
         // Fetch all family members from Firebase
@@ -829,25 +862,20 @@
                 personCard.classList.add('deceased');
             }
 
-            // Person name
+            // Person name (first name only)
             const nameSpan = document.createElement('span');
             nameSpan.classList.add('person-name');
-            nameSpan.textContent = person.fullName || 'غير محدد';
+            nameSpan.textContent = getFirstName(person.fullName);
+            nameSpan.title = person.fullName || 'غير محدد'; // Full name on hover
             personCard.appendChild(nameSpan);
 
-            // Age
-            const ageSpan = document.createElement('span');
-            ageSpan.classList.add('person-details');
-            ageSpan.textContent = `العمر: ${calculateAge(person.birthDate)}`;
-            personCard.appendChild(ageSpan);
-
-            // Birth year if available
-            if (person.birthDate && person.birthDate.toDate) {
-                const birthYear = person.birthDate.toDate().getFullYear();
-                const yearSpan = document.createElement('span');
-                yearSpan.classList.add('person-details');
-                yearSpan.textContent = `(${birthYear})`;
-                personCard.appendChild(yearSpan);
+            // Age only
+            const age = calculateAge(person.birthDate);
+            if (age) {
+                const ageSpan = document.createElement('span');
+                ageSpan.classList.add('person-details');
+                ageSpan.textContent = age;
+                personCard.appendChild(ageSpan);
             }
 
             // Add Child button
@@ -878,20 +906,6 @@
                     }
                 });
                 personCard.appendChild(toggleBtn);
-            } else {
-                // Show "no children" message for adults
-                if (person.birthDate && person.birthDate.toDate) {
-                    const birthYear = person.birthDate.toDate().getFullYear();
-                    const currentYear = new Date().getFullYear();
-                    const age = currentYear - birthYear;
-                    
-                    if (age > 18) {
-                        const noChildrenMsg = document.createElement('div');
-                        noChildrenMsg.classList.add('no-children-msg');
-                        noChildrenMsg.textContent = 'لا يوجد أطفال مسجلين';
-                        nodeDiv.appendChild(noChildrenMsg);
-                    }
-                }
             }
 
             // Click to view profile
@@ -992,7 +1006,7 @@
                 document.querySelectorAll('.tree-node').forEach(node => {
                     const personId = node.dataset.personId;
                     const person = allFamilyMembers.find(m => m.id === personId);
-                    if (person && person.fullName && person.fullName.toLowerCase().includes(searchTerm)) {
+                    if (person && person.fullName && getFirstName(person.fullName).toLowerCase().includes(searchTerm)) {
                         node.querySelector('.person-card').classList.add('highlight');
                         highlightedPersonId = personId;
                         found = true;
