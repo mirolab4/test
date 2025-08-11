@@ -310,7 +310,8 @@
             min-width: 100px;
         }
         .filter-search-group select,
-        .filter-search-group input[type="text"] {
+        .filter-search-group input[type="text"],
+        .filter-search-group input[type="number"] {
             border: 2px solid #d1d5db;
             padding: 0.7rem 1.2rem;
             border-radius: 0.75rem;
@@ -322,7 +323,8 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
         .filter-search-group select:focus,
-        .filter-search-group input[type="text"]:focus {
+        .filter-search-group input[type="text"]:focus,
+        .filter-search-group input[type="number"]:focus {
             border-color: #4f46e5;
             outline: none;
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
@@ -454,17 +456,31 @@
                 <label for="familyFilter"><i class="fas fa-filter mr-2"></i>تحديد العائلة:</label>
                 <select id="familyFilter">
                     <option value="All">الكل</option>
-                    <option value="أبو عيسى" selected>أبو عيسى</option>
-                    <option value="الزهراني">الزهراني</option>
-                    <option value="الغامدي">الغامدي</option>
-                    <option value="الحربي">الحربي</option>
+                    <!-- سيتم ملء الخيارات من قاعدة البيانات -->
                 </select>
+                
+                <label for="genderFilter"><i class="fas fa-venus-mars mr-2"></i>النوع:</label>
+                <select id="genderFilter">
+                    <option value="All">الكل</option>
+                    <option value="Male">ذكر</option>
+                    <option value="Female">أنثى</option>
+                </select>
+                
+                <label for="minAge"><i class="fas fa-user-clock mr-2"></i>الحد الأدنى للعمر:</label>
+                <input type="number" id="minAge" min="0" max="120" placeholder="0">
+                
+                <label for="maxAge"><i class="fas fa-user-clock mr-2"></i>الحد الأقصى للعمر:</label>
+                <input type="number" id="maxAge" min="0" max="120" placeholder="120">
                 
                 <label for="personSearchInput"><i class="fas fa-search mr-2"></i>البحث عن شخص:</label>
                 <input type="text" id="personSearchInput" placeholder="اكتب الاسم الكامل...">
                 
-                <button id="clearSearchBtn" class="btn-secondary px-4 py-2 rounded-lg text-sm">
-                    <i class="fas fa-times mr-2"></i>مسح البحث
+                <button id="applyFiltersBtn" class="btn-primary px-4 py-2 rounded-lg text-sm">
+                    <i class="fas fa-filter mr-2"></i>تطبيق الفلاتر
+                </button>
+                
+                <button id="clearFiltersBtn" class="btn-secondary px-4 py-2 rounded-lg text-sm">
+                    <i class="fas fa-times mr-2"></i>مسح الفلاتر
                 </button>
                 
                 <button id="exportTreeImageBtn" class="btn-primary px-4 py-2 rounded-lg text-sm">
@@ -507,7 +523,7 @@
                         </div>
                         <h3 class="text-lg font-bold text-gray-800">البحث والتصفية</h3>
                     </div>
-                    <p class="text-gray-600">استخدم حقل البحث للعثور على شخص معين في الشجرة. استخدم قائمة التصفية لتصفية الشجرة حسب العائلة.</p>
+                    <p class="text-gray-600">استخدم حقل البحث للعثور على شخص معين في الشجرة. استخدم قائمة التصفية لتصفية الشجرة حسب العائلة، الجنس، أو العمر.</p>
                 </div>
                 
                 <div class="bg-blue-50 p-5 rounded-xl border border-blue-100">
@@ -557,7 +573,7 @@
 
         let allFamilyMembers = []; // Cache all family members
         let currentFilteredMembers = []; // Members currently displayed based on filter
-        let selectedFamilyFilter = 'أبو عيسى'; // Default family filter
+        let familyNames = new Set(); // Unique family names from database
 
         // Use a default app ID
         const appId = 'family-tree-app';
@@ -567,8 +583,12 @@
         const noTreeDataMessage = document.getElementById('noTreeDataMessage');
         const familyTreeContainer = document.getElementById('familyTreeContainer');
         const familyFilterSelect = document.getElementById('familyFilter');
+        const genderFilterSelect = document.getElementById('genderFilter');
+        const minAgeInput = document.getElementById('minAge');
+        const maxAgeInput = document.getElementById('maxAge');
         const personSearchInput = document.getElementById('personSearchInput');
-        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
         const exportTreeImageBtn = document.getElementById('exportTreeImageBtn');
         const scrollToTopBtn = document.getElementById('scrollToTop');
 
@@ -592,7 +612,7 @@
 
         // Function to calculate age from birth date
         function calculateAge(birthDate) {
-            if (!birthDate || !birthDate.toDate) return 'غير محدد';
+            if (!birthDate || !birthDate.toDate) return null;
             const today = new Date();
             const birth = birthDate.toDate();
 
@@ -601,7 +621,13 @@
             if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
                 years--;
             }
-            return `${years} سنة`;
+            return years;
+        }
+
+        // Function to format age display
+        function formatAgeDisplay(age) {
+            if (age === null) return 'غير محدد';
+            return `${age} سنة`;
         }
 
         // Function to fetch all family members
@@ -610,6 +636,18 @@
                 const q = collection(db, `artifacts/${appId}/familyMembers`);
                 const querySnapshot = await getDocs(q);
                 allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Collect unique family names
+                familyNames.clear();
+                allFamilyMembers.forEach(member => {
+                    if (member.familyName) {
+                        familyNames.add(member.familyName);
+                    }
+                });
+                
+                // Update family filter dropdown
+                updateFamilyFilterOptions();
+                
                 console.log("All family members fetched for tree:", allFamilyMembers);
                 return allFamilyMembers;
             } catch (error) {
@@ -619,13 +657,37 @@
             }
         }
 
+        // Update family filter dropdown with names from database
+        function updateFamilyFilterOptions() {
+            familyFilterSelect.innerHTML = '';
+            
+            const allOption = document.createElement('option');
+            allOption.value = 'All';
+            allOption.textContent = 'الكل';
+            familyFilterSelect.appendChild(allOption);
+            
+            familyNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                familyFilterSelect.appendChild(option);
+            });
+        }
+
         // Function to build the hierarchical tree data structure
         function buildFamilyTreeData(members) {
-            const memberMap = new Map(members.map(m => [m.id, { ...m, children: [] }]));
-            const roots = [];
-
-            // First pass: populate children arrays
-            memberMap.forEach(member => {
+            const memberMap = new Map();
+            
+            // First pass: create all member nodes
+            members.forEach(member => {
+                memberMap.set(member.id, {
+                    ...member,
+                    children: []
+                });
+            });
+            
+            // Second pass: build parent-child relationships
+            members.forEach(member => {
                 if (member.childrenIds && member.childrenIds.length > 0) {
                     member.childrenIds.forEach(childId => {
                         if (memberMap.has(childId)) {
@@ -634,16 +696,16 @@
                     });
                 }
             });
-
-            // Second pass: identify roots (people who are not children of anyone in the current filtered set)
+            
+            // Third pass: find roots (people who are not children of anyone)
+            const roots = [];
             memberMap.forEach(member => {
                 let isChild = false;
-                for (const potentialParent of members) {
+                memberMap.forEach(potentialParent => {
                     if (potentialParent.childrenIds && potentialParent.childrenIds.includes(member.id)) {
                         isChild = true;
-                        break;
                     }
-                }
+                });
                 if (!isChild) {
                     roots.push(member);
                 }
@@ -687,10 +749,13 @@
             nameSpan.textContent = person.fullName || 'غير محدد';
             personCard.appendChild(nameSpan);
 
-            if (person.birthDate) {
+            // Calculate age
+            const age = calculateAge(person.birthDate);
+            
+            if (age !== null) {
                 const ageSpan = document.createElement('span');
                 ageSpan.classList.add('person-details');
-                ageSpan.textContent = `العمر: ${calculateAge(person.birthDate)}`;
+                ageSpan.textContent = `العمر: ${formatAgeDisplay(age)}`;
                 personCard.appendChild(ageSpan);
             }
 
@@ -761,6 +826,44 @@
             }
         }
 
+        // Apply all filters to the family data
+        function applyAllFilters() {
+            const familyFilter = familyFilterSelect.value;
+            const genderFilter = genderFilterSelect.value;
+            const minAge = minAgeInput.value ? parseInt(minAgeInput.value) : 0;
+            const maxAge = maxAgeInput.value ? parseInt(maxAgeInput.value) : 120;
+            const searchTerm = personSearchInput.value.toLowerCase().trim();
+            
+            currentFilteredMembers = allFamilyMembers.filter(member => {
+                // Family filter
+                if (familyFilter !== 'All' && member.familyName !== familyFilter) {
+                    return false;
+                }
+                
+                // Gender filter
+                if (genderFilter !== 'All' && member.gender !== genderFilter) {
+                    return false;
+                }
+                
+                // Age filter
+                const age = calculateAge(member.birthDate);
+                if (age !== null && (age < minAge || age > maxAge)) {
+                    return false;
+                }
+                
+                // Search filter
+                if (searchTerm.length > 0 && 
+                    (!member.fullName || !member.fullName.toLowerCase().includes(searchTerm))) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            console.log(`Filtered members count: ${currentFilteredMembers.length}`);
+            buildAndDisplayFamilyTree();
+        }
+
         // Main function to build and display the tree
         async function buildAndDisplayFamilyTree() {
             loadingIndicator.classList.remove('hidden');
@@ -774,7 +877,7 @@
             if (roots.length === 0) {
                 loadingIndicator.classList.add('hidden');
                 noTreeDataMessage.classList.remove('hidden');
-                console.warn("Could not identify any root members for the family tree with current filter.");
+                console.log("No root members found with current filters");
                 return;
             }
 
@@ -918,17 +1021,18 @@
             document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
 
             // Event listeners for filters and search
-            familyFilterSelect.addEventListener('change', () => {
-                selectedFamilyFilter = familyFilterSelect.value;
-                applyFamilyFilter();
+            applyFiltersBtn.addEventListener('click', applyAllFilters);
+            
+            clearFiltersBtn.addEventListener('click', () => {
+                familyFilterSelect.value = 'All';
+                genderFilterSelect.value = 'All';
+                minAgeInput.value = '';
+                maxAgeInput.value = '';
+                personSearchInput.value = '';
+                applyAllFilters();
             });
             
             personSearchInput.addEventListener('input', applySearchHighlight);
-            
-            clearSearchBtn.addEventListener('click', () => {
-                personSearchInput.value = '';
-                applySearchHighlight();
-            });
             
             exportTreeImageBtn.addEventListener('click', exportTreeAsImage);
 
@@ -943,7 +1047,7 @@
             
             try {
                 await fetchAllFamilyMembersForTree();
-                applyFamilyFilter();
+                applyAllFilters();
             } catch (error) {
                 console.error("Failed to load family tree data:", error);
                 showModal("فشل تحميل بيانات شجرة العائلة: " + error.message);
@@ -951,16 +1055,6 @@
                 noTreeDataMessage.classList.remove('hidden');
             }
         });
-        
-        // Apply family filter
-        function applyFamilyFilter() {
-            if (selectedFamilyFilter === 'All') {
-                currentFilteredMembers = [...allFamilyMembers];
-            } else {
-                currentFilteredMembers = allFamilyMembers.filter(p => p.familyName === selectedFamilyFilter);
-            }
-            buildAndDisplayFamilyTree();
-        }
     </script>
 </body>
 </html>
