@@ -1329,7 +1329,9 @@
     // modal handlers
     document.getElementById('closeMessageModalBtn').addEventListener('click', ()=> closeModal('messageModal'));
     document.getElementById('confirmMessageModalBtn').addEventListener('click', ()=> closeModal('messageModal'));
-
+    isAliveInput.addEventListener('change', () => { 
+          updateLifeStatus(); 
+          hasUnsavedChanges = true; 
     // read URL param for edit mode
     const urlParams = new URLSearchParams(window.location.search);
     editingPersonId = urlParams.get('id');
