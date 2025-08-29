@@ -634,7 +634,7 @@
                     اسحب للتحريك - عجلة الماوس للتصغير/التكبير
                 </div>
                 <div id="familyTreeContainer">
-                    <!-- Family tree will be rendered here by JavaScript -->
+                    <div id="treeInner"><!-- Family tree will be rendered here by JavaScript --></div>
                 </div>
                 <div class="zoom-controls">
                     <div id="zoomInBtn" class="zoom-btn">
@@ -681,6 +681,7 @@
         const loadingIndicator = document.getElementById('loadingIndicator');
         const noTreeDataMessage = document.getElementById('noTreeDataMessage');
         const familyTreeContainer = document.getElementById('familyTreeContainer');
+        const treeInner = document.getElementById('treeInner');
         const familyFilterSelect = document.getElementById('familyFilter');
         const personSearchInput = document.getElementById('personSearchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
@@ -1017,7 +1018,8 @@
                     treeWrapper.appendChild(rootContainer);
                 });
                 
-                familyTreeContainer.appendChild(treeWrapper);
+                treeInner.innerHTML = '';
+                treeInner.appendChild(treeWrapper);
                 
                 // Reset zoom and pan
                 resetTreeView();
@@ -1106,10 +1108,10 @@
             let lastDist = null;
 
             // Mouse drag (pan)
-            familyTreeContainer.addEventListener('mousedown', (e) => {
+            treeInner.addEventListener('mousedown', (e) => {
                 if (e.button !== 0) return;
                 isDragging = true;
-                familyTreeContainer.classList.add('dragging');
+                treeInner.classList.add('dragging');
                 lastX = e.clientX - translateX;
                 lastY = e.clientY - translateY;
             });
@@ -1117,7 +1119,7 @@
             document.addEventListener('mouseup', () => {
                 if (isDragging) {
                     isDragging = false;
-                    familyTreeContainer.classList.remove('dragging');
+                    treeInner.classList.remove('dragging');
                 }
             });
 
@@ -1131,7 +1133,7 @@
             });
 
             // Touch drag (pan) and pinch (zoom)
-            familyTreeContainer.addEventListener('touchstart', (e) => {
+            treeInner.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
                     touchStart = { x: e.touches[0].clientX - translateX, y: e.touches[0].clientY - translateY };
                 } else if (e.touches.length === 2) {
@@ -1139,7 +1141,7 @@
                 }
             });
 
-            familyTreeContainer.addEventListener('touchmove', (e) => {
+            treeInner.addEventListener('touchmove', (e) => {
                 if (e.touches.length === 1 && touchStart) {
                     translateX = e.touches[0].clientX - touchStart.x;
                     translateY = e.touches[0].clientY - touchStart.y;
@@ -1155,7 +1157,7 @@
                 }
             });
 
-            familyTreeContainer.addEventListener('touchend', (e) => {
+            treeInner.addEventListener('touchend', (e) => {
                 if (e.touches.length < 2) lastDist = null;
                 if (e.touches.length === 0) touchStart = null;
             });
@@ -1167,7 +1169,7 @@
             }
 
             // Mouse wheel zoom (centered on pointer)
-            familyTreeContainer.addEventListener('wheel', (e) => {
+            treeInner.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const rect = familyTreeContainer.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
@@ -1203,7 +1205,7 @@
 
         // Apply current transform to the tree
         function applyTransform() {
-            familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            treeInner.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         }
 
         // Reset tree view to initial position
