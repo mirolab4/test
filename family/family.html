@@ -477,6 +477,45 @@
             position: relative;
             top: 50%;
         }
+        @media (max-width: 700px) {
+            .person-card {
+                min-width: 110px;
+                padding: 0.5rem 0.7rem;
+                font-size: 0.8rem;
+            }
+            .tree-node {
+                margin: 0.3rem;
+                padding-top: 1.2rem;
+            }
+            .children-container {
+                margin-top: 1rem;
+                padding-top: 1rem;
+            }
+            .generation-label {
+                font-size: 0.65rem;
+                padding: 0.15rem 0.5rem;
+                top: -18px;
+            }
+        }
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+            #familyTreeContainer, #familyTreeContainer * {
+                visibility: visible !important;
+            }
+            #familyTreeContainer {
+                position: absolute !important;
+                left: 0; top: 0; width: 100vw; min-height: 100vh;
+                background: white !important;
+                box-shadow: none !important;
+                transform: none !important;
+                scale: 1 !important;
+            }
+            .zoom-controls, .reset-btn, .controls-info, .filter-search-group, nav, .btn-primary, .btn-secondary {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="p-4">
@@ -532,18 +571,45 @@
                 <label for="familyFilter"><i class="fas fa-filter mr-2"></i>تحديد العائلة:</label>
                 <select id="familyFilter" class="w-auto">
                     <option value="All">الكل</option>
-                    <!-- Family names will be populated here by JavaScript -->
                 </select>
-                
+
+                <label for="generationFilter"><i class="fas fa-layer-group mr-2"></i>الجيل:</label>
+                <select id="generationFilter" class="w-auto">
+                    <option value="All">الكل</option>
+                    <option value="0">الجيل الأول</option>
+                    <option value="1">الجيل الثاني</option>
+                    <option value="2">الجيل الثالث</option>
+                    <option value="3">الجيل الرابع</option>
+                    <option value="4">الجيل الخامس</option>
+                </select>
+
+                <label for="genderFilter"><i class="fas fa-venus-mars mr-2"></i>الجنس:</label>
+                <select id="genderFilter" class="w-auto">
+                    <option value="All">الكل</option>
+                    <option value="Male">ذكر</option>
+                    <option value="Female">أنثى</option>
+                </select>
+
+                <label for="statusFilter"><i class="fas fa-heartbeat mr-2"></i>الحالة:</label>
+                <select id="statusFilter" class="w-auto">
+                    <option value="All">الكل</option>
+                    <option value="alive">حي</option>
+                    <option value="deceased">متوفى</option>
+                </select>
+
                 <label for="personSearchInput"><i class="fas fa-search mr-2"></i>البحث عن شخص:</label>
                 <input type="text" id="personSearchInput" placeholder="اكتب الاسم الأول..." class="w-auto">
-                
+
                 <button id="clearSearchBtn" class="btn-secondary px-4 py-2 rounded-lg">
                     <i class="fas fa-times mr-2"></i>مسح البحث
                 </button>
-                
+
                 <button id="exportTreeImageBtn" class="btn-primary px-4 py-2 rounded-lg">
                     <i class="fas fa-download mr-2"></i>تصدير الشجرة
+                </button>
+
+                <button id="printTreeBtn" class="btn-secondary px-4 py-2 rounded-lg">
+                    <i class="fas fa-print mr-2"></i>طباعة الشجرة
                 </button>
             </div>
 
@@ -622,6 +688,10 @@
         const zoomInBtn = document.getElementById('zoomInBtn');
         const zoomOutBtn = document.getElementById('zoomOutBtn');
         const resetViewBtn = document.getElementById('resetViewBtn');
+        const generationFilter = document.getElementById('generationFilter');
+        const genderFilter = document.getElementById('genderFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const printTreeBtn = document.getElementById('printTreeBtn');
 
         // Pan and Zoom variables
         let isDragging = false;
@@ -731,14 +801,23 @@
 
         // Apply family filter
         function applyFamilyFilter() {
-            const filterValue = familyFilterSelect.value;
-            
-            if (filterValue === 'All') {
-                currentFilteredMembers = [...allFamilyMembers];
-            } else {
-                currentFilteredMembers = allFamilyMembers.filter(member => member.familyName === filterValue);
-            }
-            
+            const familyValue = familyFilterSelect.value;
+            const genValue = generationFilter.value;
+            const genderValue = genderFilter.value;
+            const statusValue = statusFilter.value;
+
+            currentFilteredMembers = allFamilyMembers.filter(member => {
+                let pass = true;
+                if (familyValue !== 'All') pass = pass && member.familyName === familyValue;
+                if (genValue !== 'All') pass = pass && member.generation == genValue;
+                if (genderValue !== 'All') pass = pass && member.gender === genderValue;
+                if (statusValue !== 'All') {
+                    if (statusValue === 'alive') pass = pass && member.isAlive !== false;
+                    if (statusValue === 'deceased') pass = pass && member.isAlive === false;
+                }
+                return pass;
+            });
+
             buildAndDisplayFamilyTree();
         }
 
@@ -1196,6 +1275,12 @@
                 applyTransform();
             });
             resetViewBtn.addEventListener('click', resetTreeView);
+            generationFilter.addEventListener('change', applyFamilyFilter);
+            genderFilter.addEventListener('change', applyFamilyFilter);
+            statusFilter.addEventListener('change', applyFamilyFilter);
+            printTreeBtn.addEventListener('click', () => {
+                window.print();
+            });
 
             // Fetch data and build the tree
             try {
@@ -1211,10 +1296,10 @@
                 updateFamilyFilterOptions();
                 applyFamilyFilter();
             } catch (error) {
-                console.error("Failed to load family tree data:", error);
-                showModal("فشل تحميل بيانات شجرة العائلة", error.message, 'error');
+                console.error("Error initializing tree:", error);
+                showModal("حدث خطأ أثناء تحميل البيانات", error.message, 'error');
+            } finally {
                 loadingIndicator.classList.add('hidden');
-                noTreeDataMessage.classList.remove('hidden');
             }
         });
     </script>
