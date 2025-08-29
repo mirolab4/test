@@ -1020,12 +1020,19 @@
 
         // Pan and Zoom functionality
         function setupPanZoom() {
+            const wrapper = document.getElementById('familyTreeContainerWrapper');
+            let isDragging = false;
+            let lastX = 0, lastY = 0;
+            let touchStart = null;
+            let lastDist = null;
+
+            // Mouse drag (pan)
             familyTreeContainer.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return; // Only left mouse button
+                if (e.button !== 0) return;
                 isDragging = true;
                 familyTreeContainer.classList.add('dragging');
-                startX = e.clientX - translateX;
-                startY = e.clientY - translateY;
+                lastX = e.clientX - translateX;
+                lastY = e.clientY - translateY;
             });
 
             document.addEventListener('mouseup', () => {
@@ -1035,33 +1042,84 @@
                 }
             });
 
-            familyTreeContainer.addEventListener('mousemove', (e) => {
+            document.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
                 e.preventDefault();
-                translateX = e.clientX - startX;
-                translateY = e.clientY - startY;
+                translateX = e.clientX - lastX;
+                translateY = e.clientY - lastY;
+                clampPan();
                 applyTransform();
             });
 
+            // Touch drag (pan) and pinch (zoom)
+            familyTreeContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStart = { x: e.touches[0].clientX - translateX, y: e.touches[0].clientY - translateY };
+                } else if (e.touches.length === 2) {
+                    lastDist = getTouchDist(e.touches);
+                }
+            });
+
+            familyTreeContainer.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && touchStart) {
+                    translateX = e.touches[0].clientX - touchStart.x;
+                    translateY = e.touches[0].clientY - touchStart.y;
+                    clampPan();
+                    applyTransform();
+                } else if (e.touches.length === 2 && lastDist) {
+                    const newDist = getTouchDist(e.touches);
+                    let delta = (newDist - lastDist) / 200;
+                    scale = Math.max(minScale, Math.min(maxScale, scale + delta));
+                    lastDist = newDist;
+                    clampPan();
+                    applyTransform();
+                }
+            });
+
+            familyTreeContainer.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) lastDist = null;
+                if (e.touches.length === 0) touchStart = null;
+            });
+
+            function getTouchDist(touches) {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Mouse wheel zoom (centered on pointer)
             familyTreeContainer.addEventListener('wheel', (e) => {
                 e.preventDefault();
-                const mouseX = e.clientX - familyTreeContainer.getBoundingClientRect().left;
-                const mouseY = e.clientY - familyTreeContainer.getBoundingClientRect().top;
-
+                const rect = familyTreeContainer.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
                 const oldScale = scale;
                 if (e.deltaY < 0) {
-                    scale += scaleStep;
+                    scale = Math.min(maxScale, scale + scaleStep);
                 } else {
-                    scale -= scaleStep;
+                    scale = Math.max(minScale, scale - scaleStep);
                 }
-                scale = Math.max(minScale, Math.min(maxScale, scale));
-
-                // Adjust translation to zoom towards the mouse cursor
+                // Zoom towards mouse pointer
                 translateX = mouseX - ((mouseX - translateX) * (scale / oldScale));
                 translateY = mouseY - ((mouseY - translateY) * (scale / oldScale));
-
+                clampPan();
                 applyTransform();
             });
+
+            // Clamp pan to keep tree in view
+            function clampPan() {
+                const wrapperRect = wrapper.getBoundingClientRect();
+                const treeRect = familyTreeContainer.getBoundingClientRect();
+                const width = treeRect.width * scale;
+                const height = treeRect.height * scale;
+                // Allow some free pan, but not to lose the tree completely
+                const minX = wrapperRect.width - treeRect.width * scale - 200;
+                const maxX = 200;
+                const minY = wrapperRect.height - treeRect.height * scale - 200;
+                const maxY = 200;
+                translateX = Math.max(minX, Math.min(translateX, maxX));
+                translateY = Math.max(minY, Math.min(translateY, maxY));
+            }
         }
 
         // Apply current transform to the tree
