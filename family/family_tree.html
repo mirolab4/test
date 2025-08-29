@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -16,9 +15,9 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
-            direction: rtl; /* Right-to-left for Arabic */
-            text-align: right; /* Align text to the right */
+            background-color: #f3f4f6;
+            direction: rtl;
+            text-align: right;
         }
         .container {
             max-width: 1200px;
@@ -27,42 +26,41 @@
         }
         .card {
             background-color: #ffffff;
-            border-radius: 1rem; /* Rounded corners */
+            border-radius: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
         .btn-primary {
-            background-color: #4f46e5; /* Indigo */
+            background-color: #4f46e5;
             color: white;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem; /* Rounded corners */
+            border-radius: 0.75rem;
             transition: background-color 0.2s;
         }
         .btn-primary:hover {
-            background-color: #4338ca; /* Darker indigo */
+            background-color: #4338ca;
         }
         .btn-secondary {
-            background-color: #e5e7eb; /* Light gray */
-            color: #374151; /* Dark gray text */
+            background-color: #e5e7eb;
+            color: #374151;
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
             transition: background-color 0.2s;
         }
         .btn-secondary:hover {
-            background-color: #d1d5db; /* Darker light gray */
+            background-color: #d1d5db;
         }
-        /* Custom modal styles */
         .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
+            display: none;
+            position: fixed;
+            z-index: 1000;
             left: 0;
             top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
             justify-content: center;
             align-items: center;
         }
@@ -78,102 +76,88 @@
         }
         .close-button {
             color: #aaa;
-            float: left; /* Align to left for RTL */
+            float: left;
             font-size: 28px;
             font-weight: bold;
-            cursor: pointer; /* Add cursor pointer for better UX */
+            cursor: pointer;
         }
         .close-button:hover,
         .close-button:focus {
             color: black;
             text-decoration: none;
         }
-
-        /* Family Tree Specific Styles */
         #familyTreeContainer {
-            overflow: hidden; /* Hide scrollbars, allow JS for pan/zoom */
+            overflow: hidden;
             padding: 1rem;
             background-color: #fcfcfc;
             border-radius: 1rem;
-            min-height: 500px; /* Minimum height for the tree area */
+            min-height: 500px;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Align tree to top */
-            position: relative; /* For pan/zoom transforms */
-            transform-origin: top center; /* For consistent zoom behavior */
-            cursor: grab; /* Indicate draggable */
+            align-items: flex-start;
+            position: relative;
+            transform-origin: top center;
+            cursor: grab;
         }
-
         #familyTreeContainer.dragging {
             cursor: grabbing;
         }
-
         .tree-node {
             display: flex;
             flex-direction: column;
             align-items: center;
             margin: 0.5rem;
             position: relative;
-            padding-top: 2rem; /* Space for lines from parent */
-            flex-shrink: 0; /* Prevent nodes from shrinking */
+            padding-top: 2rem;
+            flex-shrink: 0;
         }
-
         .person-card {
-            background-color: #e0f2fe; /* Light blue for male */
+            background-color: #e0f2fe;
             border: 1px solid #90cdf4;
             border-radius: 0.75rem;
             padding: 0.75rem 1rem;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            min-width: 140px; /* Slightly wider for more info */
+            min-width: 140px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
             font-size: 0.9rem;
             line-height: 1.3;
-            position: relative; /* For collapse icon */
+            position: relative;
         }
-
         .person-card.female {
-            background-color: #fce7f3; /* Light pink for female */
+            background-color: #fce7f3;
             border: 1px solid #f9a8d4;
         }
-
         .person-card.deceased {
             opacity: 0.7;
             border-color: #6b7280;
         }
-
         .person-card.highlight {
-            outline: 3px solid #f59e0b; /* Amber outline for search highlight */
+            outline: 3px solid #f59e0b;
             box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
             transform: scale(1.05);
         }
-
         .person-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-
         .person-name {
             font-weight: 600;
             color: #2d3748;
         }
-
         .person-details {
             font-size: 0.8rem;
             color: #4a5568;
         }
-
         .children-container {
             display: flex;
             justify-content: center;
             margin-top: 1.5rem;
             position: relative;
-            padding-top: 1.5rem; /* Space for lines to children */
-            /* For collapse/expand */
+            padding-top: 1.5rem;
             transition: all 0.3s ease-out;
         }
-
         .children-container.collapsed {
             max-height: 0;
             overflow: hidden;
@@ -181,8 +165,6 @@
             padding-top: 0;
             opacity: 0;
         }
-
-        /* Lines for tree connections */
         .tree-node::before {
             content: '';
             position: absolute;
@@ -190,15 +172,13 @@
             left: 50%;
             transform: translateX(-50%);
             width: 2px;
-            height: 2rem; /* Length of vertical line from parent */
-            background-color: #60a5fa; /* Blue line */
+            height: 2rem;
+            background-color: #60a5fa;
             z-index: 1;
         }
-
         .tree-node:first-child::before {
-            display: none; /* No line for the very first root node */
+            display: none;
         }
-
         .children-container::before {
             content: '';
             position: absolute;
@@ -206,26 +186,21 @@
             left: 0;
             right: 0;
             height: 2px;
-            background-color: #60a5fa; /* Horizontal line above children */
+            background-color: #60a5fa;
             z-index: 1;
         }
-
         .children-container .tree-node::before {
-            height: 1.5rem; /* Shorter line for children from horizontal line */
+            height: 1.5rem;
             top: -1.5rem;
         }
-
-        /* No line for the root of the tree if it's the only one */
         #familyTreeContainer > .tree-node::before {
             display: none;
         }
-
-        /* Collapse/Expand Icon */
         .toggle-children-btn {
             position: absolute;
             top: 50%;
-            left: -10px; /* Position to the left of the card */
-            transform: translateY(-50%) rotate(90deg); /* Rotate for right-facing arrow */
+            left: -10px;
+            transform: translateY(-50%) rotate(90deg);
             background-color: #4f46e5;
             color: white;
             border-radius: 50%;
@@ -240,13 +215,11 @@
             transition: transform 0.2s ease-in-out;
         }
         .toggle-children-btn.collapsed {
-            transform: translateY(-50%) rotate(0deg); /* Rotate back for down-facing arrow */
+            transform: translateY(-50%) rotate(0deg);
         }
         .toggle-children-btn:hover {
             background-color: #4338ca;
         }
-
-        /* Filters and Search */
         .filter-search-group {
             display: flex;
             flex-wrap: wrap;
@@ -264,8 +237,8 @@
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             background-color: white;
-            flex-grow: 1; /* Allow inputs to grow */
-            min-width: 150px; /* Minimum width for inputs */
+            flex-grow: 1;
+            min-width: 150px;
         }
     </style>
 </head>
@@ -285,13 +258,12 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">شجرة العائلة</h1>
            <nav class="flex flex-wrap gap-3">
-       <a href="index.html" class="btn-secondary">قائمة العائلة</a>
+                <a href="index.html" class="btn-secondary">قائمة العائلة</a>
                 <a href="events.html" class="btn-secondary">الأحداث</a>
                 <a href="family_tree.html" class="btn-primary">شجرة العائلة</a>
-    <a href="statistics.html" class="btn-secondary nav-link" data-page="statistics.html" style="">الإحصائيات</a>            
-    
-    <a href="export_data.html" class="btn-secondary nav-link" data-page="export_data.html" >تصدير البيانات</a>
-    <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
+                <a href="statistics.html" class="btn-secondary">الإحصائيات</a>
+                <a href="export_data.html" class="btn-secondary">تصدير البيانات</a>
+                <a href="add_edit_person.html" class="btn-secondary">إضافة شخص جديد</a>
             </nav>
         </div>
 
@@ -304,7 +276,6 @@
                 <label for="familyFilter">تحديد العائلة:</label>
                 <select id="familyFilter" class="w-auto">
                     <option value="All">الكل</option>
-                    <!-- Family names will be populated here by JavaScript -->
                 </select>
                 <label for="personSearchInput">البحث عن شخص:</label>
                 <input type="text" id="personSearchInput" placeholder="اكتب الاسم الكامل..." class="w-auto">
@@ -325,11 +296,10 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase configuration provided by the user
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBOXGJek0FHS1VqXhkgORMq-VrPoN1db3w",
             authDomain: "family-9b0b8.firebaseapp.com",
@@ -344,15 +314,8 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        let userId = null;
-        let allFamilyMembers = []; // Cache all family members
-        let currentFilteredMembers = []; // Members currently displayed based on filter
-        let selectedFamilyFilter = 'أبو عيسى'; // Default family filter
-
-        // Get app ID from environment or use a default
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const baseCollectionPath = `artifacts/${appId}/familyMembers`;
 
         // DOM Elements
         const loadingIndicator = document.getElementById('loadingIndicator');
@@ -370,15 +333,19 @@
         let translateY = 0;
         let scale = 1;
 
+        // State
+        let allFamilyMembers = [];
+        let currentFilteredMembers = [];
+
         // Function to show custom modal messages
-        function showModal(message, modalId = 'messageModal') {
+        function showModal(message) {
             document.getElementById('modalMessage').textContent = message;
-            document.getElementById(modalId).style.display = 'flex';
+            document.getElementById('messageModal').style.display = 'flex';
         }
 
         // Function to close custom modal messages
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+        function closeModal() {
+            document.getElementById('messageModal').style.display = 'none';
         }
 
         // Function to calculate age from birth date
@@ -395,29 +362,23 @@
             return `${years} سنة`;
         }
 
-        // Function to fetch all family members
+        // Fetch all family members from Firebase
         async function fetchAllFamilyMembersForTree() {
-            if (!userId) {
-                console.log("User ID not available, cannot fetch family members for tree.");
-                return [];
-            }
             try {
-                const q = collection(db, `artifacts/${appId}/users/${userId}/familyMembers`);
+                const q = collection(db, baseCollectionPath);
                 const querySnapshot = await getDocs(q);
-                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("All family members fetched for tree:", allFamilyMembers);
+                allFamilyMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), childrenIds: doc.data().childrenIds || [] }));
                 return allFamilyMembers;
             } catch (error) {
-                console.error("Error fetching family members for tree:", error);
-                showModal("حدث خطأ أثناء جلب بيانات العائلة لشجرة العائلة: " + error.message);
+                console.error("Error fetching family members:", error);
+                showModal("حدث خطأ أثناء جلب بيانات العائلة: " + error.message);
                 return [];
             }
         }
 
-        // Function to populate the family filter dropdown and set default
+        // Populate family filter dropdown
         function initializeFamilyFilter() {
             const uniqueFamilyNames = new Set(allFamilyMembers.map(p => p.familyName).filter(name => name && name.trim() !== ''));
-            
             familyFilterSelect.innerHTML = '<option value="All">الكل</option>';
             uniqueFamilyNames.forEach(name => {
                 const option = document.createElement('option');
@@ -425,35 +386,26 @@
                 option.textContent = name;
                 familyFilterSelect.appendChild(option);
             });
-
-            if (uniqueFamilyNames.has('أبو عيسى')) {
-                familyFilterSelect.value = 'أبو عيسى';
-                selectedFamilyFilter = 'أبو عيسى';
-            } else {
-                familyFilterSelect.value = 'All';
-                selectedFamilyFilter = 'All';
-            }
+            familyFilterSelect.value = 'All';
         }
 
-        // Function to apply the selected family filter
+        // Apply family filter
         function applyFamilyFilter() {
             const filterValue = familyFilterSelect.value;
-            selectedFamilyFilter = filterValue;
-
             if (filterValue === 'All') {
                 currentFilteredMembers = [...allFamilyMembers];
             } else {
                 currentFilteredMembers = allFamilyMembers.filter(p => p.familyName === filterValue);
             }
-            buildAndDisplayFamilyTree(); // Re-render the tree with filtered members
+            buildAndDisplayFamilyTree();
         }
 
-        // Function to build the hierarchical tree data structure
+        // Build hierarchical tree data structure
         function buildFamilyTreeData(members) {
             const memberMap = new Map(members.map(m => [m.id, { ...m, children: [] }]));
             const roots = [];
 
-            // First pass: populate children arrays
+            // Populate children arrays
             memberMap.forEach(member => {
                 if (member.childrenIds && member.childrenIds.length > 0) {
                     member.childrenIds.forEach(childId => {
@@ -464,7 +416,7 @@
                 }
             });
 
-            // Second pass: identify roots (people who are not children of anyone in the current filtered set)
+            // Identify roots (people who are not children of anyone in the current filtered set)
             memberMap.forEach(member => {
                 let isChild = false;
                 for (const potentialParent of members) {
@@ -488,12 +440,11 @@
             return roots;
         }
 
-
-        // Function to render a single person node
+        // Render a single person node
         function renderPersonNode(person) {
             const nodeDiv = document.createElement('div');
             nodeDiv.classList.add('tree-node');
-            nodeDiv.dataset.personId = person.id; // Store ID for search highlighting
+            nodeDiv.dataset.personId = person.id;
 
             const personCard = document.createElement('div');
             personCard.classList.add('person-card', 'rounded-lg', 'p-3', 'shadow-sm', 'transition-all', 'duration-200', 'hover:scale-105', 'relative');
@@ -505,9 +456,7 @@
                 personCard.classList.add('deceased');
             }
 
-            // Click to view profile
             personCard.addEventListener('click', (e) => {
-                // Prevent event from bubbling to toggle button if clicked
                 if (!e.target.classList.contains('toggle-children-btn') && !e.target.closest('.toggle-children-btn')) {
                     window.location.href = `profile.html?id=${person.id}`;
                 }
@@ -535,27 +484,26 @@
             addChildBtn.classList.add('btn-primary', 'mt-2', 'px-2', 'py-1', 'text-xs', 'rounded-md');
             addChildBtn.textContent = 'إضافة ابن/ابنة';
             addChildBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent card click event from firing
+                e.stopPropagation();
                 window.location.href = `add_edit_person.html?parentId=${person.id}&parentGender=${person.gender}`;
             });
             personCard.appendChild(addChildBtn);
-
 
             // Collapse/Expand button
             if (person.children && person.children.length > 0) {
                 const toggleBtn = document.createElement('div');
                 toggleBtn.classList.add('toggle-children-btn');
-                toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>'; // Font Awesome right arrow
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
                 toggleBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent card click event from firing
+                    e.stopPropagation();
                     const childrenContainer = nodeDiv.querySelector('.children-container');
                     if (childrenContainer) {
                         childrenContainer.classList.toggle('collapsed');
                         toggleBtn.classList.toggle('collapsed');
                         if (childrenContainer.classList.contains('collapsed')) {
-                            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>'; // Down arrow when collapsed
+                            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
                         } else {
-                            toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>'; // Right arrow when expanded
+                            toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
                         }
                     }
                 });
@@ -577,7 +525,6 @@
                 const childrenContainer = document.createElement('div');
                 childrenContainer.classList.add('children-container');
 
-                // Sort children by birth date for consistent display
                 person.children.sort((a, b) => {
                     const dateA = a.birthDate ? a.birthDate.toDate().getTime() : 0;
                     const dateB = b.birthDate ? b.birthDate.toDate().getTime() : 0;
@@ -593,84 +540,85 @@
 
         // Main function to build and display the tree
         async function buildAndDisplayFamilyTree() {
-            if (!userId) {
-                console.log("User ID not available, skipping tree build.");
-                return;
-            }
-
             loadingIndicator.classList.remove('hidden');
             noTreeDataMessage.classList.add('hidden');
-            familyTreeContainer.innerHTML = ''; // Clear previous tree content
-            familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`; // Reset transform
+            familyTreeContainer.innerHTML = '';
+            familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
-            // Build tree data from currentFilteredMembers
             const roots = buildFamilyTreeData(currentFilteredMembers);
 
             if (roots.length === 0) {
                 loadingIndicator.classList.add('hidden');
                 noTreeDataMessage.classList.remove('hidden');
-                console.warn("Could not identify any root members for the family tree with current filter.");
                 return;
             }
 
-            // Render each root and its descendants
             roots.forEach(root => {
                 const rootWrapper = document.createElement('div');
-                rootWrapper.classList.add('flex', 'justify-center', 'w-full'); // Wrapper for each root to center it
+                rootWrapper.classList.add('flex', 'justify-center', 'w-full');
                 renderTree(root, rootWrapper);
                 familyTreeContainer.appendChild(rootWrapper);
             });
 
             loadingIndicator.classList.add('hidden');
-            applySearchHighlight(); // Apply search highlight after rendering
+            applySearchHighlight();
         }
 
         // Pan and Zoom functionality
         function setupPanZoom() {
+            const wrapper = document.getElementById('familyTreeContainerWrapper');
+            let isDragging = false;
+            let lastX = 0, lastY = 0;
+
+            function updateTransform() {
+                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            }
+
+            function clampPan() {
+                const rect = familyTreeContainer.getBoundingClientRect();
+                const wrapperRect = wrapper.getBoundingClientRect();
+                const minX = Math.min(0, wrapperRect.width - rect.width * scale);
+                const minY = Math.min(0, wrapperRect.height - rect.height * scale);
+                translateX = Math.max(minX, Math.min(translateX, wrapperRect.width / 2));
+                translateY = Math.max(minY, Math.min(translateY, wrapperRect.height / 2));
+            }
+
             familyTreeContainer.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 familyTreeContainer.classList.add('dragging');
-                startX = e.clientX - translateX;
-                startY = e.clientY - translateY;
+                lastX = e.clientX - translateX;
+                lastY = e.clientY - translateY;
             });
 
-            familyTreeContainer.addEventListener('mouseleave', () => {
-                isDragging = false;
-                familyTreeContainer.classList.remove('dragging');
-            });
-
-            familyTreeContainer.addEventListener('mouseup', () => {
-                isDragging = false;
-                familyTreeContainer.classList.remove('dragging');
-            });
-
-            familyTreeContainer.addEventListener('mousemove', (e) => {
+            document.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
-                e.preventDefault(); // Prevent text selection
-                translateX = e.clientX - startX;
-                translateY = e.clientY - startY;
-                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                translateX = e.clientX - lastX;
+                translateY = e.clientY - lastY;
+                clampPan();
+                updateTransform();
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                familyTreeContainer.classList.remove('dragging');
             });
 
             familyTreeContainer.addEventListener('wheel', (e) => {
-                e.preventDefault(); // Prevent page scrolling
+                e.preventDefault();
                 const scaleAmount = 0.1;
-                const mouseX = e.clientX - familyTreeContainer.getBoundingClientRect().left;
-                const mouseY = e.clientY - familyTreeContainer.getBoundingClientRect().top;
-
                 const oldScale = scale;
                 if (e.deltaY < 0) {
-                    scale += scaleAmount; // Zoom in
+                    scale = Math.min(2, scale + scaleAmount);
                 } else {
-                    scale -= scaleAmount; // Zoom out
+                    scale = Math.max(0.5, scale - scaleAmount);
                 }
-                scale = Math.max(0.5, Math.min(2, scale)); // Clamp scale between 0.5 and 2
-
-                // Adjust translation to zoom towards the mouse cursor
-                translateX = mouseX - ((mouseX - translateX) * (scale / oldScale));
-                translateY = mouseY - ((mouseY - translateY) * (scale / oldScale));
-
-                familyTreeContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                const rect = familyTreeContainer.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                translateX -= (mouseX / oldScale - mouseX / scale);
+                translateY -= (mouseY / oldScale - mouseY / scale);
+                clampPan();
+                updateTransform();
             });
         }
 
@@ -686,7 +634,6 @@
                     const person = allFamilyMembers.find(m => m.id === node.dataset.personId);
                     if (person && person.fullName && person.fullName.toLowerCase().includes(searchTerm)) {
                         node.querySelector('.person-card').classList.add('highlight');
-                        // Optionally, scroll to the first highlighted element
                         if (!document.querySelector('.person-card.highlight.scrolled-into-view')) {
                             node.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             node.querySelector('.person-card').classList.add('scrolled-into-view');
@@ -696,84 +643,17 @@
             }
         }
 
-        // Main DOMContentLoaded listener
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Modal close buttons
-            document.getElementById('closeMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-            document.getElementById('confirmMessageModalBtn').addEventListener('click', () => closeModal('messageModal'));
-
-            // Event listeners for filters and search
-            familyFilterSelect.addEventListener('change', applyFamilyFilter);
-            personSearchInput.addEventListener('input', applySearchHighlight);
-            clearSearchBtn.addEventListener('click', () => {
-                personSearchInput.value = '';
-                applySearchHighlight(); // Clear highlights
-            });
-            exportTreeImageBtn.addEventListener('click', exportTreeAsImage);
-
-
-            // Setup Pan and Zoom
-            setupPanZoom();
-
-            // Initial authentication attempt
-            (async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
-                        } catch (tokenError) {
-                            if (tokenError.code === 'auth/custom-token-mismatch' || tokenError.code === 'auth/invalid-custom-token') {
-                                console.warn("Custom token mismatch or invalid. Attempting anonymous sign-in.");
-                                await signInAnonymously(auth);
-                                console.log("Signed in anonymously after custom token failure.");
-                            } else {
-                                throw tokenError;
-                            }
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
-                    }
-                } catch (error) {
-                    console.error("Error during initial authentication attempt:", error);
-                    showModal("حدث خطأ أثناء محاولة المصادقة الأولية: " + error.message);
-                }
-            })();
-
-            // Listen for auth state changes to get userId and fetch data
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log("Authentication state changed. User ID:", userId);
-                    await fetchAllFamilyMembersForTree(); // Fetch ALL members initially
-                    initializeFamilyFilter(); // Populate filter dropdown
-                    applyFamilyFilter(); // Apply initial filter and render tree
-                } else {
-                    userId = null;
-                    console.log("User signed out or no user.");
-                    loadingIndicator.classList.add('hidden');
-                    noTreeDataMessage.classList.remove('hidden');
-                    familyTreeContainer.innerHTML = '';
-                    showModal("يرجى تسجيل الدخول لعرض شجرة العائلة.", 'messageModal');
-                }
-            });
-        });
-
-        // Function to export the tree as a PNG image
+        // Export tree as image
         function exportTreeAsImage() {
-            // Temporarily reset transform for accurate capture
             const originalTransform = familyTreeContainer.style.transform;
             familyTreeContainer.style.transform = 'none';
-            familyTreeContainer.style.justifyContent = 'flex-start'; // Align left for capture
+            familyTreeContainer.style.justifyContent = 'flex-start';
 
-            // Get the actual content size for html2canvas
-            const treeContent = familyTreeContainer.querySelector('.tree-node'); // Get the first node to measure content
+            const treeContent = familyTreeContainer.querySelector('.tree-node');
             let contentWidth = familyTreeContainer.scrollWidth;
             let contentHeight = familyTreeContainer.scrollHeight;
 
             if (treeContent) {
-                 // Calculate bounding box of all nodes to get precise content size
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 document.querySelectorAll('.person-card').forEach(card => {
                     const rect = card.getBoundingClientRect();
@@ -782,22 +662,19 @@
                     maxX = Math.max(maxX, rect.right);
                     maxY = Math.max(maxY, rect.bottom);
                 });
-
-                // Add padding for lines and spacing
                 const padding = 50;
                 contentWidth = (maxX - minX) + 2 * padding;
                 contentHeight = (maxY - minY) + 2 * padding;
             }
 
-
             html2canvas(familyTreeContainer, {
-                useCORS: true, // Important for images if any (though not used here)
-                scrollX: -window.scrollX, // Adjust for page scroll
-                scrollY: -window.scrollY, // Adjust for page scroll
+                useCORS: true,
+                scrollX: -window.scrollX,
+                scrollY: -window.scrollY,
                 width: contentWidth,
                 height: contentHeight,
-                windowWidth: familyTreeContainer.scrollWidth, // Capture full scrollable width
-                windowHeight: familyTreeContainer.scrollHeight, // Capture full scrollable height
+                windowWidth: familyTreeContainer.scrollWidth,
+                windowHeight: familyTreeContainer.scrollHeight,
             }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = 'family_tree.png';
@@ -808,11 +685,31 @@
                 console.error("Error exporting tree as image:", error);
                 showModal("حدث خطأ أثناء تصدير الشجرة كصورة: " + error.message);
             }).finally(() => {
-                // Restore original transform and alignment
                 familyTreeContainer.style.transform = originalTransform;
                 familyTreeContainer.style.justifyContent = 'center';
             });
         }
+
+        // Main DOMContentLoaded listener
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('closeMessageModalBtn').addEventListener('click', closeModal);
+            document.getElementById('confirmMessageModalBtn').addEventListener('click', closeModal);
+
+            familyFilterSelect.addEventListener('change', applyFamilyFilter);
+            personSearchInput.addEventListener('input', applySearchHighlight);
+            clearSearchBtn.addEventListener('click', () => {
+                personSearchInput.value = '';
+                applySearchHighlight();
+            });
+            exportTreeImageBtn.addEventListener('click', exportTreeAsImage);
+
+            setupPanZoom();
+
+            loadingIndicator.classList.remove('hidden');
+            await fetchAllFamilyMembersForTree();
+            initializeFamilyFilter();
+            applyFamilyFilter();
+        });
     </script>
 </body>
 </html>
